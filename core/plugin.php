@@ -175,6 +175,11 @@ function plugin_sync(): array
         $found[$id] = $m;
         $snapshot = array_intersect_key($m, array_flip(['name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings']));
         $existing = plugins()[$id] ?? null;
+        // files changed underneath an installed plugin (scan, zip upload, core upgrade): run its install routine for the new version now,
+        // because the version stored below is what plugin_enable() compares against later
+        if ($existing !== null && (int)($existing['installed'] ?? 0) === 1 && (string)$existing['version'] !== (string)$m['version'] && !empty($m['install']) && is_callable($m['install'])) {
+            $m['install']($m);
+        }
         $data = ['id' => $id, 'name' => (string)$m['name'], 'version' => (string)$m['version'], 'manifest' => json_encode_value($snapshot), 'updated_at' => now()];
         if ($existing === null) $data += ['enabled' => 0, 'installed' => 0, 'settings' => '{}', 'sort' => 0];
         db_upsert('fb_plugins', $data, ['id']);
