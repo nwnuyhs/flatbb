@@ -222,7 +222,8 @@ function plugin_uninstall(string $id): void
     plugin_assets_build();
 }
 
-function plugin_delete_files(string $id): void
+/** Remove plugins/<id>/ from disk. $forget=false keeps the registry row (settings, enabled state) for a reinstall. */
+function plugin_delete_files(string $id, bool $forget = true): void
 {
     if (!plugin_id_valid($id)) return;
     $dir = plugin_path($id);
@@ -230,7 +231,7 @@ function plugin_delete_files(string $id): void
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
     foreach ($it as $f) $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
     @rmdir($dir);
-    db_delete('fb_plugins', 'id=?', [$id]);
+    if ($forget) db_delete('fb_plugins', 'id=?', [$id]);
     plugins(true);
 }
 
@@ -263,7 +264,7 @@ function plugin_install_zip(string $file): string
     if (!preg_match('/[\'"]id[\'"]\s*=>\s*[\'"]' . preg_quote($id, '/') . '[\'"]/', $src)) { $zip->close(); throw new RuntimeException(t('plugin.php does not declare id "%s".', $id)); }
     $was_enabled = plugin_enabled($id);
     if ($was_enabled) plugin_disable($id);
-    if (is_dir(plugin_path($id))) plugin_delete_files($id);
+    if (is_dir(plugin_path($id))) plugin_delete_files($id, false); // keep settings and enabled state across the reinstall
     if (!$zip->extractTo(PLUGIN_DIR)) { $zip->close(); throw new RuntimeException(t('Could not write to plugins/.')); }
     $zip->close();
     foreach (glob(PLUGIN_DIR . '/__MACOSX') ?: [] as $junk) upgrade_rmdir($junk);
