@@ -27,6 +27,7 @@ function setup_index(): never
                 db_connect($db)->query('SELECT 1');
             } catch (Throwable $e) {
                 $errors[] = t('Database connection failed: %s', $e->getMessage());
+                if (str_contains($e->getMessage(), '1045')) $errors[] = t('MySQL rejected the user name or password. Retype the password by hand: browsers often auto-fill this field with a saved password from another site.');
             }
         }
         if ($errors === []) {

@@ -27,8 +27,8 @@
         <div class="form-row"><label>Host</label><input name="mysql_host" value="<?= h($values['mysql_host']) ?>"></div>
         <div class="form-row"><label>Port</label><input name="mysql_port" value="<?= h($values['mysql_port']) ?>"></div>
         <div class="form-row"><label>Database</label><input name="mysql_name" value="<?= h($values['mysql_name']) ?>"></div>
-        <div class="form-row"><label>User</label><input name="mysql_user" value="<?= h($values['mysql_user']) ?>"></div>
-        <div class="form-row"><label>Password</label><input name="mysql_pass" type="password" value="<?= h($values['mysql_pass']) ?>"></div>
+        <div class="form-row"><label>User</label><input name="mysql_user" value="<?= h($values['mysql_user']) ?>" autocomplete="off"></div>
+        <div class="form-row"><label>Password</label><input name="mysql_pass" type="password" value="<?= h($values['mysql_pass']) ?>" autocomplete="off" data-lpignore="true"></div>
       </div>
     </div></section>
     <section class="card"><header class="card-head"><h3>Site & administrator</h3></header><div class="card-body">
@@ -39,7 +39,7 @@
       <div class="form-grid">
         <div class="form-row"><label>Admin username</label><input name="admin_name" value="<?= h($values['admin_name']) ?>" required></div>
         <div class="form-row"><label>Admin email</label><input name="admin_email" type="email" value="<?= h($values['admin_email']) ?>"></div>
-        <div class="form-row"><label>Admin password</label><input name="admin_pass" type="password" minlength="8" required></div>
+        <div class="form-row"><label>Admin password</label><input name="admin_pass" type="password" minlength="8" required autocomplete="new-password"></div>
       </div>
     </div></section>
     <div class="form-actions"><button type="submit" class="btn btn-primary btn-lg">Install</button></div>
