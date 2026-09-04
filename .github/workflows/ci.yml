@@ -13,5 +13,7 @@ jobs:
         run: find . -name '*.php' -not -path './data/*' -print0 | xargs -0 -n1 php -l > /dev/null && php -l flatbb > /dev/null
       - name: Static security rules
         run: php flatbb security:check
+      - name: Test suite
+        run: php flatbb test
       - name: Plugin rules
         run: php flatbb plugin:check hello && php flatbb plugin:check market

@@ -40,6 +40,7 @@ php flatbb plugin:check <id>         # lint + rules
 php flatbb plugin:publish <id>       # upload to www.flatbb.com (FLATBB_TOKEN)
 php flatbb search:rebuild
 php flatbb schema:upgrade
+php flatbb test                           # dependency-free test suite (tests/*_test.php)
 php flatbb lang:sync <code>              # create/refresh lang/<code>.php with every UI string
 php flatbb admin:password <user> <newpass>
 php flatbb migrate:import <file.sqlite>   # move a SQLite site into this (MySQL) database

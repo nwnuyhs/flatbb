@@ -80,6 +80,7 @@ php flatbb plugin:publish <id>    # package and upload to www.flatbb.com (FLATBB
 php flatbb hooks:list > docs/HOOKS.md
 php flatbb api:list   > docs/API.md
 php flatbb lang:sync <code>       # create/refresh lang/<code>.php with every t() string
+php flatbb test                   # run tests/*_test.php against a temporary SQLite database (no dependencies)
 php flatbb security:check         # static rules: no $_POST/$_GET reads, no eval/exec, no unescaped template output (exit 1 on findings)
 php flatbb cron                   # run due scheduled jobs
 php -l <file>                     # always lint changed PHP files
@@ -87,7 +88,7 @@ php -l <file>                     # always lint changed PHP files
 
 ## Definition of done
 
-- `php -l` passes on every changed file; `php flatbb plugin:check <id>` passes for plugins.
+- `php -l` passes on every changed file; `php flatbb test` and `php flatbb security:check` pass; `php flatbb plugin:check <id>` passes for plugins.
 - No new queries in loops; list pages stay under ~10 queries.
 - Works on SQLite and on MySQL 5.7 (same schema helpers, no dialect SQL).
 - User-facing text is escaped, translatable, and English.

@@ -331,3 +331,69 @@ function security_scan(array $files): array
     }
     return $found;
 }
+
+/* ---------------------------------------------------------------- tests (php flatbb test) */
+
+/**
+ * Minimal test runner, no dependencies: every tests/*.php file defines test_* functions that throw on failure.
+ * test_boot() gives each run a fresh SQLite database in the system temp dir, so tests never touch data/.
+ */
+function test_boot(): void
+{
+    $dir = sys_get_temp_dir() . '/flatbb-test-' . getmypid();
+    @mkdir($dir, 0777, true);
+    config(null, null, ['db' => ['driver' => 'sqlite', 'path' => $dir . '/test.sqlite'], 'secret' => str_repeat('t', 32), 'debug' => true, 'lang' => 'en']);
+    $_SERVER['HTTP_HOST'] = 'localhost';
+    $_SERVER['SCRIPT_NAME'] = '/index.php';
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    schema_install();
+    if (val('SELECT COUNT(*) FROM fb_users') == 0) schema_seed('admin', 'admin@example.com', 'admin-password-1');
+}
+
+function test_assert(bool $ok, string $message = 'assertion failed'): void
+{
+    if (!$ok) throw new RuntimeException($message);
+}
+
+function test_same(mixed $expected, mixed $actual, string $what = 'value'): void
+{
+    if ($expected !== $actual) throw new RuntimeException($what . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+}
+
+function test_contains(string $needle, string $haystack, string $what = 'output'): void
+{
+    if (!str_contains($haystack, $needle)) throw new RuntimeException($what . ' does not contain ' . var_export($needle, true) . ' (got ' . var_export(cut($haystack, 120), true) . ')');
+}
+
+function test_not_contains(string $needle, string $haystack, string $what = 'output'): void
+{
+    if (str_contains($haystack, $needle)) throw new RuntimeException($what . ' must not contain ' . var_export($needle, true));
+}
+
+/** Run every test_* function found in tests/*.php (or one file). Returns [passed, failed, [failures]]. */
+function test_run(string $only = '', ?callable $out = null): array
+{
+    $out ??= static fn(string $s) => null;
+    test_boot();
+    $files = $only !== '' ? [ROOT . '/tests/' . basename($only)] : (glob(ROOT . '/tests/*_test.php') ?: []);
+    $passed = 0; $failed = 0; $failures = [];
+    foreach ($files as $file) {
+        if (!is_file($file)) { $failures[] = basename($file) . ': file not found'; $failed++; continue; }
+        $before = get_defined_functions()['user'];
+        require_once $file;
+        $new = array_diff(get_defined_functions()['user'], $before);
+        foreach ($new as $fn) {
+            if (!str_starts_with($fn, 'test_') || in_array($fn, ['test_boot', 'test_assert', 'test_same', 'test_contains', 'test_not_contains', 'test_run'], true)) continue;
+            try {
+                $fn();
+                $passed++;
+                $out('  ok   ' . $fn);
+            } catch (Throwable $e) {
+                $failed++;
+                $failures[] = $fn . ': ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')';
+                $out('  FAIL ' . $fn . ' - ' . $e->getMessage());
+            }
+        }
+    }
+    return [$passed, $failed, $failures];
+}

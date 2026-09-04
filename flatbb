@@ -15,6 +15,7 @@
  *   php flatbb hooks:list              print every hook/region found in core (used for docs/HOOKS.md)
  *   php flatbb api:list                print core function signatures (used for docs/API.md)
  *   php flatbb lang:sync <code>        create/update lang/<code>.php with every t() string (empty = untranslated)
+ *   php flatbb test [file_test.php]    run the test suite in tests/ (fresh temporary SQLite database, no dependencies)
  *   php flatbb security:check          static rules for core, app and plugins (superglobals, eval/exec, unescaped template output); exit 1 on findings
  *   php flatbb search:rebuild          rebuild the full-text index
  *   php flatbb schema:upgrade          create missing tables/columns/indexes
@@ -39,7 +40,7 @@ $flag = static function (string $name, ?string $default = null) use ($flags): ?s
     return $default;
 };
 $out = static fn(string $s) => fwrite(STDOUT, $s . "\n");
-if (!in_array($cmd, ['help', 'hooks:list', 'api:list', 'lang:sync', 'security:check', 'plugin:check', 'plugin:package', 'plugin:publish', 'release'], true)) {
+if (!in_array($cmd, ['help', 'hooks:list', 'api:list', 'lang:sync', 'security:check', 'test', 'plugin:check', 'plugin:package', 'plugin:publish', 'release'], true)) {
     if (!is_installed()) exit("flatbb is not installed yet. Open the site in a browser first.\n");
     app_boot();
 }
@@ -84,6 +85,10 @@ switch ($cmd) {
     case 'api:list':
         $out(docs_api_markdown());
         break;
+    case 'test':
+        [$p, $f, $fails] = test_run((string)($args[0] ?? ''), $out);
+        $out(($f === 0 ? 'OK ' : 'FAILED ') . $p . ' passed, ' . $f . ' failed');
+        exit($f === 0 ? 0 : 1);
     case 'security:check':
         $files = array_merge(security_files(ROOT . '/core'), security_files(ROOT . '/app'), security_files(ROOT . '/plugins'), [ROOT . '/index.php']);
         $found = security_scan($files);
