@@ -44,6 +44,25 @@ function seo_sitemap(): never
     exit;
 }
 
+/** Web app manifest: "Add to home screen" uses the site name and icon instead of the page title. */
+function seo_manifest(): never
+{
+    $site = setting('site_name');
+    $fav = setting('site_favicon');
+    $icon = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg';
+    $type = str_contains($icon, '.svg') ? 'image/svg+xml' : (str_contains($icon, '.ico') ? 'image/x-icon' : 'image/png');
+    $brand = preg_match('/^#[0-9a-f]{6}$/i', setting('brand_color', '#e7672e')) ? setting('brand_color') : '#e7672e';
+    header('Content-Type: application/manifest+json; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    echo json_encode_value([
+        'name' => $site, 'short_name' => cut($site, 12, ''), 'description' => setting('site_tagline'),
+        'start_url' => (base_path() ?: '') . '/', 'scope' => (base_path() ?: '') . '/', 'display' => 'minimal-ui',
+        'background_color' => '#ffffff', 'theme_color' => $brand,
+        'icons' => [['src' => $icon, 'sizes' => $type === 'image/svg+xml' ? 'any' : '192x192 512x512', 'type' => $type, 'purpose' => 'any']],
+    ]);
+    exit;
+}
+
 function seo_rss(): never
 {
     header('Content-Type: application/rss+xml; charset=utf-8');

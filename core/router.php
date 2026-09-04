@@ -67,6 +67,7 @@ function routes_core(): array
         '/cron' => 'cron_run_web',
         '/sitemap.xml' => 'seo_sitemap',
         '/rss' => 'seo_rss',
+        '/manifest.webmanifest' => 'seo_manifest',
         '/setup' => 'setup_index',
         '/__rewrite_check' => 'router_rewrite_check',
     ];

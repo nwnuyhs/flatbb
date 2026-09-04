@@ -35,6 +35,9 @@ $unread = notifications_unread();
 <?php if ($canonical !== ''): ?><link rel="canonical" href="<?= h($canonical) ?>"><?php endif; ?>
 <?php if ($robots !== ''): ?><meta name="robots" content="<?= h($robots) ?>"><?php endif; ?>
 <meta name="theme-color" content="<?= h($brand) ?>">
+<meta name="application-name" content="<?= h($site) ?>">
+<meta name="apple-mobile-web-app-title" content="<?= h($site) ?>">
+<link rel="manifest" href="<?= h(url('/manifest.webmanifest')) ?>">
 <link rel="alternate" type="application/rss+xml" title="<?= h($site) ?>" href="<?= h(url('/rss')) ?>">
 <?php $fav = setting('site_favicon'); $fav_url = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg'; $fav_type = str_contains($fav_url, '.svg') ? 'image/svg+xml' : (str_contains($fav_url, '.ico') ? 'image/x-icon' : 'image/png'); ?>
 <link rel="icon" href="<?= h($fav_url) ?>" type="<?= h($fav_type) ?>">
