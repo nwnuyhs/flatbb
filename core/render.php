@@ -37,6 +37,7 @@ function sidebar_cards_default(): array
     $cards = [];
     $cards['user'] = view('card_user', ['me' => me()]);
     $cards['stats'] = view('card_stats', ['stats' => site_stats()]);
+    $cards['newest'] = view('card_newest', ['users' => site_stats()['newest_users'] ?? []]);
     return region_list('sidebar.right.cards', $cards);
 }
 
@@ -62,9 +63,11 @@ function site_stats(): array
             'posts' => (int)val('SELECT COUNT(*) FROM fb_posts WHERE is_deleted=0 AND floor>0'),
             'users' => (int)val('SELECT COUNT(*) FROM fb_users'),
             'online' => (int)val('SELECT COUNT(*) FROM fb_users WHERE last_seen>?', [now() - 900]),
-            'newest' => (string)(val('SELECT username FROM fb_users ORDER BY id DESC LIMIT 1') ?? ''),
+            'newest_users' => q('SELECT username, avatar FROM fb_users ORDER BY id DESC LIMIT 8')->fetchAll(PDO::FETCH_ASSOC), // newest first, for the "Newest members" sidebar card
+            'newest' => '',
             'at' => now(),
         ];
+        $s['newest'] = (string)($s['newest_users'][0]['username'] ?? ''); // kept for plugins that read the old key
         save_settings(['stats_cache' => json_encode_value($s)]);
         return $s;
     }) ?? [];

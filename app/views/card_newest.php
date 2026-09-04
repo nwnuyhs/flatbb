@@ -1,0 +1,2 @@
+<?php /** Newest members card: grid of avatars with names, newest first. Variable: users */ ?>
+<?= $users === [] ? '' : card(t('Newest members'), '<div class="newest-grid">' . implode('', array_map(static fn(array $u): string => '<a class="newest-item" href="' . h(user_url($u)) . '">' . avatar($u, 40, false) . '<span>' . h((string)$u['username']) . '</span></a>', $users)) . '</div>', 'card-newest') ?>

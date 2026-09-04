@@ -154,6 +154,12 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .stat-list { list-style: none; margin: 0; padding: 0; }
 .stat-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
 .stat-list li:last-child { border: 0; }
+/* newest members card: 4 per row, rounded-square avatar with the name underneath */
+.newest-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 4px; }
+.newest-item { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; color: var(--text); font-size: var(--font-size-xs); text-decoration: none; }
+.newest-item .avatar { border-radius: 15%; }
+.newest-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.newest-item:hover span { color: var(--brand); }
 .link-list { list-style: none; margin: 0; padding: 6px 0; }
 .link-list li { padding: 7px 16px; }
 .link-list li a { color: var(--text); display: block; }
