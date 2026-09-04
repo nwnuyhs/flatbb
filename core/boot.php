@@ -55,6 +55,7 @@ set_error_handler(static function (int $no, string $str, string $file, int $line
 set_exception_handler(static function (Throwable $e): void {
     $detail = get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString();
     @error_log('[flatbb] ' . $detail);
+    if (defined('DATA_DIR') && is_dir(DATA_DIR)) @file_put_contents(DATA_DIR . '/error.log', date('c') . ' ' . ($_SERVER['REQUEST_METHOD'] ?? '') . ' ' . ($_SERVER['REQUEST_URI'] ?? '') . "\n" . $detail . "\n\n", FILE_APPEND | LOCK_EX);
     if (IS_CLI) {
         fwrite(STDERR, $detail . "\n");
         exit(1);
@@ -63,7 +64,9 @@ set_exception_handler(static function (Throwable $e): void {
         http_response_code(500);
         header('Content-Type: text/html; charset=utf-8');
     }
-    $body = debug_mode() ? '<pre>' . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . '</pre>' : '<p>Something went wrong. Please try again later.</p>';
+    $show = debug_mode();
+    if (!$show) { try { $show = function_exists('is_admin') && is_admin(); } catch (Throwable) { $show = false; } } // admins see the cause; visitors do not
+    $body = $show ? '<pre>' . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . '</pre><p>Also written to data/error.log.</p>' : '<p>Something went wrong. Please try again later.</p>';
     echo '<!doctype html><meta charset="utf-8"><title>Error</title><body style="font-family:system-ui;padding:40px;max-width:900px;margin:auto"><h1>500</h1>' . $body;
     exit;
 });

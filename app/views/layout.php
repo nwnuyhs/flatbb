@@ -42,8 +42,10 @@ $unread = notifications_unread();
 <?php $fav = setting('site_favicon'); $fav_url = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg'; $fav_type = str_contains($fav_url, '.svg') ? 'image/svg+xml' : (str_contains($fav_url, '.ico') ? 'image/x-icon' : 'image/png'); ?>
 <link rel="icon" href="<?= h($fav_url) ?>" type="<?= h($fav_type) ?>">
 <?php if ($fav !== '' && $fav_type === 'image/png'): ?><link rel="apple-touch-icon" href="<?= h($fav_url) ?>"><?php endif; ?>
-<style>:root{--brand:<?= h($brand) ?>}</style>
 <link rel="stylesheet" href="<?= h(base_path()) ?>/assets/app.css?v=<?= FLATBB_VERSION ?>.<?= (int)@filemtime(ROOT . "/assets/app.css") ?>">
+<?php if (strtolower($brand) !== '#e7672e'): [$br, $bg, $bb] = sscanf($brand, '#%02x%02x%02x'); $hover = sprintf('#%02x%02x%02x', (int)($br * .88), (int)($bg * .88), (int)($bb * .88)); ?>
+<style>:root{--brand:<?= h($brand) ?>;--brand-hover:<?= h($hover) ?>;--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.12)}[data-theme="dark"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}@media (prefers-color-scheme:dark){[data-theme="auto"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}}</style>
+<?php endif; ?>
 <?= plugin_assets_tag('css') ?>
 <?= region('head', ['title' => $title], '', false) ?>
 <?= raw(setting('head_code')) ?>
