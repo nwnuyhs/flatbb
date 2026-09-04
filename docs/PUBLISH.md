@@ -26,6 +26,10 @@ php flatbb plugin:check <id>
 
 ## 3. Publish
 
+From the browser: zip the plugin folder and upload it at https://www.flatbb.com/market/publish (signed in). The manifest is read from plugin.php, README.md becomes the plugin page.
+
+From the command line:
+
 ```bash
 php flatbb plugin:publish <id> --changelog="What changed in this version"
 ```

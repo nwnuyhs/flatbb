@@ -270,6 +270,15 @@ Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.
 
 ## 16. Prompt to give an AI
 
+No command line is needed to build or ship a plugin: the AI writes `plugins/<id>/plugin.php`, you zip that folder and upload it under Admin → Plugins → Upload plugin (or publish it to everyone at https://www.flatbb.com/market/publish). The complete specification, hooks and API are hosted as one plain-text file at https://www.flatbb.com/docs/plugins.md, so the prompt can be as short as:
+
+```
+Read https://www.flatbb.com/docs/plugins.md first. Then create a flatbb plugin plugins/<id>/plugin.php that: <what it does, where it shows up, its settings, who may use it>.
+Follow every rule in the document. Give me the finished folder as a zip I can upload under Admin -> Plugins.
+```
+
+Inside a checkout of flatbb the local files work the same way:
+
 ```
 Read CLAUDE.md, docs/PLUGIN.md and docs/HOOKS.md in this repository, then look at plugins/hello/plugin.php.
 Create the plugin plugins/<id>/plugin.php that: <what it does, where it shows up, its settings, who may use it>.

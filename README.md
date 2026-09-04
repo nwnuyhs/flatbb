@@ -54,6 +54,8 @@ Admin → Tools → Updates shows the latest release; **Upgrade** downloads the 
 
 ## Building plugins
 
+Everything an AI assistant needs is one hosted file: https://www.flatbb.com/docs/plugins.md (rendered at https://www.flatbb.com/docs/plugins). Paste it into your assistant, describe the plugin, upload the zip in Admin → Plugins, or publish it at https://www.flatbb.com/market/publish.
+
 Start with `plugins/hello/plugin.php`, read `docs/PLUGIN.md`. With Claude Code or another AI assistant, open the repository and say what you want; `CLAUDE.md` gives the assistant everything it needs. Publish with `php flatbb plugin:publish <id>` (see `docs/PUBLISH.md`).
 
 ## Layout
