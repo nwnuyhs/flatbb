@@ -16,7 +16,7 @@ function test_md_strips_scripts_and_event_handlers(): void
     test_not_contains('<script', $html);
     test_assert(!preg_match('/<[^>]*onerror/i', $html), 'no onerror attribute inside a tag');
     test_not_contains('<img', $html);
-    test_assert(!preg_match('/href=["']\s*javascript/i', $html), 'javascript: links are never rendered as links');
+    test_assert(!preg_match('/href=["\']\s*javascript/i', $html), 'javascript: links are never rendered as links');
 }
 
 function test_md_links_are_escaped_and_nofollow(): void
