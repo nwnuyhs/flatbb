@@ -129,6 +129,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .col-main { min-width: 0; }
 .region:empty { display: none; }
 .side-nav, .side-section { margin-bottom: 18px; }
+.drawer-nav { display: none; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); } /* header.nav links, shown inside the mobile drawer only */
 .side-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: 500; transition: background .12s, color .12s; }
 .side-link .icon { width: 18px; height: 18px; }
 .side-link:hover { background: var(--panel); color: var(--text); }
@@ -479,6 +480,7 @@ body.adrawer-open { overflow: hidden; }
   .drawer-backdrop { position: fixed; inset: 0; background: var(--backdrop); z-index: 90; display: none; }
   body.drawer-open .drawer-backdrop { display: block; }
   .topnav { display: none; }
+  .drawer-nav { display: block; }
   .search-form { width: 160px; }
   .category-row { grid-template-columns: 1fr; gap: 6px; }
   .cat-last { display: none; }

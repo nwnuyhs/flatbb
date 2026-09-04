@@ -84,7 +84,10 @@ $unread = notifications_unread();
   </div>
 </header>
 <div class="container page-grid">
-  <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left"><?= raw($left) ?></aside><?php endif; ?>
+  <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left">
+    <?php if ($nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)$item['url']) ?>"><?= icon((string)($item['icon'] ?? 'external')) ?><span><?= h((string)$item['label']) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
+    <?= raw($left) ?>
+  </aside><?php endif; ?>
   <main class="col-main" data-slot="main">
     <?php if ($flash): ?><div class="flash flash-<?= h($flash['type']) ?>" data-flash><?= h($flash['message']) ?></div><?php endif; ?>
     <?php if ($breadcrumbs !== []): ?><nav class="breadcrumbs"><a href="<?= h(url('/')) ?>"><?= t('Home') ?></a><?php foreach ($breadcrumbs as $b): ?><span>/</span><?= $b[1] !== '' ? '<a href="' . h($b[1]) . '">' . h($b[0]) . '</a>' : '<span>' . h($b[0]) . '</span>' ?><?php endforeach; ?></nav><?php endif; ?>
