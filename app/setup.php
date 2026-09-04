@@ -67,6 +67,7 @@ function setup_checks(): array
         ['label' => 'PDO SQLite', 'ok' => extension_loaded('pdo_sqlite'), 'detail' => extension_loaded('pdo_sqlite') ? 'available' : 'missing (required for SQLite)', 'fatal' => false],
         ['label' => 'PDO MySQL', 'ok' => extension_loaded('pdo_mysql'), 'detail' => extension_loaded('pdo_mysql') ? 'available' : 'missing (required for MySQL)', 'fatal' => false],
         ['label' => 'mbstring', 'ok' => extension_loaded('mbstring'), 'detail' => extension_loaded('mbstring') ? 'available' : 'missing', 'fatal' => true],
+        ['label' => 'fileinfo', 'ok' => class_exists('finfo'), 'detail' => class_exists('finfo') ? 'available' : 'missing (uploads are checked by extension and image headers only)', 'fatal' => false],
         ['label' => 'GD (images)', 'ok' => function_exists('imagecreatetruecolor'), 'detail' => function_exists('imagecreatetruecolor') ? 'available' : 'missing: avatars and image resizing disabled', 'fatal' => false],
         ['label' => 'data/ writable', 'ok' => $writable(DATA_DIR), 'detail' => DATA_DIR, 'fatal' => true],
         ['label' => 'data/cache/ writable', 'ok' => $writable(CACHE_DIR), 'detail' => CACHE_DIR, 'fatal' => true],

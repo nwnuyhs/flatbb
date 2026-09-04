@@ -11,6 +11,15 @@ function upload_url(string $path): string
     return base_path() . '/uploads/' . ltrim($path, '/');
 }
 
+/** Sniffed mime type. fileinfo is optional: without it, image files are identified by getimagesize() and everything else stays ''. */
+function upload_mime(string $file): string
+{
+    if (class_exists('finfo')) return (string)(new finfo(FILEINFO_MIME_TYPE))->file($file);
+    if (function_exists('mime_content_type')) return (string)@mime_content_type($file);
+    $info = @getimagesize($file);
+    return is_array($info) ? (string)($info['mime'] ?? '') : '';
+}
+
 function upload_allowed_types(): array
 {
     return array_values(array_filter(array_map('trim', explode(',', strtolower(setting('upload_types', 'jpg,jpeg,png,gif,webp'))))));
@@ -50,7 +59,7 @@ function upload_store(array $user, string $tmp, string $original): array
     if ($ext === '' || !in_array($ext, upload_allowed_types(), true) || in_array($ext, ['php', 'phtml', 'phar', 'htaccess', 'html', 'htm', 'svg', 'js'], true)) {
         throw new RuntimeException(t('File type .%s is not allowed.', $ext));
     }
-    $mime = (string)(new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+    $mime = upload_mime($tmp);
     $is_image = in_array($ext, upload_image_exts(), true);
     $w = $h = 0;
     if ($is_image) {
@@ -140,12 +149,13 @@ function upload_site_image(string $key, array $file, array $exts, int $max_bytes
     if ($ext === 'jpeg') $ext = 'jpg';
     if (!in_array($ext, $exts, true)) throw new RuntimeException(t('Allowed types: %s.', implode(', ', $exts)));
     $tmp = (string)$file['tmp_name'];
-    $mime = (string)(new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+    $mime = upload_mime($tmp);
     if ($ext === 'svg') {
         $svg = (string)file_get_contents($tmp);
         if (!str_contains($svg, '<svg') || preg_match('/<script|on[a-z]+\s*=|javascript:|<foreignObject/i', $svg)) throw new RuntimeException(t('The SVG file is invalid or contains scripts.'));
     } elseif ($ext === 'ico') {
-        if (!in_array($mime, ['image/x-icon', 'image/vnd.microsoft.icon', 'image/ico', 'application/octet-stream'], true)) throw new RuntimeException(t('The image file is invalid.'));
+        $head = (string)@file_get_contents($tmp, false, null, 0, 4);
+        if ($head !== "   " && !in_array($mime, ['image/x-icon', 'image/vnd.microsoft.icon', 'image/ico', 'application/octet-stream'], true)) throw new RuntimeException(t('The image file is invalid.'));
     } elseif (!str_starts_with($mime, 'image/') || @getimagesize($tmp) === false) {
         throw new RuntimeException(t('The image file is invalid.'));
     }
