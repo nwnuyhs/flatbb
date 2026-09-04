@@ -1,0 +1,325 @@
+/* flatbb front-end. Vanilla JS, no build step. Everything hangs off data-* attributes so plugins
+ * can reuse the same behaviours: data-ajax forms, data-dropdown, data-toggle, data-editor, data-confirm.
+ * Plugins get window.FB (base, csrf, uid) and can listen for document events: fb:ajax, fb:editor.
+ */
+(function () {
+  'use strict';
+  var FB = window.FB || {};
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* ---------- helpers ---------- */
+  function toast(msg, type) {
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + (type || 'info');
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.classList.add('show'); }, 10);
+    setTimeout(function () { el.classList.remove('show'); setTimeout(function () { el.remove(); }, 300); }, 3500);
+  }
+  function request(url, opts) {
+    opts = opts || {};
+    var headers = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': FB.csrf };
+    if (opts.json) headers['Content-Type'] = 'application/json';
+    return fetch(url, { method: opts.method || 'GET', headers: headers, body: opts.body, credentials: 'same-origin' })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, error: FB.i18n.failed }; }); });
+  }
+  FB.request = request;
+  FB.toast = toast;
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement;
+  function applyTheme(t) { root.setAttribute('data-theme', t); try { localStorage.setItem('fb_theme', t); } catch (e) {} }
+  try { var saved = localStorage.getItem('fb_theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  function currentDark() {
+    var t = root.getAttribute('data-theme');
+    if (t === 'auto') return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return t === 'dark';
+  }
+
+  /* ---------- global click handling ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-toggle]');
+    if (t) {
+      var what = t.getAttribute('data-toggle');
+      if (what === 'drawer') document.body.classList.toggle('drawer-open');
+      if (what === 'theme') applyTheme(currentDark() ? 'light' : 'dark');
+      return;
+    }
+    var dt = e.target.closest('.dropdown-toggle');
+    if (dt) {
+      var dd = dt.closest('[data-dropdown]');
+      var open = dd.classList.contains('open');
+      $$('[data-dropdown].open').forEach(function (d) { d.classList.remove('open'); });
+      if (!open) dd.classList.add('open');
+      e.preventDefault();
+      return;
+    }
+    if (!e.target.closest('.dropdown-menu')) $$('[data-dropdown].open').forEach(function (d) { d.classList.remove('open'); });
+
+    var rp = e.target.closest('[data-reply-to-post]');
+    if (rp) { setReplyTarget(rp.getAttribute('data-reply-to-post'), rp.getAttribute('data-username')); return; }
+    var qp = e.target.closest('[data-quote-post]');
+    if (qp) { quotePost(qp.getAttribute('data-quote-post')); return; }
+    if (e.target.closest('[data-clear-reply]')) { setReplyTarget('', ''); return; }
+    var cp = e.target.closest('[data-copy]');
+    if (cp && navigator.clipboard) {
+      e.preventDefault();
+      navigator.clipboard.writeText(cp.getAttribute('data-copy')).then(function () { toast(FB.i18n.copied, 'success'); }, function () { window.location.href = cp.href; });
+    }
+  });
+
+  /* ---------- ajax forms ---------- */
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form.matches('form[data-ajax]')) return;
+    if (form.hasAttribute('data-confirm') && !window.confirm(form.getAttribute('data-confirm') || FB.i18n.confirm)) { e.preventDefault(); return; }
+    e.preventDefault();
+    var btn = form.querySelector('[type=submit]');
+    if (btn) btn.disabled = true;
+    // getAttribute: a field named "action" would shadow form.action
+    request(form.getAttribute('action'), { method: 'POST', body: new FormData(form) }).then(function (r) {
+      if (btn) btn.disabled = false;
+      document.dispatchEvent(new CustomEvent('fb:ajax', { detail: { form: form, response: r } }));
+      if (!r.ok) { toast(r.error || FB.i18n.failed, 'error'); return; }
+      if (form.hasAttribute('data-composer')) { form.querySelector('textarea').value = ''; }
+      $$('[data-editor]', form).forEach(function (ed) { if (ed.__fbEditor) ed.__fbEditor.clearDraft(); });
+      if (form.querySelector('[data-like]') && typeof r.liked !== 'undefined') {
+        var b = form.querySelector('[data-like]');
+        b.classList.toggle('active', r.liked);
+        b.querySelector('[data-count]').textContent = r.count || '';
+        return;
+      }
+      if (form.querySelector('[data-bookmark]') && typeof r.bookmarked !== 'undefined') {
+        var bb = form.querySelector('[data-bookmark]');
+        bb.classList.toggle('active', r.bookmarked);
+        bb.querySelector('span').textContent = r.bookmarked ? 'Bookmarked' : 'Bookmark';
+        return;
+      }
+      if (r.redirect) { window.location.href = r.redirect; if (r.redirect.indexOf('#') > -1) window.location.reload(); return; }
+      window.location.reload();
+    });
+  });
+
+  /* ---------- plain forms with confirm ---------- */
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (f.matches('form[data-confirm]:not([data-ajax])') && !window.confirm(f.getAttribute('data-confirm') || FB.i18n.confirm)) e.preventDefault();
+  });
+
+  /* ---------- reply target / quote ---------- */
+  function composer() { return $('form[data-composer]'); }
+  function setReplyTarget(id, name) {
+    var f = composer(); if (!f) return;
+    var input = f.querySelector('[data-reply-to]'), box = f.querySelector('[data-reply-target]');
+    if (input) input.value = id || '';
+    if (box) { box.classList.toggle('hidden', !id); box.querySelector('span').textContent = id ? '@' + name : ''; }
+    if (id) { f.scrollIntoView({ behavior: 'smooth', block: 'start' }); var ta = f.querySelector('textarea'); if (ta) ta.focus(); }
+  }
+  function quotePost(id) {
+    request(FB.base + (FB.rewrite ? '/post/' + id + '/raw' : '/index.php?r=' + encodeURIComponent('/post/' + id + '/raw'))).then(function (r) {
+      if (!r.ok) return;
+      var f = composer(); if (!f) return;
+      var ta = f.querySelector('textarea');
+      var q = '> **@' + r.username + '** wrote:\n> ' + r.body.split('\n').join('\n> ') + '\n\n';
+      ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n\n') : '') + q;
+      f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ta.focus();
+    });
+  }
+
+  /* ---------- editor ----------
+   * Public API for plugins: FB.editor.register('cmd', function (api, arg) {...}) handles buttons declared with
+   * that cmd in the composer.toolbar region; FB.editor.get(el) returns the api of an editor element.
+   * Every command dispatches a cancelable "fb:editor" event first (detail: {editor, api, cmd, arg}). */
+  var editorCommands = {};
+  function editorInit(ed) {
+    if (ed.__fbEditor) return ed.__fbEditor;
+    var ta = ed.querySelector('textarea'), preview = ed.querySelector('[data-preview]'), status = ed.querySelector('[data-status]'), fileInput = ed.querySelector('[data-upload-input]');
+    var emojiBox = ed.querySelector('[data-emoji]'), helpBox = ed.querySelector('[data-help]'), banner = ed.querySelector('[data-draft-banner]');
+    var previewTimer, draftTimer, previewOn = false;
+    var api = {
+      el: ed, textarea: ta,
+      value: function (v) { if (typeof v === 'string') { ta.value = v; ta.dispatchEvent(new Event('input')); } return ta.value; },
+      selection: function () { return [ta.selectionStart, ta.selectionEnd, ta.value.slice(ta.selectionStart, ta.selectionEnd)]; },
+      replace: function (start, end, text, cursor) { ta.setRangeText(text, start, end, 'end'); if (typeof cursor === 'number') ta.selectionStart = ta.selectionEnd = start + cursor; ta.focus(); ta.dispatchEvent(new Event('input')); },
+      insert: function (text, cursor) { var s = api.selection(); api.replace(s[0], s[1], text, cursor); },
+      wrap: function (before, after, placeholder) { after = after == null ? before : after; var s = api.selection(), v = s[2] || placeholder || 'text'; api.replace(s[0], s[1], before + v + after, before.length + v.length + after.length); },
+      prefix: function (p) { var s = api.selection(), start = ta.value.lastIndexOf('\n', s[0] - 1) + 1; var block = ta.value.slice(start, s[1]); api.replace(start, s[1], p + block.split('\n').join('\n' + p)); },
+      block: function (text) { var s = api.selection(); var pre = s[0] > 0 && ta.value[s[0] - 1] !== '\n' ? '\n\n' : ''; api.replace(s[0], s[1], pre + text + '\n'); },
+      upload: function (files) { Array.prototype.forEach.call(files, uploadOne); },
+      preview: function (on) { setPreview(typeof on === 'boolean' ? on : !previewOn); },
+      fullscreen: function (on) { var v = typeof on === 'boolean' ? on : !ed.classList.contains('fullscreen'); ed.classList.toggle('fullscreen', v); document.body.classList.toggle('editor-fs', v); if (v) ta.focus(); },
+      status: function (text) { if (status) status.textContent = text || ''; },
+      run: function (cmd, arg) {
+        var ev = new CustomEvent('fb:editor', { detail: { editor: ed, api: api, cmd: cmd, arg: arg }, cancelable: true });
+        if (!document.dispatchEvent(ev)) return;
+        var fn = editorCommands[cmd];
+        if (fn) fn(api, arg, ed);
+      }
+    };
+    function setPreview(on) {
+      previewOn = on;
+      ed.classList.toggle('split', on && window.innerWidth >= 768);
+      ed.classList.toggle('preview-only', on && window.innerWidth < 768);
+      preview.hidden = !on;
+      var b = ed.querySelector('[data-cmd=preview]'); if (b) b.classList.toggle('active', on);
+      if (on) renderPreview(); else ta.focus();
+    }
+    function renderPreview() {
+      var fd = new FormData(); fd.append('body', ta.value); fd.append('_token', FB.csrf);
+      request(FB.api, { method: 'POST', body: fd }).then(function (r) { preview.innerHTML = r.ok ? (r.html || '<p class="muted">' + FB.i18n.nothing + '</p>') : '<p class="muted">' + (r.error || '') + '</p>'; });
+    }
+    function uploadOne(file) {
+      var fd = new FormData(); fd.append('file', file); fd.append('_token', FB.csrf);
+      api.status(FB.i18n.uploading + ' ' + file.name);
+      var placeholder = '[' + file.name + '…]()';
+      api.insert(placeholder);
+      request(FB.upload, { method: 'POST', body: fd }).then(function (r) {
+        api.status('');
+        if (!r.ok) { toast(r.error || FB.i18n.failed, 'error'); api.value(ta.value.replace(placeholder, '')); return; }
+        api.value(ta.value.replace(placeholder, r.markdown));
+      });
+    }
+    /* drafts: per user and scope, kept in localStorage for N days, restored on request */
+    var scope = ed.getAttribute('data-scope'), days = parseInt(ed.getAttribute('data-draft-days') || '0', 10);
+    var draftKey = scope && FB.uid && days > 0 ? 'fb_draft_' + FB.uid + '_' + scope : null;
+    function draftRead() { try { var d = JSON.parse(localStorage.getItem(draftKey) || 'null'); if (d && Date.now() - d.t < days * 86400000) return d.v; localStorage.removeItem(draftKey); } catch (e) {} return null; }
+    function draftWrite() { try { if (ta.value.trim()) localStorage.setItem(draftKey, JSON.stringify({ v: ta.value, t: Date.now() })); else localStorage.removeItem(draftKey); } catch (e) {} }
+    api.clearDraft = function () { try { if (draftKey) localStorage.removeItem(draftKey); } catch (e) {} };
+    if (draftKey) {
+      var saved = draftRead();
+      if (saved && saved !== ta.value && banner) {
+        banner.classList.remove('hidden');
+        banner.querySelector('[data-draft-restore]').addEventListener('click', function () { api.value(saved); banner.classList.add('hidden'); });
+        banner.querySelector('[data-draft-discard]').addEventListener('click', function () { api.clearDraft(); banner.classList.add('hidden'); });
+      }
+      ta.addEventListener('input', function () { clearTimeout(draftTimer); draftTimer = setTimeout(draftWrite, 500); });
+    }
+    /* events */
+    ed.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cmd]');
+      if (b) { api.run(b.getAttribute('data-cmd'), b.getAttribute('data-arg')); return; }
+      var em = e.target.closest('[data-emoji-char]');
+      if (em) { api.insert(em.getAttribute('data-emoji-char') + ' '); emojiBox.classList.add('hidden'); }
+    });
+    ta.addEventListener('input', function () { if (previewOn) { clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 400); } });
+    if (fileInput) {
+      fileInput.addEventListener('change', function () { api.upload(fileInput.files); fileInput.value = ''; });
+      ta.addEventListener('paste', function (e) {
+        var items = (e.clipboardData || {}).items || [], files = [];
+        for (var i = 0; i < items.length; i++) if (items[i].kind === 'file') files.push(items[i].getAsFile());
+        if (files.length) { e.preventDefault(); api.upload(files); }
+      });
+      ta.addEventListener('dragover', function (e) { e.preventDefault(); ed.classList.add('dragover'); });
+      ta.addEventListener('dragleave', function () { ed.classList.remove('dragover'); });
+      ta.addEventListener('drop', function (e) { e.preventDefault(); ed.classList.remove('dragover'); if (e.dataTransfer.files.length) api.upload(e.dataTransfer.files); });
+    }
+    ta.addEventListener('keydown', function (e) {
+      var mod = e.ctrlKey || e.metaKey;
+      if (e.key === 'Escape') { if (emojiBox && !emojiBox.classList.contains('hidden')) emojiBox.classList.add('hidden'); else if (helpBox && !helpBox.classList.contains('hidden')) helpBox.classList.add('hidden'); else if (ed.classList.contains('fullscreen')) api.fullscreen(false); return; }
+      if (!mod) return;
+      var map = { b: 'bold', i: 'italic', k: 'link' };
+      if (e.key === 'Enter') { var f = ta.closest('form'); if (f) { e.preventDefault(); f.requestSubmit ? f.requestSubmit() : f.submit(); } return; }
+      if (e.shiftKey && (e.key === '7' || e.key === '&')) { e.preventDefault(); api.run('ol'); return; }
+      if (e.shiftKey && (e.key === '8' || e.key === '*')) { e.preventDefault(); api.run('ul'); return; }
+      if (e.shiftKey && e.key.toLowerCase() === 'p') { e.preventDefault(); api.run('preview'); return; }
+      if (map[e.key.toLowerCase()] && !e.shiftKey) { e.preventDefault(); api.run(map[e.key.toLowerCase()]); }
+    });
+    /* @mention autocomplete */
+    var menu = document.createElement('div'); menu.className = 'mention-menu hidden'; ed.appendChild(menu);
+    var mentionTimer;
+    ta.addEventListener('input', function () {
+      clearTimeout(mentionTimer);
+      var pos = ta.selectionStart, before = ta.value.slice(0, pos), m = before.match(/(?:^|\s)@([\w.-]{1,30})$/);
+      if (!m || !FB.uid) { menu.classList.add('hidden'); return; }
+      mentionTimer = setTimeout(function () {
+        request(FB.users + (FB.users.indexOf('?') > -1 ? '&' : '?') + 'q=' + encodeURIComponent(m[1])).then(function (r) {
+          if (!r.ok || !r.users.length) { menu.classList.add('hidden'); return; }
+          menu.innerHTML = r.users.map(function (u) { return '<button type="button" data-name="' + u.username + '">' + (u.avatar ? '<img src="' + u.avatar + '" alt="">' : '') + u.username + '</button>'; }).join('');
+          menu.classList.remove('hidden');
+        });
+      }, 150);
+    });
+    menu.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-name]'); if (!b) return;
+      var pos = ta.selectionStart, before = ta.value.slice(0, pos).replace(/@[\w.-]*$/, '@' + b.getAttribute('data-name') + ' ');
+      ta.value = before + ta.value.slice(pos); ta.selectionStart = ta.selectionEnd = before.length; ta.focus();
+      menu.classList.add('hidden');
+    });
+    ed.__fbEditor = api;
+    return api;
+  }
+  /* built-in commands (plugins may override any of them with FB.editor.register) */
+  editorCommands.bold = function (api) { api.wrap('**'); };
+  editorCommands.italic = function (api) { api.wrap('*'); };
+  editorCommands.strike = function (api) { api.wrap('~~'); };
+  editorCommands.heading = function (api) { api.prefix('## '); };
+  editorCommands.quote = function (api) { api.prefix('> '); };
+  editorCommands.ul = function (api) { api.prefix('- '); };
+  editorCommands.ol = function (api) { var s = api.selection(), lines = (s[2] || 'item').split('\n'); api.replace(s[0], s[1], lines.map(function (l, i) { return (i + 1) + '. ' + l; }).join('\n')); };
+  editorCommands.code = function (api) { var s = api.selection(); if (s[2].indexOf('\n') > -1) api.block('```\n' + s[2] + '\n```'); else api.wrap('`', '`', 'code'); };
+  editorCommands.code_block = function (api) { var s = api.selection(); api.block('```\n' + (s[2] || 'code') + '\n```'); };
+  editorCommands.link = function (api) { var s = api.selection(); var u = window.prompt('URL', 'https://'); if (u) api.replace(s[0], s[1], '[' + (s[2] || u) + '](' + u + ')'); };
+  editorCommands.image = function (api) { var u = window.prompt('Image URL', 'https://'); if (u) api.insert('![](' + u + ')'); };
+  editorCommands.upload = function (api, arg, ed) { var i = ed.querySelector('[data-upload-input]'); if (i) i.click(); };
+  editorCommands.table = function (api) { api.block('| Column | Column |\n|---|---|\n| a | b |\n| c | d |'); };
+  editorCommands.hr = function (api) { api.block('---'); };
+  editorCommands.emoji = function (api, arg, ed) { var box = ed.querySelector('[data-emoji]'); if (box) box.classList.toggle('hidden'); };
+  editorCommands.help = function (api, arg, ed) { var box = ed.querySelector('[data-help]'); if (box) box.classList.toggle('hidden'); };
+  editorCommands.preview = function (api) { api.preview(); };
+  editorCommands.fullscreen = function (api) { api.fullscreen(); };
+  FB.editor = { register: function (cmd, fn) { editorCommands[cmd] = fn; }, get: function (el) { return el && el.__fbEditor; }, commands: editorCommands, init: editorInit };
+  function initEditor(ed) { return editorInit(ed); }
+  $$('[data-editor]').forEach(editorInit);
+  FB.initEditor = initEditor;
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('[data-emoji],[data-cmd=emoji]')) $$('[data-emoji]').forEach(function (b) { b.classList.add('hidden'); });
+    if (!e.target.closest('[data-help],[data-cmd=help]')) $$('[data-help]').forEach(function (b) { b.classList.add('hidden'); });
+  });
+
+  /* ---------- admin drawer: open an editor URL beside the list without leaving the page ---------- */
+  function drawerClose(push) {
+    var d = $('#drawer'), b = $('[data-drawer-backdrop]');
+    var back = d ? d.getAttribute('data-back') : null;
+    if (d) d.remove(); if (b) b.remove();
+    document.body.classList.remove('adrawer-open');
+    if (push && back) history.pushState({}, '', back);
+  }
+  function drawerOpen(url, push) {
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var d = doc.querySelector('#drawer'), b = doc.querySelector('[data-drawer-backdrop]');
+      if (!d) { window.location.href = url; return; }
+      drawerClose(false);
+      document.body.appendChild(b); document.body.appendChild(d);
+      document.body.classList.add('adrawer-open');
+      $$('[data-editor]', d).forEach(initEditor);
+      if (push) history.pushState({}, '', url);
+      var first = d.querySelector('input:not([type=hidden]),select,textarea'); if (first) first.focus();
+    }).catch(function () { window.location.href = url; });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-drawer]');
+    if (a) { e.preventDefault(); drawerOpen(a.href, true); return; }
+    if (e.target.closest('[data-drawer-close]')) { e.preventDefault(); drawerClose(true); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('#drawer')) drawerClose(true); });
+  window.addEventListener('popstate', function () { if ($('#drawer')) window.location.reload(); });
+  if ($('#drawer')) document.body.classList.add('adrawer-open');
+
+  /* ---------- misc ---------- */
+  var flash = $('[data-flash]');
+  if (flash) setTimeout(function () { flash.classList.add('fade'); }, 4000);
+  if (location.hash && location.hash.indexOf('#post-') === 0) {
+    var target = $(location.hash); if (target) target.classList.add('highlight');
+  }
+  // keep unread badge fresh every 60s
+  if (FB.uid) setInterval(function () {
+    request(FB.base + (FB.rewrite ? '/api/unread' : '/index.php?r=%2Fapi%2Funread')).then(function (r) {
+      var b = $('[data-unread]'); if (!b || !r.ok) return;
+      b.textContent = r.count; b.classList.toggle('hidden', !r.count);
+    });
+  }, 60000);
+  document.dispatchEvent(new CustomEvent('fb:ready'));
+})();

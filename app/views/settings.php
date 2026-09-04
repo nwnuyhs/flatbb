@@ -1,0 +1,33 @@
+<?php /** Account settings. Variables: user, tab, tabs, prefs, extra */ ?>
+<div class="settings">
+  <h1><?= t('Settings') ?></h1>
+  <?= tabs(array_map(static fn(string $k, string $label): array => ['label' => $label, 'url' => url('/settings/' . $k), 'active' => $k === $tab], array_keys($tabs), $tabs)) ?>
+  <?php if ($tab === 'points'): ?>
+  <div class="settings-form settings-points"><?= raw($extra) ?></div>
+  <?php else: ?>
+  <form method="post" action="<?= h(url('/settings/' . $tab)) ?>" enctype="multipart/form-data" class="settings-form">
+    <?= csrf_field() ?>
+    <?php if ($tab === 'profile'): ?>
+      <?= form_row(t('Email'), input('email', (string)$user['email'], ['type' => 'email'])) ?>
+      <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
+      <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>
+      <?= form_row(t('Location'), input('location', (string)$user['location'])) ?>
+      <?= form_row(t('Signature'), textarea('signature', (string)$user['signature'], ['rows' => 2, 'maxlength' => 300])) ?>
+    <?php elseif ($tab === 'avatar'): ?>
+      <div class="form-row"><?= avatar($user, 96, false) ?></div>
+      <?= form_row(t('Upload a new avatar'), input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It will be cropped to a square.')) ?>
+      <?php if ($user['avatar'] !== ''): ?><div class="form-row"><?= checkbox('remove', false, t('Remove current avatar')) ?></div><?php endif; ?>
+    <?php elseif ($tab === 'password'): ?>
+      <?= form_row(t('Current password'), input('old_password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])) ?>
+      <?= form_row(t('New password'), input('password', '', ['type' => 'password', 'required' => true, 'minlength' => 8, 'autocomplete' => 'new-password'])) ?>
+    <?php elseif ($tab === 'preferences'): ?>
+      <?= form_row(t('Theme'), select('theme', ['auto' => t('Follow system'), 'light' => t('Light'), 'dark' => t('Dark')], (string)($prefs['theme'] ?? 'auto'))) ?>
+      <div class="form-row"><?= checkbox('notify_reply', (int)($prefs['notify_reply'] ?? 1) === 1, t('Notify me when someone replies to my topics')) ?></div>
+      <div class="form-row"><?= checkbox('notify_mention', (int)($prefs['notify_mention'] ?? 1) === 1, t('Notify me when someone mentions me')) ?></div>
+      <div class="form-row"><?= checkbox('show_points', (int)($prefs['show_points'] ?? 1) === 1, t('Show my points on my public profile')) ?></div>
+    <?php endif; ?>
+    <?= raw($extra) ?>
+    <div class="form-actions"><button type="submit" class="btn btn-primary"><?= t('Save') ?></button></div>
+  </form>
+  <?php endif; ?>
+</div>

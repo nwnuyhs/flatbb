@@ -1,0 +1,26 @@
+# flatbb — nginx site snippet. Put inside your server {} block (or in the site's "rewrite" file on BaoTa/aaPanel).
+# root must point at the flatbb directory (the one containing index.php).
+
+index index.php;
+
+# clean URLs
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+
+# private directories (^~ wins over the regex .php location, so these can never be executed)
+location ^~ /data/  { return 404; }
+location ^~ /core/  { return 404; }
+location ^~ /app/   { return 404; }
+location ^~ /lang/  { return 404; }
+location ^~ /docs/  { return 404; }
+location ^~ /tests/ { return 404; }
+location ~ ^/(flatbb|CLAUDE\.md|AGENTS\.md|README\.md|LICENSE)$ { return 404; }
+location ~ ^/plugins/.*\.php$ { return 404; }
+location ~ ^/uploads/.*\.(php|phtml|phar)$ { return 404; }
+
+# static files
+location ~* \.(css|js|svg|png|jpg|jpeg|gif|webp|ico|woff2?)$ {
+    expires 30d;
+    access_log off;
+}

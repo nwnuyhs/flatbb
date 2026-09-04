@@ -1,0 +1,133 @@
+#!/usr/bin/env php
+<?php
+/**
+ * flatbb command line.
+ *
+ *   php flatbb cron                    run due scheduled jobs
+ *   php flatbb cron --force            run every job now
+ *   php flatbb plugin:list             list registered plugins
+ *   php flatbb plugin:sync             scan plugins/ and register new plugins
+ *   php flatbb plugin:enable <id>      enable (runs install)
+ *   php flatbb plugin:disable <id>
+ *   php flatbb plugin:check <id>       lint + naming rules (what the marketplace checks)
+ *   php flatbb plugin:package <id>     build dist/<id>-<version>.zip
+ *   php flatbb plugin:publish <id>     package and upload to www.flatbb.com (needs FLATBB_TOKEN; --changelog=, --insecure)
+ *   php flatbb hooks:list              print every hook/region found in core (used for docs/HOOKS.md)
+ *   php flatbb api:list                print core function signatures (used for docs/API.md)
+ *   php flatbb lang:sync <code>        create/update lang/<code>.php with every t() string (empty = untranslated)
+ *   php flatbb security:check          static rules for core, app and plugins (superglobals, eval/exec, unescaped template output); exit 1 on findings
+ *   php flatbb search:rebuild          rebuild the full-text index
+ *   php flatbb schema:upgrade          create missing tables/columns/indexes
+ *   php flatbb admin:password <user> <newpass>
+ *   php flatbb migrate:import <file.sqlite>   copy all data from a SQLite database into the current (MySQL) database
+ *   php flatbb upgrade:check           show the latest release on the marketplace
+ *   php flatbb upgrade [file.zip]      upgrade the core in place (downloads the latest release when no file is given)
+ *   php flatbb release                 maintainers: build dist/flatbb-<version>.zip and print its sha256
+ */
+if (PHP_SAPI !== 'cli') exit("CLI only\n");
+require __DIR__ . '/core/boot.php';
+$_SERVER['HTTP_HOST'] = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$cmd = $argv[1] ?? 'help';
+$args = array_values(array_filter(array_slice($argv, 2), static fn(string $a): bool => !str_starts_with($a, '--')));
+$flags = array_values(array_filter(array_slice($argv, 2), static fn(string $a): bool => str_starts_with($a, '--')));
+$flag = static function (string $name, ?string $default = null) use ($flags): ?string {
+    foreach ($flags as $f) {
+        if ($f === '--' . $name) return '1';
+        if (str_starts_with($f, '--' . $name . '=')) return substr($f, strlen($name) + 3);
+    }
+    return $default;
+};
+$out = static fn(string $s) => fwrite(STDOUT, $s . "\n");
+if (!in_array($cmd, ['help', 'hooks:list', 'api:list', 'lang:sync', 'security:check', 'plugin:check', 'plugin:package', 'plugin:publish', 'release'], true)) {
+    if (!is_installed()) exit("flatbb is not installed yet. Open the site in a browser first.\n");
+    app_boot();
+}
+
+switch ($cmd) {
+    case 'cron':
+        foreach (cron_run($flag('force') === '1') as $name => $status) $out(str_pad($name, 32) . $status);
+        break;
+    case 'plugin:list':
+        foreach (plugins() as $id => $p) $out(str_pad($id, 24) . str_pad((string)$p['version'], 10) . ((int)$p['enabled'] ? 'enabled ' : 'disabled') . '  ' . $p['name']);
+        break;
+    case 'plugin:sync':
+        $found = plugin_sync();
+        $out(count($found) . ' plugin(s) registered: ' . implode(', ', array_keys($found)));
+        break;
+    case 'plugin:enable':
+        plugin_enable((string)($args[0] ?? ''));
+        $out('enabled ' . $args[0]);
+        break;
+    case 'plugin:disable':
+        plugin_disable((string)($args[0] ?? ''));
+        $out('disabled ' . $args[0]);
+        break;
+    case 'plugin:check':
+        $r = plugin_check((string)($args[0] ?? ''));
+        foreach ($r['errors'] as $e) $out('ERROR   ' . $e);
+        foreach ($r['warnings'] as $w) $out('WARNING ' . $w);
+        $out($r['errors'] === [] ? 'OK ' . $args[0] . ' ' . ($r['manifest']['version'] ?? '') : 'FAILED');
+        exit($r['errors'] === [] ? 0 : 1);
+    case 'plugin:package':
+        $file = plugin_package((string)($args[0] ?? ''));
+        $out('written ' . $file);
+        break;
+    case 'plugin:publish':
+        $r = plugin_publish((string)($args[0] ?? ''), (string)($flag('token') ?? getenv('FLATBB_TOKEN') ?: ''), (string)($flag('changelog') ?? ''), (string)($flag('endpoint') ?? ''), $flag('insecure') === '1');
+        $out($r['message']);
+        if (!empty($r['url'])) $out($r['url']);
+        exit($r['ok'] ? 0 : 1);
+    case 'hooks:list':
+        $out(docs_hooks_markdown());
+        break;
+    case 'api:list':
+        $out(docs_api_markdown());
+        break;
+    case 'security:check':
+        $files = array_merge(security_files(ROOT . '/core'), security_files(ROOT . '/app'), security_files(ROOT . '/plugins'), [ROOT . '/index.php']);
+        $found = security_scan($files);
+        foreach ($found as $f) $out($f);
+        $out($found === [] ? 'OK ' . count($files) . ' files, no findings' : count($found) . ' finding(s)');
+        exit($found === [] ? 0 : 1);
+    case 'lang:sync':
+        [$a, $r, $e] = lang_sync((string)($args[0] ?? ''));
+        $out("lang/{$args[0]}.php: $a added, $r removed, $e untranslated");
+        break;
+    case 'search:rebuild':
+        $out(search_rebuild() . ' posts indexed');
+        break;
+    case 'schema:upgrade':
+        schema_install();
+        $out('schema is up to date (v' . SCHEMA_VERSION . ')');
+        break;
+    case 'migrate:import':
+        $file = (string)($args[0] ?? '');
+        if ($file === '') exit("usage: migrate:import <path-to-flatbb.sqlite>\n");
+        $out('Importing into ' . db_driver() . ' from ' . $file);
+        $r = migrate_import_sqlite($file, static function (string $table, int $n) use ($out): void { $out('  ' . str_pad($table, 40) . $n . ' rows'); });
+        foreach ($r['skipped'] as $t => $why) $out('  skipped ' . $t . ': ' . $why);
+        $out('done in ' . $r['seconds'] . 's, ' . count($r['tables']) . ' tables. Copy uploads/ and plugins/ manually if you have not yet.');
+        break;
+    case 'upgrade:check':
+        $i = upgrade_check(true);
+        if (!empty($i['error'])) exit('check failed: ' . $i['error'] . "\n");
+        $out('installed ' . FLATBB_VERSION . ', latest ' . $i['version'] . (version_compare($i['version'], FLATBB_VERSION, '>') ? '  -> run: php flatbb upgrade' : '  (up to date)'));
+        break;
+    case 'upgrade':
+        $v = upgrade_apply($args[0] ?? null, $out);
+        $out('upgraded to ' . $v);
+        break;
+    case 'release':
+        $r = upgrade_build_release();
+        $out('written ' . $r['file'] . ' (' . human_size($r['size']) . ")\nsha256 " . $r['sha256'] . "\nPublish these in Market Server settings on www.flatbb.com: version " . $r['version'] . ', download URL, sha256.');
+        break;
+    case 'admin:password':
+        $u = user_by_name((string)($args[0] ?? ''));
+        if ($u === null || strlen((string)($args[1] ?? '')) < 8) exit("usage: admin:password <username> <password(8+)>\n");
+        db_update('fb_users', ['password' => password_hash((string)$args[1], PASSWORD_DEFAULT)], 'id=?', [(int)$u['id']]);
+        $out('password updated for ' . $u['username']);
+        break;
+    default:
+        $out(trim((string)preg_replace('/^ \* ?/m', '', (string)substr((string)file_get_contents(__FILE__), 0, (int)strpos((string)file_get_contents(__FILE__), '*/')))));
+}

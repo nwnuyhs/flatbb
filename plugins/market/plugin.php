@@ -1,0 +1,186 @@
+<?php
+/**
+ * Market — browse, install and update plugins from the flatbb marketplace at www.flatbb.com,
+ * and publish your own plugins from Admin → Plugins.
+ */
+if (!defined('FLATBB')) exit;
+
+const MARKET_CACHE_TTL = 900;
+
+function market_endpoint(): string
+{
+    return rtrim((string)config('market_endpoint', FLATBB_MARKET_ENDPOINT), '/');
+}
+
+/** Identifies this forum to the marketplace (install statistics; later: site licences). */
+function market_site_headers(): array
+{
+    return ['X-Flatbb-Site: ' . base_url(), 'X-Flatbb-Version: ' . FLATBB_VERSION];
+}
+
+/** GET a URL with curl (timeouts, size cap). Returns body or null. */
+function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error = null): ?string
+{
+    if (!function_exists('curl_init')) { $error = 'curl extension missing'; return null; }
+    if (http_self_request_blocked($url)) { $error = 'self request skipped on the dev server'; return null; }
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 60, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json, application/zip'], market_site_headers())]);
+    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, static fn($r, $dl_total, $dl): int => $dl > $max_bytes ? 1 : 0);
+    curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+    $body = curl_exec($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($body === false || $status >= 400) { $error = $err !== '' ? $err : 'HTTP ' . $status; return null; }
+    return (string)$body;
+}
+
+/** Marketplace listing, cached for 15 minutes in data/cache/market_list.json. */
+function market_list(bool $refresh = false, string $q = ''): array
+{
+    $file = CACHE_DIR . '/market_list.json';
+    if (!$refresh && $q === '' && is_file($file) && now() - (int)filemtime($file) < MARKET_CACHE_TTL) {
+        $d = json_decode_array((string)file_get_contents($file));
+        if ($d !== []) return $d;
+    }
+    $body = market_http_get(market_endpoint() . '/plugins' . ($q !== '' ? '?q=' . rawurlencode($q) : ''), 2097152, $error);
+    if ($body === null) return ['error' => $error ?? 'unreachable', 'plugins' => [], 'core' => []];
+    $d = json_decode_array($body);
+    if (!isset($d['plugins'])) return ['error' => 'bad response', 'plugins' => [], 'core' => []];
+    if ($q === '') @file_put_contents($file, $body, LOCK_EX);
+    return $d;
+}
+
+/** Download a plugin package from the marketplace and install it. Returns the installed version. */
+function market_install(string $id, string $version = ''): string
+{
+    if (!plugin_id_valid($id)) throw new RuntimeException('Invalid plugin id');
+    $url = market_endpoint() . '/plugins/' . $id . '/download' . ($version !== '' ? '?version=' . rawurlencode($version) : '');
+    $zip_body = market_http_get($url, 20971520, $error);
+    if ($zip_body === null) throw new RuntimeException('Download failed: ' . $error);
+    $tmp = CACHE_DIR . '/market_' . $id . '_' . random_token(4) . '.zip';
+    file_put_contents($tmp, $zip_body, LOCK_EX);
+    try {
+        $installed = plugin_install_zip($tmp);
+    } finally {
+        @unlink($tmp);
+    }
+    if ($installed !== $id) throw new RuntimeException('Package id mismatch: ' . $installed);
+    $m = plugin_read_manifest($id);
+    fire('market.after_install', ['id' => $id, 'version' => (string)($m['version'] ?? '')]);
+    return (string)($m['version'] ?? '');
+}
+
+/* ---------------------------------------------------------------- admin page */
+
+function market_admin_page(string $page): never
+{
+    need_admin();
+    if (is_post()) {
+        check_csrf();
+        $id = post_str('id', 40);
+        try {
+            switch (post_str('action', 20)) {
+                case 'install':
+                case 'update':
+                    $v = market_install($id, post_str('version', 20));
+                    flash(t('%s %s installed. Enable it under Plugins.', $id, $v));
+                    break;
+                case 'refresh':
+                    market_list(true);
+                    flash(t('Marketplace list refreshed.'));
+                    break;
+                default:
+                    fail(t('Unknown action.'));
+            }
+        } catch (Throwable $e) {
+            fail(t('Market error: %s', $e->getMessage()), url('/admin/ext/market/market'));
+        }
+        redirect(url('/admin/ext/market/market'));
+    }
+    $q = get_str('q', 60);
+    $data = market_list(false, $q);
+    $local = plugins();
+    $html = '<div class="admin-toolbar"><form method="get" action="' . h(url('/admin/ext/market/market')) . '">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . t('Search plugins') . '"><button class="btn" type="submit">' . icon('search') . t('Search') . '</button></form>'
+        . action_form(url('/admin/ext/market/market'), '<button class="btn" type="submit">' . icon('refresh') . t('Refresh') . '</button>', ['action' => 'refresh'])
+        . '<a class="btn" href="' . h(url('/admin/plugins')) . '">' . icon('puzzle') . t('Installed plugins') . '</a><span class="muted small">www.flatbb.com</span></div>';
+    if (!empty($data['error'])) $html .= '<div class="flash flash-error">' . t('Could not reach the marketplace: %s', (string)$data['error']) . '</div>';
+    if (!empty($data['core']['version']) && version_compare((string)$data['core']['version'], FLATBB_VERSION, '>')) {
+        $html .= '<div class="flash flash-info">' . t('flatbb %s is available (you run %s).', (string)$data['core']['version'], FLATBB_VERSION) . ' <a href="' . h((string)($data['core']['url'] ?? 'https://www.flatbb.com')) . '" target="_blank" rel="noopener">' . t('Release notes') . '</a></div>';
+    }
+    $items = (array)($data['plugins'] ?? []);
+    if ($items === []) $html .= '<div class="empty">' . icon('puzzle') . '<p>' . t('No plugins found.') . '</p></div>';
+    foreach ($items as $p) {
+        $id = (string)($p['id'] ?? '');
+        if (!plugin_id_valid($id)) continue;
+        $installed = $local[$id] ?? null;
+        $remote_v = (string)($p['version'] ?? '0');
+        $ops = '';
+        $status = (string)($p['status'] ?? 'certified');
+        if ($installed === null) {
+            $ops = action_form(url('/admin/ext/market/market'), '<button class="btn btn-sm btn-primary">' . icon('download') . t('Install') . '</button>', ['action' => 'install', 'id' => $id, 'version' => $remote_v], '', $status === 'certified' ? '' : t('%s passed the automatic checks but has not been reviewed by the marketplace yet. Install it?', $id));
+        } elseif (version_compare($remote_v, (string)$installed['version'], '>')) {
+            $ops = action_form(url('/admin/ext/market/market'), '<button class="btn btn-sm btn-primary">' . icon('refresh') . t('Update to %s', $remote_v) . '</button>', ['action' => 'update', 'id' => $id, 'version' => $remote_v], '', t('Update %s? Your settings are kept.', $id));
+        } else {
+            $ops = '<span class="flag flag-success">' . t('installed') . '</span>';
+        }
+        $badge = $status === 'certified' ? '<span class="flag flag-success" title="' . h(t('Reviewed by the marketplace')) . '">' . t('Certified') . '</span>' : ($status === 'community' ? '<span class="flag" title="' . h(t('Passed the automatic checks; not reviewed by a person yet')) . '">' . t('Community') . '</span>' : '<span class="flag flag-danger">' . h($status) . '</span>');
+        $html .= '<div class="plugin-item"><div class="plugin-main"><h3>' . h((string)($p['name'] ?? $id)) . ' ' . $badge . '</h3>'
+            . '<div class="plugin-meta"><span>ID ' . h($id) . '</span><span>v' . h($remote_v) . '</span>' . (!empty($p['author']) ? '<span>' . t('by') . ' ' . h((string)$p['author']) . '</span>' : '') . (isset($p['downloads']) ? '<span>' . (int)$p['downloads'] . ' ' . t('installs') . '</span>' : '') . (!empty($p['url']) ? '<a href="' . h((string)$p['url']) . '" target="_blank" rel="noopener">' . t('details') . '</a>' : '') . '</div>'
+            . '<p class="muted">' . h((string)($p['description'] ?? '')) . '</p></div><div class="plugin-ops">' . $ops . '</div></div>';
+    }
+    admin_page(t('Plugin market'), $html, 'ext.market.market');
+}
+
+/** "Publish" button on Admin → Plugins rows (needs a token in the market settings). */
+function market_plugin_ops(string $ops, array $ctx): string
+{
+    $id = (string)($ctx['plugin']['id'] ?? '');
+    if ($id === '' || $id === 'market' || $id === 'market_server') return $ops;
+    return $ops . action_form(url('/admin/ext/market/publish'), '<button class="btn btn-sm">' . icon('upload') . t('Publish') . '</button>', ['id' => $id], '', t('Package and publish %s to the marketplace?', $id));
+}
+
+function market_admin_publish(string $page): never
+{
+    need_admin();
+    require_post();
+    $id = post_str('id', 40);
+    $token = (string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: '');
+    $r = plugin_publish($id, $token, post_str('changelog', 500));
+    flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
+    redirect(url('/admin/plugins'));
+}
+
+function market_dashboard_cards(array $cards, array $ctx): array
+{
+    $file = CACHE_DIR . '/market_list.json';
+    if (!is_file($file)) return $cards;
+    $n = 0;
+    foreach ((array)(json_decode_array((string)file_get_contents($file))['plugins'] ?? []) as $p) {
+        $local = plugins()[(string)($p['id'] ?? '')] ?? null;
+        if ($local !== null && version_compare((string)($p['version'] ?? '0'), (string)$local['version'], '>')) $n++;
+    }
+    if ($n > 0) $cards['market_updates'] = ['html' => card('', '<b>' . $n . '</b><span><a href="' . h(url('/admin/ext/market/market')) . '">' . t('Plugin updates') . '</a></span>')];
+    return $cards;
+}
+
+return [
+    'id' => 'market',
+    'name' => 'Plugin Market',
+    'version' => '1.0.2',
+    'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins.',
+    'author' => 'flatbb',
+    'url' => 'https://www.flatbb.com',
+    'requires' => ['flatbb' => '0.1.0'],
+    'settings' => [
+        'token' => ['type' => 'text', 'label' => 'Developer token (for publishing)', 'default' => '', 'max' => 120, 'help' => 'Create one at www.flatbb.com → Settings → Developer. Leave empty to use the FLATBB_TOKEN environment variable.'],
+    ],
+    'admin_pages' => [
+        'market' => ['label' => 'Market', 'callback' => 'market_admin_page'],
+        'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
+    ],
+    'hooks' => [
+        'admin.plugin_ops' => 'market_plugin_ops',
+        'admin.dashboard.cards' => 'market_dashboard_cards',
+    ],
+];

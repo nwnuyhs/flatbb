@@ -1,0 +1,16 @@
+/data/*
+!/data/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
+/dist/
+/plugins/*
+!/plugins/hello/
+!/plugins/market/
+*.zip
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+/plugins/market_server/
+/docs/PLAN.md
+/bbs1org_v8.9.2.zip

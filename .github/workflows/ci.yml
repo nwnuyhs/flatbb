@@ -1,0 +1,17 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, pdo_sqlite, gd, zip, fileinfo
+      - name: Lint every PHP file
+        run: find . -name '*.php' -not -path './data/*' -print0 | xargs -0 -n1 php -l > /dev/null && php -l flatbb > /dev/null
+      - name: Static security rules
+        run: php flatbb security:check
+      - name: Plugin rules
+        run: php flatbb plugin:check hello && php flatbb plugin:check market
