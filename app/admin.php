@@ -235,14 +235,14 @@ function admin_page_users(): never
         flash(t('User saved.'));
         redirect($list_url);
     }
-    $where = $q !== '' ? "WHERE username_lower LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\'" : '';
+    $where = $q !== '' ? "WHERE username_lower LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!'" : '';
     $params = $q !== '' ? [db_like(mb_strtolower($q)), db_like(mb_strtolower($q))] : [];
     $pg = paginate_calc((int)val("SELECT COUNT(*) FROM fb_users {$where}", $params), get_int('page', 1, 1, 100000), 30);
     $rows = [];
     foreach (all("SELECT * FROM fb_users {$where} ORDER BY id DESC LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], $params) as $u) {
         $g = group_by_id((int)$u['group_id']);
         $rows[] = [
-            avatar($u, 24) . ' ' . user_link($u) . '<br><small class="muted">' . h($u['email'] ?: '#' . $u['id']) . '</small>',
+            avatar($u, 24) . ' ' . user_link($u) . '<br><small class="muted">#' . (int)$u['id'] . ($u['email'] !== '' ? ' · ' . h((string)$u['email']) : '') . '</small>',
             h($g['name'] ?? '?'), (int)$u['topic_count'] . ' / ' . (int)$u['post_count'], human_time((int)$u['last_seen']),
             (int)$u['status'] === 1 ? '<span class="flag flag-success">' . t('active') . '</span>' : '<span class="flag flag-danger">' . t('suspended') . '</span>',
             '<div class="row-actions">' . admin_drawer_link(admin_url('users', ['q' => $q, 'edit' => $u['id']]), t('Edit')) . '</div>',
@@ -263,7 +263,7 @@ function admin_page_users(): never
             . '<p class="muted small">' . t('Balance: %s points', human_number((int)$edit['points'])) . '</p>' . points_log_html(points_log((int)$edit['id'], 1, 8)['rows'], t('No points activity yet.'))
             . '<p class="muted small">' . t('Email') . ': ' . h($edit['email'] ?: '-') . '<br>' . t('Registered') . ' ' . date('Y-m-d', (int)$edit['created_at']) . ' · IP ' . h($edit['created_ip']) . '<br>' . t('Topics') . ' ' . (int)$edit['topic_count'] . ' · ' . t('Replies') . ' ' . (int)$edit['post_count'] . '</p>'
             . admin_form_actions(t('Save'), $list_url) . '</form>';
-        $drawer = ['title' => $edit['username'], 'sub' => t('Edit user'), 'body' => $body, 'back' => $list_url, 'links' => [t('Public profile') => user_url($edit)]];
+        $drawer = ['title' => $edit['username'], 'sub' => t('Edit user') . ' · #' . (int)$edit['id'], 'body' => $body, 'back' => $list_url, 'links' => [t('Public profile') => user_url($edit)]];
     }
     admin_page(t('Users'), $html, 'users', ['drawer' => $drawer]);
 }

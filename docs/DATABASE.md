@@ -21,7 +21,7 @@ flatbb runs on MySQL 5.7+ / MariaDB 10.2+ (`utf8mb4`, the installer default) or 
 - Timestamps are unix seconds in `uint`. Booleans are 0/1. JSON is stored as text (`json_encode_value()` / `json_decode_array()`), never as a JSON column.
 - Avoid: CTEs, window functions, `INSERT … ON DUPLICATE KEY UPDATE` written by hand (use `db_upsert()`), `LIMIT` in subqueries with `IN` on MySQL, `RETURNING`, `ILIKE`, `||` concatenation (use `CONCAT` on MySQL / `||` on SQLite → avoid both, concatenate in PHP), `GREATEST` (use `db_greatest()`), `RANDOM()`/`RAND()` (use `db_random()`).
 - Full-text search is abstracted in `core/search.php`; do not query `fb_search_fts` directly.
-- `LIKE` needs `ESCAPE '\\'` and `db_like()` for user input.
+- `LIKE` needs `ESCAPE '!'` and `db_like()` for user input (never a backslash as escape character: MySQL treats it as a string escape and fails with error 1064).
 
 ## Helpers
 

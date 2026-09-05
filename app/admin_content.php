@@ -119,7 +119,7 @@ function admin_page_tags(): never
         request_cache('top_tags', null, true);
         redirect($list_url);
     }
-    $where = $q !== '' ? "WHERE name LIKE ? ESCAPE '\\'" : '';
+    $where = $q !== '' ? "WHERE name LIKE ? ESCAPE '!'" : '';
     $params = $q !== '' ? [db_like(mb_strtolower($q))] : [];
     $pg = paginate_calc((int)val("SELECT COUNT(*) FROM fb_tags {$where}", $params), get_int('page', 1, 1, 10000), 50);
     $rows = [];

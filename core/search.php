@@ -79,8 +79,8 @@ function search_query(string $q, int $page = 1, int $per_page = 20): array
         return ['total' => $total, 'rows' => $rows];
     }
     $like = db_like($q);
-    $total = (int)val("SELECT COUNT(*) FROM fb_search WHERE title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\'", [$like, $like]);
-    $rows = all("SELECT post_id,topic_id FROM fb_search WHERE title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\' ORDER BY post_id DESC LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, [$like, $like]);
+    $total = (int)val("SELECT COUNT(*) FROM fb_search WHERE title LIKE ? ESCAPE '!' OR body LIKE ? ESCAPE '!'", [$like, $like]);
+    $rows = all("SELECT post_id,topic_id FROM fb_search WHERE title LIKE ? ESCAPE '!' OR body LIKE ? ESCAPE '!' ORDER BY post_id DESC LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, [$like, $like]);
     return ['total' => $total, 'rows' => $rows];
 }
 

@@ -101,3 +101,12 @@ function test_region_list_orders_by_weight_and_filters_visibility(): void
     save_settings(['layout_hidden_items' => '{}']);
     request_cache('layout_hidden_items', null, true);
 }
+
+function test_like_escape_runs_and_matches_literally(): void
+{
+    test_same('%50!%off!_now!!%', db_like('50%off_now!'));
+    $n = (int)val("SELECT COUNT(*) FROM fb_users WHERE username_lower LIKE ? ESCAPE '!'", [db_like('adm')]);
+    test_same(1, $n, 'admin matched with the ! escape character');
+    $n = (int)val("SELECT COUNT(*) FROM fb_users WHERE username_lower LIKE ? ESCAPE '!'", [db_like('a_m')]);
+    test_same(0, $n, 'underscore is literal, not a wildcard');
+}

@@ -118,9 +118,10 @@ function rows_by_ids(string $table, array $ids, string $cols = '*', string $key 
     return $out;
 }
 
+/** LIKE pattern for user input, to be used with `LIKE ? ESCAPE '!'` (a backslash escape character is a syntax error on MySQL). */
 function db_like(string $s): string
 {
-    return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $s) . '%';
+    return '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $s) . '%';
 }
 
 /* ---------------------------------------------------------------- writes */
