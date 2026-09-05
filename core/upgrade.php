@@ -117,7 +117,8 @@ function upgrade_apply(?string $zip_file = null, ?callable $log = null): string
     }
     upgrade_rmdir($tmp);
     $log('Backup of the previous files: ' . $backup);
-    // finish: schema, caches. The new code is loaded on the next request; schema helpers are version-agnostic.
+    // finish: caches. This process still runs the old code, so the schema is brought up to date by app_boot() on the first request
+    // with the new code (SCHEMA_VERSION differs from the stored one); schema_install() here only covers helpers that already exist.
     schema_install();
     foreach (glob(CACHE_DIR . '/*') ?: [] as $f) if (is_file($f) && !str_starts_with(basename($f), 'plugins.')) @unlink($f);
     plugin_sync();
