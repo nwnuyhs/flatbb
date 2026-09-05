@@ -101,6 +101,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `topic.view` | filter | Filter the topic row shown on the topic page (ctx: posts). | `app/topic.php` |
 | `topic_list.rows` | filter | Filter topic rows of any list (batch-loaded, attach extra data here). | `app/home.php` |
 | `upgrade.after_apply` | event |  | `core/upgrade.php` |
+| `user.after_rename` | event | After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically. | `core/auth.php` |
 | `user.after_save` | event | After the profile was saved. | `app/user.php` |
 | `user.before_save` | filter | Profile fields before saving. | `app/user.php` |
 | `user.prefs_save` | filter | Preferences array before saving. | `app/user.php` |

@@ -137,6 +137,8 @@ function admin_settings_fields(): array
         'registration' => [t('Registration'), [
             'allow_register' => ['checkbox', t('Allow new registrations')],
             'invite_code' => ['text', t('Invite code'), t('When set, registration requires this code.')],
+            'allow_rename' => ['checkbox', t('Members may change their own username'), t('Administrators can always rename users from the Users page. Old profile links redirect to the new name.')],
+            'rename_days' => ['number', t('Days between username changes'), t('Applies to members renaming themselves.'), null, 0, 3650],
         ]],
         'email' => [t('Email'), [
             'mail_from' => ['text', t('Sender address'), t('Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.')],
@@ -224,6 +226,11 @@ function admin_page_users(): never
         $group = group_by_id(post_int('group_id'));
         if ($group === null) fail(t('Group not found.'));
         if ((int)$u['id'] === uid() && !(int)$group['is_admin']) fail(t('You cannot remove your own admin rights.'));
+        $new_name = post_str('username', 30);
+        if ($new_name !== '' && $new_name !== (string)$u['username']) {
+            $err = user_rename($u, $new_name, uid());
+            if ($err !== '') fail($err, admin_url('users', ['q' => $q, 'edit' => $u['id']]));
+        }
         db_update('fb_users', ['group_id' => (int)$group['id'], 'status' => post_int('status') ? 1 : 0], 'id=?', [(int)$u['id']]);
         $np = post_secret('password');
         if ($np !== '') {
@@ -255,7 +262,9 @@ function admin_page_users(): never
     if (($edit = user_by_id(get_int('edit', 0))) !== null) {
         $opts = [];
         foreach (groups() as $g) $opts[(string)$g['id']] = $g['name'];
+        $former = array_map(static fn(array $f): string => (string)$f['name'], user_former_names($edit));
         $body = '<form method="post" action="' . h($list_url) . '">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
+            . form_row(t('Username'), input('username', (string)$edit['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), t('Letters, numbers, dot, dash or underscore. Links to the old name redirect to the new one.') . ($former !== [] ? ' ' . t('Former names: %s', implode(', ', $former)) : ''))
             . form_row(t('Group'), select('group_id', $opts, (string)$edit['group_id']))
             . form_row(t('Status'), select('status', ['1' => t('Active'), '0' => t('Suspended')], (string)$edit['status']))
             . form_row(t('New password'), input('password', '', ['type' => 'password', 'autocomplete' => 'new-password']), t('Leave empty to keep the current password.'))

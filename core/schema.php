@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 function schema_tables(): array
 {
@@ -37,6 +37,7 @@ function schema_tables(): array
             'created_ip' => 'string',
             'unread_notifications' => 'uint',
             'prefs' => 'text',           // JSON
+            'former_names' => 'text',    // JSON list of {name, at}: old profile URLs keep working after a rename
             'reset_token' => 'string',   // sha256 of the password-reset token
             'reset_expires' => 'uint',
         ],
@@ -201,6 +202,7 @@ function schema_indexes(): array
         ['fb_users', 'ux_users_username', ['username_lower'], true],
         ['fb_users', 'ix_users_email', ['email']],
         ['fb_users', 'ix_users_group', ['group_id']],
+        ['fb_users', 'ix_users_points', ['points']], // leaderboards (the points plugin used to create it)
         ['fb_groups', 'ux_groups_slug', ['slug'], true],
         ['fb_categories', 'ux_categories_slug', ['slug'], true],
         ['fb_tags', 'ux_tags_slug', ['slug'], true],

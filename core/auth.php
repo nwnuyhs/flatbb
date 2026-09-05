@@ -229,6 +229,44 @@ function username_valid(string $name): bool
     return (bool)preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{1,29}$/', $name);
 }
 
+/**
+ * Change a username: same rules as registration, the old name is kept so /u/<old name> redirects, caches are cleared and
+ * user.after_rename fires. Returns '' on success or the error message to show. $by is the acting user (admin or self).
+ */
+function user_rename(array $user, string $new, int $by = 0): string
+{
+    $new = trim($new);
+    if ($new === (string)$user['username']) return t('That is already the username.');
+    if (!username_valid($new)) return t('Username must be 2-30 characters: letters, numbers, dot, dash or underscore.');
+    $taken = user_by_name($new);
+    if ($taken !== null && (int)$taken['id'] !== (int)$user['id']) return t('That username is already taken.');
+    $former = user_former_names($user);
+    $former[] = ['name' => (string)$user['username'], 'at' => now()];
+    db_update('fb_users', ['username' => $new, 'username_lower' => mb_strtolower($new), 'former_names' => json_encode_value(array_slice($former, -10))], 'id=?', [(int)$user['id']]);
+    request_cache('users_full', null, true);
+    request_cache('users', null, true);
+    request_cache('me', null, true);
+    fire('user.after_rename', ['user_id' => (int)$user['id'], 'old' => (string)$user['username'], 'new' => $new, 'by' => $by]);
+    return '';
+}
+
+/** Previous usernames of a user, oldest first: [['name' => ..., 'at' => unix], ...]. */
+function user_former_names(array $user): array
+{
+    return array_values(array_filter(json_decode_array((string)($user['former_names'] ?? '')), static fn($f): bool => is_array($f) && isset($f['name'])));
+}
+
+/** The user who used to have this name (old profile links redirect to the current name). */
+function user_by_former_name(string $name): ?array
+{
+    if (!username_valid($name)) return null;
+    // usernames are ASCII-only, so LIKE is case-insensitive on both engines; the quotes make it an exact JSON value match
+    foreach (all("SELECT * FROM fb_users WHERE former_names LIKE ? ESCAPE '!' ORDER BY id ASC LIMIT 5", [db_like('"name":"' . $name . '"')]) as $u) {
+        foreach (user_former_names($u) as $f) if (strcasecmp((string)$f['name'], $name) === 0) return $u;
+    }
+    return null;
+}
+
 function user_create(string $username, string $email, string $password, int $group_id = 0): int
 {
     if ($group_id <= 0) $group_id = (int)val("SELECT id FROM fb_groups WHERE slug='member'");

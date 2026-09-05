@@ -262,7 +262,7 @@ Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.
 - [ ] `php -l` and `php flatbb plugin:check <id>` pass.
 - [ ] Everything is prefixed with the plugin id (functions, tables, CSS, JS, storage, hooks).
 - [ ] No query in a loop; loop hooks are memory-only; no leftover placeholders.
-- [ ] All state changes use `require_post()`; permissions checked; output escaped; `php flatbb security:check` and `plugin:check` pass.
+- [ ] All state changes happen on POST (`require_post()` in handlers; admin pages may branch on `is_post()`, the dispatcher has verified the CSRF token already); permissions checked; output escaped; `php flatbb security:check` and `plugin:check` pass.
 - [ ] Works on SQLite and MySQL 5.7 (no dialect SQL, schema via `db_*` helpers).
 - [ ] Old settings/data still work; `install` and `uninstall` are idempotent.
 - [ ] `version` bumped; `description` accurate; `README.md` describes settings and usage.

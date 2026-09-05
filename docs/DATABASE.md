@@ -41,7 +41,7 @@ tx(function () { ... });
 | Table | Purpose |
 | --- | --- |
 | `fb_settings` | key/value site settings |
-| `fb_users` | accounts; denormalised counters; `prefs` JSON |
+| `fb_users` | accounts; denormalised counters; `prefs` JSON; `former_names` JSON (previous usernames, for redirects) |
 | `fb_groups` | user groups with `permissions` JSON and admin/mod flags |
 | `fb_categories` | categories (one level of nesting via `parent_id`), per-group view/post restrictions |
 | `fb_tags`, `fb_topic_tags` | tags |

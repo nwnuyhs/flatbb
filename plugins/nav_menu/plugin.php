@@ -21,7 +21,7 @@ function nav_menu_install(array $m): void
 
 function nav_menu_uninstall(array $m): void
 {
-    q('DROP TABLE IF EXISTS plugin_nav_menu_items');
+    db_drop_table('plugin_nav_menu_items');
 }
 
 /** All items ordered by weight, loaded once per request. */
@@ -60,6 +60,7 @@ function nav_menu_admin(string $page): never
     need_admin();
     $list_url = url('/admin/ext/nav_menu/menu');
     if (is_post()) {
+        require_post(); // the dispatcher verified the CSRF token already; this documents the contract
         $id = post_int('id');
         $action = post_str('action', 20);
         $row = $id > 0 ? one('SELECT * FROM plugin_nav_menu_items WHERE id=?', [$id]) : null;
@@ -70,7 +71,7 @@ function nav_menu_admin(string $page): never
                 db_update('plugin_nav_menu_items', ['enabled' => $action === 'on' ? 1 : 0], 'id=?', [$id]);
                 json_ok();
             case 'delete':
-                q('DELETE FROM plugin_nav_menu_items WHERE id=?', [$id]);
+                db_delete('plugin_nav_menu_items', 'id=?', [$id]);
                 flash(t('Link deleted.'));
                 redirect($list_url);
             case 'up':
@@ -143,7 +144,7 @@ function nav_menu_admin(string $page): never
 return [
     'id' => 'nav_menu',
     'name' => 'Navigation Menu',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'Header navigation links you manage in the admin panel: label, URL, icon, new tab, visibility and order. Also fills the mobile drawer.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

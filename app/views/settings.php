@@ -8,6 +8,9 @@
   <form method="post" action="<?= h(url('/settings/' . $tab)) ?>" enctype="multipart/form-data" class="settings-form">
     <?= csrf_field() ?>
     <?php if ($tab === 'profile'): ?>
+      <?php if (user_rename_allowed()): ?>
+      <?= form_row(t('Username'), input('username', (string)$user['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), user_rename_next($user) > now() ? t('You can change your username again on %s.', date('Y-m-d', user_rename_next($user))) : t('Letters, numbers, dot, dash or underscore. Links to your old profile name keep working.')) ?>
+      <?php endif; ?>
       <?= form_row(t('Email'), input('email', (string)$user['email'], ['type' => 'email'])) ?>
       <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>

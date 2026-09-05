@@ -3,10 +3,26 @@
  * Public profiles (/u/name) and account settings (/settings).
  */
 
+/** Whether members may change their own username (Admin -> Settings -> Registration). */
+function user_rename_allowed(): bool
+{
+    return setting('allow_rename', '0') === '1';
+}
+
+/** Unix time from which this member may rename again (0 when never renamed). */
+function user_rename_next(array $user): int
+{
+    $former = user_former_names($user);
+    $last = $former === [] ? 0 : (int)end($former)['at'];
+    $days = max(0, (int)setting('rename_days', '30'));
+    return $last > 0 ? $last + $days * 86400 : 0;
+}
+
 /** GET /u/{name}[/{tab}] tabs: topics, replies, bookmarks (own only) */
 function user_profile(string $name, string $tab = 'topics'): never
 {
     $user = user_by_name(rawurldecode($name));
+    if ($user === null && ($renamed = user_by_former_name(rawurldecode($name))) !== null) redirect(user_url($renamed) . ($tab !== 'topics' ? '/' . $tab : ''), 301);
     if ($user === null) not_found();
     $self = uid() === (int)$user['id'];
     $tabs = [
@@ -69,8 +85,17 @@ function user_settings(string $tab = 'profile'): never
             if ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [$email, (int)$me['id']])) fail(t('That email is already registered.'), $back);
             $data = hook('user.before_save', ['email' => $email, 'bio' => post_str('bio', 1000), 'website' => $website, 'location' => post_str('location', 80), 'signature' => post_str('signature', 300)], ['user' => $me]);
             db_update('fb_users', $data, 'id=?', [(int)$me['id']]);
+            $renamed = false;
+            $new_name = post_str('username', 30);
+            if (user_rename_allowed() && $new_name !== '' && $new_name !== (string)$me['username']) {
+                $next = user_rename_next((array)$me);
+                if ($next > now()) fail(t('You can change your username again on %s.', date('Y-m-d', $next)), $back);
+                $err = user_rename((array)$me, $new_name, (int)$me['id']);
+                if ($err !== '') fail($err, $back);
+                $renamed = true;
+            }
             fire('user.after_save', ['user_id' => (int)$me['id']]);
-            flash(t('Profile saved.'));
+            flash($renamed ? t('Profile saved. Your username is now %s.', $new_name) : t('Profile saved.'));
         } elseif ($tab === 'avatar') {
             $f = $_FILES['avatar'] ?? null;
             if (post_int('remove') === 1) {

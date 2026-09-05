@@ -203,6 +203,7 @@ function docs_hook_descriptions(): array
         'admin.settings_save' => 'Filter settings before they are saved.',
         'admin.category_save' => 'Filter category data before saving.',
         'admin.user_saved' => 'After an admin edited a user.',
+        'user.after_rename' => 'After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically.',
         'admin.plugin_ops' => 'Extra buttons on a plugin row.',
         'admin.tools' => 'Add rows to Admin → Tools.',
         'admin.tool' => 'Handle a custom tool action.',

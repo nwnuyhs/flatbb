@@ -110,3 +110,19 @@ function test_like_escape_runs_and_matches_literally(): void
     $n = (int)val("SELECT COUNT(*) FROM fb_users WHERE username_lower LIKE ? ESCAPE '!'", [db_like('a_m')]);
     test_same(0, $n, 'underscore is literal, not a wildcard');
 }
+
+function test_user_rename_keeps_old_name_for_redirects(): void
+{
+    $uid = user_create('rename_me', '', 'password-123');
+    $u = user_by_id($uid);
+    test_same('', user_rename($u, 'renamed_user', 1));
+    test_assert(user_by_name('renamed_user') !== null, 'new name resolves');
+    test_assert(user_by_name('rename_me') === null, 'old name is free');
+    $old = user_by_former_name('RENAME_ME');
+    test_same($uid, (int)($old['id'] ?? 0), 'old name (any case) finds the renamed user');
+    $u = user_by_id($uid);
+    test_assert(user_rename($u, 'admin') !== '', 'taken name is refused');
+    test_assert(user_rename($u, 'a b') !== '', 'invalid name is refused');
+    test_assert(user_rename($u, 'renamed_user') !== '', 'same name is refused');
+    test_same(1, count(user_former_names($u)));
+}
