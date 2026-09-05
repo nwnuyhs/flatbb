@@ -94,7 +94,7 @@ function plugin_package(string $id): string
  */
 function plugin_publish(string $id, string $token, string $changelog = '', string $endpoint = '', bool $insecure = false): array
 {
-    if ($token === '') return ['ok' => false, 'message' => 'Missing token. Create one at https://www.flatbb.com/settings/developer and pass --token=... or set FLATBB_TOKEN.'];
+    if ($token === '') return ['ok' => false, 'message' => 'Missing token. Create one at https://www.flatbb.com/settings/developer (shown once), then paste it under Admin → Plugins → Market → Settings, or pass --token=... / set FLATBB_TOKEN on the command line.'];
     try {
         $zip = plugin_package($id);
     } catch (RuntimeException $e) {

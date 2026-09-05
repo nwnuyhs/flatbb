@@ -137,7 +137,8 @@ function market_plugin_ops(string $ops, array $ctx): string
 {
     $id = (string)($ctx['plugin']['id'] ?? '');
     if ($id === '' || $id === 'market' || $id === 'market_server') return $ops;
-    return $ops . action_form(url('/admin/ext/market/publish'), '<button class="btn btn-sm">' . icon('upload') . t('Publish') . '</button>', ['id' => $id], '', t('Package and publish %s to the marketplace?', $id));
+    $has_token = (string)plugin_setting('market', 'token', '') !== '' || (string)(getenv('FLATBB_TOKEN') ?: '') !== '';
+    return $ops . action_form(url('/admin/ext/market/publish'), '<button class="btn btn-sm">' . icon('upload') . t('Publish') . '</button>', ['id' => $id], '', $has_token ? t('Package and publish %s to the marketplace?', $id) : t('Package %s for the marketplace? You will be asked for your developer token next.', $id));
 }
 
 function market_admin_publish(string $page): never
@@ -145,7 +146,22 @@ function market_admin_publish(string $page): never
     need_admin();
     require_post();
     $id = post_str('id', 40);
-    $token = (string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: '');
+    if (!isset(plugins()[$id])) fail(t('Plugin not found.'), url('/admin/plugins'));
+    $pasted = trim(post_str('token', 120));
+    if ($pasted !== '') {
+        // first publish from this admin: the developer token is pasted once and kept in the plugin settings
+        plugin_save_settings('market', ['token' => $pasted] + plugin_settings('market'));
+    }
+    $token = $pasted !== '' ? $pasted : ((string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: ''));
+    if ($token === '') {
+        // no token yet: ask for it here instead of failing, then publish in the same step
+        $body = '<form method="post" action="' . h(url('/admin/ext/market/publish')) . '" class="admin-form">' . csrf_field() . '<input type="hidden" name="id" value="' . h($id) . '">'
+            . '<p class="muted">' . t('Publishing to the marketplace needs a developer token. Create one at %s (Settings → Developer, it is shown once), paste it here and it is kept for the next time under Plugins → Market → Settings.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
+            . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']))
+            . form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 3, 'maxlength' => 500]))
+            . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Save token and publish %s', $id) . '</button> <a class="btn" href="' . h(url('/admin/plugins')) . '">' . t('Cancel') . '</a></div></form>';
+        admin_page(t('Publish %s', $id), $body, 'ext.market.market');
+    }
     $r = plugin_publish($id, $token, post_str('changelog', 500));
     flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
     redirect(url('/admin/plugins'));
@@ -167,13 +183,13 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.0.2',
+    'version' => '1.0.3',
     'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
     'requires' => ['flatbb' => '0.1.0'],
     'settings' => [
-        'token' => ['type' => 'text', 'label' => 'Developer token (for publishing)', 'default' => '', 'max' => 120, 'help' => 'Create one at www.flatbb.com → Settings → Developer. Leave empty to use the FLATBB_TOKEN environment variable.'],
+        'token' => ['type' => 'text', 'label' => 'Developer token (for publishing)', 'default' => '', 'max' => 120, 'help' => 'Create one at www.flatbb.com → Settings → Developer (it is shown once) and paste it here; the Publish button asks for it the first time. Leave empty to use the FLATBB_TOKEN environment variable.'],
     ],
     'admin_pages' => [
         'market' => ['label' => 'Market', 'callback' => 'market_admin_page'],
