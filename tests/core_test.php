@@ -200,3 +200,25 @@ function test_upload_dirs_get_protection_files(): void
     test_assert(is_file(UPLOAD_DIR . '/.user.ini') && str_contains((string)file_get_contents(UPLOAD_DIR . '/.user.ini'), 'engine = Off'), 'uploads/.user.ini written');
     test_assert(is_file(UPLOAD_DIR . '/.htaccess'), 'uploads/.htaccess written');
 }
+
+function test_manifest_parser_reads_data_and_refuses_code(): void
+{
+    $src = "<?php\nif (!defined('FLATBB')) exit;\nfunction x_install(array \$m): void { db_create_table('plugin_x_items', ['id' => 'id', 'version' => 'string']); return; }\n// return [ in a comment\nreturn [\n    'id' => 'x', 'name' => \"X \\\"quoted\\\"\", 'version' => '1.2.3', 'requires' => ['flatbb' => FLATBB_VERSION],\n    'description' => 'a' . ' b', 'n' => -5, 'f' => 1.5, 'on' => true, 'none' => null,\n    'hooks' => array('a.b' => 'x_a', 'c' => ['x_c1', 'x_c2']), 'list' => [1, 2, 3,],\n];\n";
+    $m = plugin_manifest_parse($src, $err);
+    test_assert($m !== null, 'readable: ' . (string)$err);
+    test_same('x', $m['id']);
+    test_same('X "quoted"', $m['name']);
+    test_same(FLATBB_VERSION, $m['requires']['flatbb'], 'constant resolved');
+    test_same('a b', $m['description'], 'concatenation');
+    test_same(-5, $m['n']);
+    test_same(['x_c1', 'x_c2'], $m['hooks']['c']);
+    test_same([1, 2, 3], $m['list'], 'trailing comma');
+    test_assert(plugin_manifest_parse("<?php\nreturn ['id' => strtolower('X')];") === null, 'a call is refused');
+    test_assert(plugin_manifest_parse("<?php\n\$v = 'x';\nreturn ['id' => \$v];") === null, 'a variable is refused');
+    test_assert(plugin_manifest_parse("<?php\nfunction f() { return ['id' => 'inner']; }\n") === null, 'a return inside a function is not the manifest');
+    test_assert(plugin_manifest_parse("<?php\nreturn ['id' => UNKNOWN_CONST_XYZ];", $e2) === null && str_contains((string)$e2, 'UNKNOWN_CONST_XYZ'), 'unknown constants are named in the error');
+    foreach (['hello', 'market', 'nav_menu'] as $id) {
+        $p = plugin_manifest_parse((string)file_get_contents(PLUGIN_DIR . '/' . $id . '/plugin.php'), $e3);
+        test_same($id, (string)($p['id'] ?? ''), $id . ' manifest is static (' . (string)$e3 . ')');
+    }
+}

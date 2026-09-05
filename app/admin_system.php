@@ -44,7 +44,8 @@ function admin_page_plugins(): never
     foreach (plugins() as $id => $p) {
         $m = $p['manifest'];
         $enabled = (int)$p['enabled'] === 1;
-        $live = $enabled ? plugin_read_manifest($id) : plugin_peek($id); // a disabled plugin's code never runs, not even to read its manifest
+        $snapshot = is_array($row['manifest'] ?? null) ? $row['manifest'] : json_decode_array((string)($row['manifest'] ?? ''));
+        $live = $enabled ? plugin_read_manifest($id) : ($snapshot !== [] ? $snapshot + ['id' => $id] : plugin_peek($id)); // a disabled plugin's code never runs: its manifest was read by the tokenizer at scan time
         $has_settings = $live !== null && (!empty($live['settings']) || !empty($live['admin_pages']));
         $update = $live !== null && version_compare((string)$live['version'], (string)$p['version'], '>') ? ' <span class="flag">' . t('%s on enable', $live['version']) . '</span>' : '';
         $menu = [];

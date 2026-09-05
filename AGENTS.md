@@ -56,7 +56,7 @@ docs/              documentation for humans and AIs (HOOKS.md and API.md are gen
 5. **State changes are POST + CSRF, enforced centrally**: `dispatch()` verifies the CSRF token on every POST before any handler runs (a route that authenticates with an API token lists itself in the manifest key `csrf_exempt`). Handlers still call `require_post()` for the method check; forms include `csrf_field()`; permissions with `need_login()`, `need_admin()`, `can()`.
    **Never read `$_POST`/`$_GET` directly**: use `post_str()`, `post_int()`, `post_list()`, `post_secret()`, `get_str()`, `get_int()`. In templates `<?= ... ?>` may only start with `h()`, `t()`, a known HTML helper, or `raw()` for HTML that was already escaped upstream. `php flatbb security:check` fails the build on violations (also run by `plugin:check`).
 6. **Files stay small**: no file over 30 KB. Split by concern rather than growing a file.
-7. **Plain functions, no classes, no globals**: per-request memoisation goes through `request_cache()`.
+7. **Plain functions, no globals**: the core is functions only; a plugin may use classes and traits when their names carry the plugin prefix (`MyId*`). Per-request memoisation goes through `request_cache()`.
 8. **Plugins never edit core files**, not even to add a hook: a plugin must never patch the core on the site it runs on. If it needs a hook that does not exist, the hook is added to core upstream (one line, usually a pull request) and documented in HOOKS.md, so every plugin can rely on it.
 9. **Every plugin symbol is prefixed** with the plugin id: functions `myplugin_*`, tables `plugin_myplugin_*`, CSS classes `.myplugin-*`, JS globals `myplugin_*`.
 10. **Bump `version`** in the manifest on every plugin change.

@@ -25,6 +25,9 @@ function plugin_check(string $id): array
         $errors[] = 'plugin.php must return a manifest array with "id" => "' . $id . '"';
         return ['errors' => $errors, 'warnings' => $warnings, 'manifest' => null];
     }
+    $static = plugin_manifest_parse($src, $why);
+    if ($static === null) $errors[] = 'The manifest must be static data (strings, numbers, arrays, constants): ' . $why;
+    elseif ((string)($static['id'] ?? '') !== $id) $errors[] = 'The manifest read without executing the file has id "' . (string)($static['id'] ?? '') . '", expected "' . $id . '"';
     foreach (['name', 'version', 'description', 'author'] as $k) if (trim((string)($m[$k] ?? '')) === '') $errors[] = 'Manifest is missing "' . $k . '"';
     if (!preg_match('/^\d+\.\d+\.\d+$/', (string)$m['version'])) $errors[] = 'version must be semantic (x.y.z), got "' . $m['version'] . '"';
     if (mb_strlen((string)$m['description']) > 200) $warnings[] = 'description is longer than 200 characters';
@@ -84,6 +87,9 @@ function plugin_package(string $id): string
         if (preg_match('#(^|/)(\.git|node_modules|\.DS_Store|\.idea)(/|$)#', $rel)) continue;
         $zip->addFile($f->getPathname(), $id . '/' . $rel);
     }
+    // by-product for tools and services that read metadata without PHP; plugin.php stays the source of truth
+    $meta = array_intersect_key($r['manifest'], array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'assets', 'csrf_exempt']));
+    $zip->addFromString($id . '/plugin.json', json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
     $zip->close();
     return $file;
 }

@@ -54,6 +54,8 @@ Register it once with `php flatbb plugin:sync` or Admin → Plugins → "Scan pl
 | `hooks` | no | `['hook.name' => 'callback' \| ['cb1', 'cb2']]`. See `docs/HOOKS.md`. |
 | `routes` | no | `['/path' => 'callback', '/path/{id}' => 'callback']`. Patterns as in `core/router.php`. |
 | `csrf_exempt` | no | Paths from `routes` that authenticate with an API token instead of a browser session (e.g. `['/api/myid/webhook']`). Every other POST is rejected by the dispatcher without a valid CSRF token. |
+
+The manifest is **data**: strings, numbers, booleans, nested arrays and constants only, no calls, variables or expressions. It is read with PHP's tokenizer without executing the file (the admin lists disabled plugins that way, the marketplace validates uploads that way) and cached when the plugin is scanned; `plugin:check` refuses a manifest that cannot be read statically. `plugin:package` writes a `plugin.json` copy into the zip for tools that want the metadata without PHP; you never edit it.
 | `admin_pages` | no | `['key' => ['label' => 'Menu label', 'callback' => 'fn']]` → `/admin/ext/<id>/<key>`. Call `need_admin()` inside. |
 | `settings` | no | Declarative settings; the admin form is generated (see §5). |
 | `assets` | no | `['css' => [...], 'js' => [...]]`, each item a function name returning source, or a file path relative to the plugin dir. Bundled into one file for all plugins. |

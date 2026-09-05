@@ -66,16 +66,9 @@ function plugin_peek(string $id): ?array
     if (!plugin_id_valid($id)) return null;
     $file = plugin_path($id, 'plugin.php');
     if (!is_file($file)) return null;
-    $src = (string)file_get_contents($file);
-    $pos = strrpos($src, "\nreturn [");
-    if ($pos !== false) $src = substr($src, $pos); // only the manifest: table definitions above it also use keys like 'id' or 'version'
-    if (!preg_match('/[\'"]id[\'"]\s*=>\s*[\'"]' . preg_quote($id, '/') . '[\'"]/', $src)) return null;
-    $m = ['id' => $id, 'name' => $id, 'version' => '0.0.0', 'description' => '', 'author' => '', 'requires' => []];
-    foreach (['name', 'version', 'description', 'author', 'url'] as $k) {
-        if (preg_match('/[\'"]' . $k . '[\'"]\s*=>\s*([\'"])((?:\\\\.|(?!\1).)*)\1/s', $src, $x)) $m[$k] = stripcslashes($x[2]);
-    }
-    if (preg_match('/[\'"]requires[\'"]\s*=>\s*\[\s*[\'"]flatbb[\'"]\s*=>\s*[\'"]([0-9.]+)[\'"]/', $src, $x)) $m['requires'] = ['flatbb' => $x[1]];
-    return $m;
+    $m = plugin_manifest_parse((string)file_get_contents($file)); // the tokenizer reads the returned array; the file is never executed
+    if ($m === null || (string)($m['id'] ?? '') !== $id) return null;
+    return $m + ['name' => $id, 'version' => '0.0.0', 'description' => '', 'author' => '', 'requires' => [], 'hooks' => [], 'routes' => [], 'admin_pages' => [], 'cron' => [], 'settings' => []];
 }
 
 /** Include plugins/<id>/plugin.php once and return its manifest (null when invalid). Only call this for enabled plugins or on an explicit admin/CLI action. */
