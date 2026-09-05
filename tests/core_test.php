@@ -92,6 +92,9 @@ function test_region_list_orders_by_weight_and_filters_visibility(): void
     }, 'testplugin');
     $keys = array_keys(region_list('test.links', []));
     test_same(['c', 'a', 'b'], $keys, 'guest sees public items in weight order');
+    $cards = region_list('test.cards', ['user' => '<div>user card</div>', 'stats' => '<div>stats</div>']);
+    test_same(['user', 'stats'], array_keys($cards), 'plain HTML items (sidebar cards) are kept in order');
+    test_same('<div>stats</div>', $cards['stats']);
     save_settings(['layout_hidden_items' => json_encode_value(['test.links' => ['a' => 1]])]);
     request_cache('layout_hidden_items', null, true);
     test_same(['c', 'b'], array_keys(region_list('test.links', [])), 'hidden item is dropped');

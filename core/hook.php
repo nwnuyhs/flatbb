@@ -127,17 +127,22 @@ function region_list(string $name, array $items, array $ctx = []): array
     $items = hook('region.' . $name, $items, $ctx);
     if (!is_array($items)) return [];
     $hidden = layout_hidden_items($name);
-    $out = [];
+    $sorted = [];
     $i = 0;
     foreach ($items as $id => $item) {
-        if (!is_array($item) || isset($hidden[(string)$id])) continue;
-        $vis = (string)($item['visible'] ?? 'everyone');
-        if (($vis === 'members' && uid() <= 0) || ($vis === 'admins' && !is_admin())) continue;
-        $item['_order'] = $i++;
-        $out[$id] = $item;
+        if (isset($hidden[(string)$id])) continue;
+        $weight = 0;
+        if (is_array($item)) {
+            $vis = (string)($item['visible'] ?? 'everyone');
+            if (($vis === 'members' && uid() <= 0) || ($vis === 'admins' && !is_admin())) continue;
+            $weight = (int)($item['weight'] ?? 0);
+        }
+        // plain HTML items (sidebar cards are rendered views) keep their place: weight 0, always visible
+        $sorted[$id] = ['w' => $weight, 'o' => $i++, 'v' => $item];
     }
-    uasort($out, static fn(array $a, array $b): int => [(int)($a['weight'] ?? 0), $a['_order']] <=> [(int)($b['weight'] ?? 0), $b['_order']]);
-    foreach ($out as &$item) unset($item['_order']);
+    uasort($sorted, static fn(array $a, array $b): int => [$a['w'], $a['o']] <=> [$b['w'], $b['o']]);
+    $out = [];
+    foreach ($sorted as $id => $e) $out[$id] = $e['v'];
     return $out;
 }
 
