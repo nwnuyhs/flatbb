@@ -268,6 +268,8 @@ function setting_defaults(): array
         'posts_per_page' => '20',
         'allow_register' => '1',
         'invite_code' => '',
+        'allow_rename' => '0',
+        'rename_days' => '30',
         'post_interval' => '15',
         'new_user_limit_hours' => '24',
         'new_user_max_posts' => '5',
