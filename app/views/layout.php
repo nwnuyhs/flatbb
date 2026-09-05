@@ -29,7 +29,7 @@ $unread = notifications_unread();
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= h($title) ?><?= current_path() !== '/' ? ' - ' . h($site) : ' - ' . h(setting('site_tagline')) ?></title>
+<title><?= current_path() !== '/' ? h($title) . ' - ' . h($site) : h($site) . ' - ' . h(setting('site_tagline')) ?></title>
 <?php $description = $description !== '' ? $description : setting('site_description'); if ($description !== ''): ?><meta name="description" content="<?= h(cut($description, 200)) ?>"><?php endif; ?>
 <?php if (setting('seo_keywords') !== ''): ?><meta name="keywords" content="<?= h(setting('seo_keywords')) ?>"><?php endif; ?>
 <?php if ($canonical !== ''): ?><link rel="canonical" href="<?= h($canonical) ?>"><?php endif; ?>
