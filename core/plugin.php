@@ -67,6 +67,8 @@ function plugin_peek(string $id): ?array
     $file = plugin_path($id, 'plugin.php');
     if (!is_file($file)) return null;
     $src = (string)file_get_contents($file);
+    $pos = strrpos($src, "\nreturn [");
+    if ($pos !== false) $src = substr($src, $pos); // only the manifest: table definitions above it also use keys like 'id' or 'version'
     if (!preg_match('/[\'"]id[\'"]\s*=>\s*[\'"]' . preg_quote($id, '/') . '[\'"]/', $src)) return null;
     $m = ['id' => $id, 'name' => $id, 'version' => '0.0.0', 'description' => '', 'author' => '', 'requires' => []];
     foreach (['name', 'version', 'description', 'author', 'url'] as $k) {
