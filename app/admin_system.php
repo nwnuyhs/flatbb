@@ -32,7 +32,7 @@ function admin_page_plugins(): never
                     fire('plugin.settings_saved', ['id' => $id]);
                     admin_log('plugin.settings', $id);
                     flash(t('Settings saved.'));
-                    redirect(admin_url('plugins', ['settings' => $id]));
+                    redirect(admin_url('plugins'));
                 default: fail(t('Unknown action.'));
             }
         } catch (Throwable $e) {
