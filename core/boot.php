@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.21');
+define('FLATBB_VERSION', '0.1.22');
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');
 define('APP_DIR', ROOT . '/app');
@@ -84,6 +84,7 @@ function app_boot(): void
 {
     if (!is_dir(DATA_DIR)) @mkdir(DATA_DIR, 0755, true);
     if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+    upload_protect_dirs();
     if (!is_installed()) return;
     // an in-place upgrade copies the files while the old code is still loaded: new tables, columns and indexes are created here,
     // on the first request that runs the new code (schema helpers are idempotent; SCHEMA_VERSION is bumped with every schema change)

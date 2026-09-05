@@ -192,3 +192,11 @@ function test_logout_everywhere_invalidates_old_session_signatures(): void
     test_assert((string)$fresh['auth_salt'] !== '', 'salt set');
     test_assert(!hash_equals($old, auth_signature((int)$u['id'], $exp, auth_key($fresh))), 'old signature no longer matches');
 }
+
+function test_upload_dirs_get_protection_files(): void
+{
+    @unlink(UPLOAD_DIR . '/.user.ini');
+    upload_protect_dirs();
+    test_assert(is_file(UPLOAD_DIR . '/.user.ini') && str_contains((string)file_get_contents(UPLOAD_DIR . '/.user.ini'), 'engine = Off'), 'uploads/.user.ini written');
+    test_assert(is_file(UPLOAD_DIR . '/.htaccess'), 'uploads/.htaccess written');
+}

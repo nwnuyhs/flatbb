@@ -166,3 +166,20 @@ function upload_site_image(string $key, array $file, array $exts, int $max_bytes
     if (!@move_uploaded_file($tmp, UPLOAD_DIR . '/' . $rel) && !@rename($tmp, UPLOAD_DIR . '/' . $rel)) throw new RuntimeException(t('Could not save the file.'));
     return $rel . '?v=' . now();
 }
+
+/**
+ * Drop protection files into uploads/ and data/ when they are missing: PHP-FPM/CGI reads .user.ini (engine off), Apache
+ * reads .htaccess. nginx needs the rules from nginx.conf.example; the Guard plugin's check-up tells whether they work.
+ */
+function upload_protect_dirs(): void
+{
+    $files = [
+        UPLOAD_DIR . '/.user.ini' => "; flatbb: uploaded files are never executed\nengine = Off\n",
+        UPLOAD_DIR . '/.htaccess' => "# flatbb: uploaded files are never executed\n<IfModule mod_php.c>\nphp_flag engine off\n</IfModule>\n<FilesMatch \"\\.(php|phtml|phar|php[0-9]|phps)$\">\nRequire all denied\n</FilesMatch>\n",
+        DATA_DIR . '/.htaccess' => "# flatbb: private data\nRequire all denied\n",
+        DATA_DIR . '/.user.ini' => "engine = Off\n",
+    ];
+    foreach ($files as $path => $body) {
+        if (!is_file($path) && is_dir(dirname($path))) @file_put_contents($path, $body);
+    }
+}

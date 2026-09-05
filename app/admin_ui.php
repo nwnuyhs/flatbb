@@ -23,6 +23,7 @@ function admin_menu_items(string $active): array
         'layout' => ['label' => t('Layout'), 'icon' => 'layout', 'group' => t('Appearance')],
         'settings' => ['label' => t('Settings'), 'icon' => 'settings', 'group' => t('System')],
         'plugins' => ['label' => t('Plugins'), 'icon' => 'puzzle', 'group' => t('System')],
+        'updates' => ['label' => t('Updates'), 'icon' => 'download', 'group' => t('System'), 'badge' => upgrade_available() ? t('new') : ''],
         'cron' => ['label' => t('Scheduled jobs'), 'icon' => 'clock', 'group' => t('System')],
         'tools' => ['label' => t('Tools'), 'icon' => 'terminal', 'group' => t('System')],
     ];
@@ -45,7 +46,7 @@ function admin_page(string $title, string $body, string $active = '', array $opt
     $group = null;
     foreach (admin_menu_items($active) as $it) {
         if (($it['group'] ?? '') !== $group) { $group = $it['group']; if ($group !== '') $menu .= '<h4 class="side-group">' . h($group) . '</h4>'; }
-        $menu .= '<a class="side-link' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . icon((string)($it['icon'] ?? 'circle')) . '<span>' . h((string)$it['label']) . '</span></a>';
+        $menu .= '<a class="side-link' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . icon((string)($it['icon'] ?? 'circle')) . '<span>' . h((string)$it['label']) . '</span>' . (!empty($it['badge']) ? ' <span class="badge">' . h((string)$it['badge']) . '</span>' : '') . '</a>';
     }
     $menu .= '</nav>';
     $drawer = $opts['drawer'] ?? null;

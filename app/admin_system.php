@@ -260,19 +260,6 @@ function admin_page_tools(): never
                 flash(t('Cache cleared.'));
                 break;
             case 'schema': schema_install(); admin_log('tools.schema'); flash(t('Schema upgraded.')); break;
-            case 'update_check':
-                $i = upgrade_check(true);
-                flash(!empty($i['error']) ? t('Update check failed: %s', (string)$i['error']) : t('Latest release: %s (installed %s).', (string)$i['version'], FLATBB_VERSION), !empty($i['error']) ? 'error' : 'info');
-                break;
-            case 'upgrade':
-                try {
-                    $v = upgrade_apply(null);
-                    admin_log('tools.upgrade', $v);
-                    flash(t('Upgraded to flatbb %s. A backup of the previous files is in data/.', $v));
-                } catch (Throwable $e) {
-                    fail(t('Upgrade failed: %s', $e->getMessage()), admin_url('tools'));
-                }
-                break;
             case 'import_sqlite':
                 $file = post_str('sqlite_file', 300);
                 try {
@@ -301,12 +288,6 @@ function admin_page_tools(): never
     }
     $html .= '</tbody></table></div>';
     $html .= admin_tools_security_html();
-    $latest = json_decode_array(setting('core_update_cache', ''));
-    $newer = !empty($latest['version']) && version_compare((string)$latest['version'], FLATBB_VERSION, '>');
-    $html .= '<div class="admin-form" style="margin-top:16px"><h3>' . t('Updates') . '</h3><p>' . t('Installed: flatbb %s.', FLATBB_VERSION) . ' ' . (!empty($latest['version']) ? t('Latest: %s (checked %s).', (string)$latest['version'], human_time((int)($latest['checked_at'] ?? 0))) : t('Not checked yet.')) . '</p><div class="btn-row">'
-        . action_form(admin_url('tools'), '<button class="btn">' . icon('refresh') . t('Check for updates') . '</button>', ['action' => 'update_check'])
-        . ($newer ? action_form(admin_url('tools'), '<button class="btn btn-primary">' . icon('download') . t('Upgrade to %s', (string)$latest['version']) . '</button>', ['action' => 'upgrade'], '', t('Upgrade now? Back up your database first. Core files are replaced; data, uploads and your plugins are kept.')) : '')
-        . (!empty($latest['url']) ? '<a class="btn btn-ghost" href="' . h((string)$latest['url']) . '" target="_blank" rel="noopener">' . t('Release notes') . '</a>' : '') . '</div></div>';
     $html .= '<form method="post" action="' . h(admin_url('tools')) . '" class="admin-form" style="margin-top:16px" data-confirm="' . t('This empties the current database tables and replaces them with the SQLite data. Continue?') . '">' . csrf_field() . '<input type="hidden" name="action" value="import_sqlite"><h3>' . t('Import from SQLite') . '</h3><p class="muted">' . t('Moving from SQLite to MySQL: install this copy on MySQL, enable the same plugins, then import the old data/flatbb.sqlite file. Ids are preserved; the search index and counters are rebuilt. Copy uploads/ yourself.') . '</p>'
         . form_row(t('Path to the SQLite file on this server'), input('sqlite_file', '', ['placeholder' => DATA_DIR . '/old-flatbb.sqlite'])) . '<button type="submit" class="btn btn-danger">' . t('Import') . '</button></form>';
     admin_page(t('Tools'), $html, 'tools');
@@ -329,4 +310,40 @@ function admin_tools_security_html(): string
         . h(match ($mode) { 'enforce' => t('Enforced: the browser blocks scripts that are not part of the forum or a plugin.'), 'off' => t('Off. Turn it on under Settings → Security.'), default => t('Report only: violations are logged here but nothing is blocked. Switch to Enforce under Settings → Security once the list stays empty for a while.') })
         . '</p>' . ($mode === 'off' ? '' : admin_table([t('When'), t('Directive'), t('Blocked'), t('Page')], $rrows, t('No reports.'))) . '</div>';
     return $html;
+}
+
+/* ---------------------------------------------------------------- updates */
+
+/** GET|POST /admin/updates: the installed version, the latest release (checked daily by cron) and the one-click upgrade. */
+function admin_page_updates(): never
+{
+    if (is_post()) {
+        check_csrf();
+        switch (post_str('action', 30)) {
+            case 'update_check':
+                $i = upgrade_check(true);
+                flash(!empty($i['error']) ? t('Update check failed: %s', (string)$i['error']) : t('Latest release: %s (installed %s).', (string)$i['version'], FLATBB_VERSION), !empty($i['error']) ? 'error' : 'info');
+                break;
+            case 'upgrade':
+                try {
+                    $v = upgrade_apply(null);
+                    admin_log('tools.upgrade', $v);
+                    flash(t('Upgraded to flatbb %s. A backup of the previous files is in data/.', $v));
+                } catch (Throwable $e) {
+                    fail(t('Upgrade failed: %s', $e->getMessage()), admin_url('updates'));
+                }
+                break;
+            default: fail(t('Unknown action.'), admin_url('updates'));
+        }
+        redirect(admin_url('updates'));
+    }
+    $latest = json_decode_array(setting('core_update_cache', ''));
+    $newer = upgrade_available();
+    $html = '<div class="admin-form"><h3>' . ($newer ? t('flatbb %s is available', (string)$latest['version']) : t('flatbb is up to date')) . '</h3>'
+        . '<p>' . t('Installed: flatbb %s.', FLATBB_VERSION) . ' ' . (!empty($latest['version']) ? t('Latest: %s (checked %s).', (string)$latest['version'], human_time((int)($latest['checked_at'] ?? 0))) : t('Not checked yet.')) . '</p>'
+        . '<p class="muted small">' . t('The marketplace is asked once a day by the scheduled jobs; a "new" mark appears in the menu when a newer release exists. Upgrading replaces the core files and keeps your data, uploads, settings and plugins; a backup of the previous files is written to data/.') . '</p><div class="btn-row">'
+        . ($newer ? action_form(admin_url('updates'), '<button class="btn btn-primary">' . icon('download') . t('Upgrade to %s', (string)$latest['version']) . '</button>', ['action' => 'upgrade'], '', t('Upgrade now? Back up your database first. Core files are replaced; data, uploads and your plugins are kept.')) : '')
+        . action_form(admin_url('updates'), '<button class="btn">' . icon('refresh') . t('Check for updates') . '</button>', ['action' => 'update_check'])
+        . (!empty($latest['url']) ? '<a class="btn btn-ghost" href="' . h((string)$latest['url']) . '" target="_blank" rel="noopener">' . t('Release notes') . '</a>' : '') . '</div></div>';
+    admin_page(t('Updates'), $html, 'updates');
 }

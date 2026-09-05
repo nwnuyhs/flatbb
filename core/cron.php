@@ -13,6 +13,7 @@ function cron_jobs(): array
         'core.hot_scores' => ['callback' => 'cron_hot_scores', 'interval' => 1800, 'plugin' => ''],
         'core.cleanup' => ['callback' => 'cron_cleanup', 'interval' => 86400, 'plugin' => ''],
         'core.stats' => ['callback' => 'cron_stats', 'interval' => 300, 'plugin' => ''],
+        'core.update_check' => ['callback' => 'cron_update_check', 'interval' => 86400, 'plugin' => ''],
     ];
     foreach (plugin_manifests() as $id => $m) {
         foreach ((array)($m['cron'] ?? []) as $name => $job) {
@@ -96,4 +97,11 @@ function cron_stats(): string
     request_cache('site_stats', null, true);
     site_stats();
     return 'refreshed';
+}
+
+/** Daily: refresh the core release cache so the admin menu shows "Updates · new" without anyone clicking Check. */
+function cron_update_check(): string
+{
+    $i = upgrade_check(true);
+    return !empty($i['error']) ? 'error: ' . $i['error'] : 'latest ' . (string)$i['version'];
 }
