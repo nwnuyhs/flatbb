@@ -41,7 +41,7 @@ function admin_security_checks(bool $force = false): array
     $probe = static function (string $path): string {
         if (!function_exists('curl_init')) return 'unknown';
         $ch = curl_init(base_url() . $path);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_USERAGENT => 'flatbb-selfcheck']);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_USERAGENT => 'flatbb-selfcheck']);
         $body = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         curl_close($ch);

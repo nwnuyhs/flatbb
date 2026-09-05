@@ -5,6 +5,7 @@
  * A plugin is plugins/<id>/plugin.php that returns a manifest array. See docs/PLUGIN.md.
  * Registration lives in fb_plugins; normal requests never scan the plugins directory.
  * Only enabled plugins are loaded. Loading = include the file, register hooks/routes/cron/lang.
+ * Disabled plugins are never included: the admin page, the folder scan and the zip upload read their manifest as text (plugin_peek).
  */
 
 function plugin_id_valid(string $id): bool
@@ -53,10 +54,29 @@ function plugin_manifests(?array $set = null): array
 
 function plugin_manifest(string $id): ?array
 {
-    return plugin_manifests()[$id] ?? plugin_read_manifest($id);
+    return plugin_manifests()[$id] ?? (plugin_enabled($id) ? plugin_read_manifest($id) : null); // disabled plugins are not executed to answer this
 }
 
-/** Include plugins/<id>/plugin.php once and return its manifest (null when invalid). */
+/**
+ * Read id, name, version, description and author of plugins/<id>/plugin.php as text, without executing it.
+ * Used for plugins that are not enabled: their code only runs once an admin enables them.
+ */
+function plugin_peek(string $id): ?array
+{
+    if (!plugin_id_valid($id)) return null;
+    $file = plugin_path($id, 'plugin.php');
+    if (!is_file($file)) return null;
+    $src = (string)file_get_contents($file);
+    if (!preg_match('/[\'"]id[\'"]\s*=>\s*[\'"]' . preg_quote($id, '/') . '[\'"]/', $src)) return null;
+    $m = ['id' => $id, 'name' => $id, 'version' => '0.0.0', 'description' => '', 'author' => '', 'requires' => []];
+    foreach (['name', 'version', 'description', 'author', 'url'] as $k) {
+        if (preg_match('/[\'"]' . $k . '[\'"]\s*=>\s*([\'"])((?:\\\\.|(?!\1).)*)\1/s', $src, $x)) $m[$k] = stripcslashes($x[2]);
+    }
+    if (preg_match('/[\'"]requires[\'"]\s*=>\s*\[\s*[\'"]flatbb[\'"]\s*=>\s*[\'"]([0-9.]+)[\'"]/', $src, $x)) $m['requires'] = ['flatbb' => $x[1]];
+    return $m;
+}
+
+/** Include plugins/<id>/plugin.php once and return its manifest (null when invalid). Only call this for enabled plugins or on an explicit admin/CLI action. */
 function plugin_read_manifest(string $id): ?array
 {
     static $files = [];
@@ -170,14 +190,16 @@ function plugin_sync(): array
     $found = [];
     foreach (glob(PLUGIN_DIR . '/*/plugin.php') ?: [] as $file) {
         $id = basename(dirname($file));
-        $m = plugin_read_manifest($id);
+        // disabled plugins are only peeked at (name, version): their code runs for the first time when an admin enables them
+        $enabled = (int)(plugins()[$id]['enabled'] ?? 0) === 1;
+        $m = $enabled ? plugin_read_manifest($id) : plugin_peek($id);
         if ($m === null) continue;
         $found[$id] = $m;
         $snapshot = array_intersect_key($m, array_flip(['name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings']));
         $existing = plugins()[$id] ?? null;
         // files changed underneath an installed plugin (scan, zip upload, core upgrade): run its install routine for the new version now,
         // because the version stored below is what plugin_enable() compares against later
-        if ($existing !== null && (int)($existing['installed'] ?? 0) === 1 && (string)$existing['version'] !== (string)$m['version'] && !empty($m['install']) && is_callable($m['install'])) {
+        if ($enabled && $existing !== null && (int)($existing['installed'] ?? 0) === 1 && (string)$existing['version'] !== (string)$m['version'] && !empty($m['install']) && is_callable($m['install'])) {
             $m['install']($m);
         }
         $data = ['id' => $id, 'name' => (string)$m['name'], 'version' => (string)$m['version'], 'manifest' => json_encode_value($snapshot), 'updated_at' => now()];
@@ -274,7 +296,7 @@ function plugin_install_zip(string $file): string
     $zip->close();
     foreach (glob(PLUGIN_DIR . '/__MACOSX') ?: [] as $junk) upgrade_rmdir($junk);
     plugin_sync();
-    if (plugin_read_manifest($id) === null) throw new RuntimeException(t('The installed files do not contain a valid manifest.'));
+    if (plugin_peek($id) === null) throw new RuntimeException(t('The installed files do not contain a valid manifest.'));
     if ($was_enabled) plugin_enable($id);
     fire('plugin.after_install_zip', ['id' => $id]);
     return $id;

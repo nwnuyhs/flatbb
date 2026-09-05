@@ -105,6 +105,15 @@ function can_manage_topic(array $topic): bool
     return is_mod() || (uid() > 0 && (int)$topic['user_id'] === uid() && can('delete_own'));
 }
 
+/** The topic of a post when the current user may see it (topic not deleted unless mod, category viewable), else null. */
+function post_topic_visible(array $post): ?array
+{
+    $topic = topic_by_id((int)$post['topic_id']);
+    if ($topic === null || ((int)$topic['is_deleted'] === 1 && !is_mod())) return null;
+    $cat = category_by_id((int)$topic['category_id']);
+    return $cat !== null && !category_can_view($cat) ? null : $topic;
+}
+
 function can_edit_post(array $post): bool
 {
     if (is_mod()) return true;
@@ -322,7 +331,7 @@ function topic_bookmark(string $id): never
 function post_permalink(string $id): never
 {
     $post = post_by_id((int)$id);
-    $topic = $post ? topic_by_id((int)$post['topic_id']) : null;
+    $topic = $post ? post_topic_visible($post) : null;
     if ($post === null || $topic === null) not_found();
     $before = (int)val('SELECT COUNT(*) FROM fb_posts WHERE topic_id=? AND is_deleted=0 AND id<?', [(int)$topic['id'], (int)$post['id']]);
     $page = (int)floor($before / max(5, (int)setting('posts_per_page', '20'))) + 1;
@@ -334,7 +343,7 @@ function post_edit(string $id): never
 {
     $me = need_login();
     $post = post_by_id((int)$id);
-    $topic = $post ? topic_by_id((int)$post['topic_id']) : null;
+    $topic = $post ? post_topic_visible($post) : null;
     if ($post === null || $topic === null) not_found();
     if (!can_edit_post($post)) forbidden();
     if ((int)$post['floor'] === 0) redirect(url('/t/' . $topic['id'] . '/edit'));
@@ -354,7 +363,7 @@ function post_like(string $id): never
     $me = need_login();
     require_post();
     $post = post_by_id((int)$id);
-    if ($post === null || (int)$post['is_deleted'] === 1) not_found();
+    if ($post === null || (int)$post['is_deleted'] === 1 || post_topic_visible($post) === null) not_found();
     if ((int)$post['user_id'] === (int)$me['id']) fail(t('You cannot like your own post.'));
     $liked = (bool)val('SELECT 1 FROM fb_likes WHERE user_id=? AND post_id=?', [(int)$me['id'], (int)$post['id']]);
     tx(static function () use ($liked, $me, $post): void {
@@ -383,7 +392,7 @@ function post_delete(string $id): never
     need_login();
     require_post();
     $post = post_by_id((int)$id);
-    $topic = $post ? topic_by_id((int)$post['topic_id']) : null;
+    $topic = $post ? post_topic_visible($post) : null;
     if ($post === null || $topic === null) not_found();
     if ((int)$post['floor'] === 0) fail(t('Delete the topic instead.'));
     $restore = post_str('action', 20) === 'restore';
@@ -401,7 +410,7 @@ function post_delete(string $id): never
 function post_raw(string $id): never
 {
     $post = post_by_id((int)$id);
-    if ($post === null || (int)$post['is_deleted'] === 1) json_error('not found', 404);
+    if ($post === null || (int)$post['is_deleted'] === 1 || post_topic_visible($post) === null) json_error('not found', 404);
     $user = user_by_id((int)$post['user_id']);
     json_ok(['body' => $post['body'], 'username' => $user['username'] ?? '', 'floor' => (int)$post['floor']]);
 }

@@ -82,12 +82,12 @@ function setup_rewrite_works(): bool
     $r = false;
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 4, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'flatbb-installer']);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 4, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'flatbb-installer']);
         $r = curl_exec($ch);
         curl_close($ch);
     }
     if ($r === false && ini_get('allow_url_fopen')) {
-        $ctx = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => true, 'user_agent' => 'flatbb-installer'], 'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
+        $ctx = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => true, 'user_agent' => 'flatbb-installer']]);
         $r = @file_get_contents($url, false, $ctx);
     }
     return is_string($r) && trim($r) === 'ok';
