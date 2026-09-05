@@ -98,7 +98,7 @@ Signature for every hook: `function myid_x($value, array $ctx)`. Return the new 
 Events (fired with `fire()`) ignore the return value.
 
 - **HTML regions** (`region.header.left`, `region.sidebar.right.top`, `region.footer.right`, …): `$value` is HTML, append to it.
-- **List regions** (`region.sidebar.left.nav`, `region.header.user_menu`, `region.post.actions`, `region.sidebar.right.cards`, …): `$value` is an array keyed by item id. Add `['label' => …, 'url' => …, 'icon' => …]` or `['html' => …]`. Insert your item with your plugin id as key.
+- **List regions** (`region.header.nav`, `region.sidebar.left.nav`, `region.header.user_menu`, `region.post.actions`, `region.sidebar.right.cards`, …): `$value` is an array keyed by item id. Add `['label' => …, 'url' => …, 'icon' => …]` or `['html' => …]`. Insert your item with your plugin id as key (`myid` or `myid_<n>`). Optional keys the core honours for every list region: `weight` (int, lower first; equal weights keep insertion order; the marketplace links use 50 and 60), `visible` (`everyone` default, `members`, `admins`: filtered by the core, do not re-check in your callback), `new_tab` (bool, header links open in a new tab). Admins can hide any single item per region under Admin → Layout, so never hard-code your item as mandatory. Reference example: `plugins/nav_menu/plugin.php` (one table, one admin page, one list-region hook).
 - **Inline regions inside loops** (`region.topic_list.item.*`, `region.post.*`): called once per row/post. **No database access.** Use data already present in `$ctx['topic']`/`$ctx['post']`, or attach data beforehand with the batch hooks `topic_list.rows` / `topic.posts` (called once per page with all rows).
 - **Admin control**: every region appears in Admin → Layout, where admins can switch your plugin off per region or add HTML blocks. Do not fight that with CSS.
 - **Front end**: every region element carries `data-slot="<region>"`; select with `[data-slot~="post.actions"]`. In-loop slots repeat; scope by `[data-post-id]` / `[data-topic-id]`.
@@ -276,6 +276,8 @@ No command line is needed to build or ship a plugin: the AI writes `plugins/<id>
 Read https://www.flatbb.com/dev/plugins.md first. Then create a flatbb plugin plugins/<id>/plugin.php that: <what it does, where it shows up, its settings, who may use it>.
 Follow every rule in the document. Give me the finished folder as a zip I can upload under Admin -> Plugins.
 ```
+
+Two bundled plugins are meant to be copied: `plugins/hello` (footer badge and a page, the minimum) and `plugins/nav_menu` (a table, an admin page with a drawer form and a list-region hook, the typical shape of a real plugin).
 
 Inside a checkout of flatbb the local files work the same way:
 

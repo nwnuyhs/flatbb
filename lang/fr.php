@@ -372,6 +372,7 @@ return [
     'Settings saved.' => 'Réglages enregistrés.',
     'Show in this position' => 'Afficher à cette position',
     'Show my points on my public profile' => 'Afficher mes points sur mon profil public',
+    'Show this item' => 'Afficher cet élément',
     'Sign In' => 'Connexion',
     'Sign in' => 'Se connecter',
     'Sign in to reply.' => 'Connectez-vous pour répondre.',

@@ -41,8 +41,8 @@ function admin_page_plugins(): never
     $rows = [];
     foreach (plugins() as $id => $p) {
         $m = $p['manifest'];
-        $live = plugin_read_manifest($id);
         $enabled = (int)$p['enabled'] === 1;
+        $live = $enabled ? plugin_read_manifest($id) : plugin_peek($id); // a disabled plugin's code never runs, not even to read its manifest
         $has_settings = $live !== null && (!empty($live['settings']) || !empty($live['admin_pages']));
         $update = $live !== null && version_compare((string)$live['version'], (string)$p['version'], '>') ? ' <span class="flag">' . t('%s on enable', $live['version']) . '</span>' : '';
         $menu = [];
@@ -97,6 +97,15 @@ function admin_page_layout(): never
         check_csrf();
         $action = post_str('action', 20);
         $bid = post_str('id', 40);
+        if ($action === 'item_on' || $action === 'item_off') {
+            $map = json_decode_array(setting('layout_hidden_items', '{}'));
+            $region = post_str('region', 60);
+            $item = post_str('item', 200);
+            if (!isset(regions_known()[$region]) || $item === '') fail(t('Choose a position.'), $list_url);
+            if ($action === 'item_off') $map[$region][$item] = 1; else unset($map[$region][$item]);
+            save_settings(['layout_hidden_items' => json_encode_value(array_filter($map))]);
+            json_ok();
+        }
         if ($action === 'plugin_on' || $action === 'plugin_off') {
             $map = json_decode_array(setting('layout_regions', '{}'));
             $hook = 'region.' . post_str('region', 60);
@@ -156,6 +165,17 @@ function admin_page_layout(): never
         foreach (array_keys($by_hook[$name] ?? []) as $pid) {
             $on = layout_plugin_enabled('region.' . $name, $pid);
             $chips .= '<span class="chip">' . admin_switch($list_url, ['action' => $on ? 'plugin_off' : 'plugin_on', 'region' => $name, 'plugin' => $pid], $on, t('Show in this position')) . h(plugins()[$pid]['name'] ?? $pid) . '</span>';
+        }
+        // single items of list regions (links, tabs, menu entries) can be hidden one by one; loop regions have no items outside a row
+        if (str_contains($desc, '(list)') && isset($by_hook[$name])) {
+            $hidden = layout_hidden_items($name);
+            try { $items = hook('region.' . $name, [], []); } catch (Throwable) { $items = []; }
+            foreach (is_array($items) ? $items : [] as $iid => $it) {
+                if (!is_array($it)) continue;
+                $on = !isset($hidden[(string)$iid]);
+                $label = (string)($it['label'] ?? $iid);
+                $chips .= '<span class="chip chip-item">' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . '</span>';
+            }
         }
         $rows[] = [
             '<code>' . h($name) . '</code><br><small class="muted">' . h($desc) . '</small>',

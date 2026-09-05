@@ -115,10 +115,37 @@ function region(string $name, array $ctx = [], string $default = '', bool $wrap 
 }
 
 /** Array region: items keyed by id, each ['label'=>..,'url'=>..,'icon'=>..,'active'=>bool,'html'=>..]. */
+/**
+ * Array-valued region (nav links, tabs, cards, menu items). Items are keyed by id; besides label/url/icon/html an item may carry
+ *  - weight  (int, default 0): lower comes first, equal weights keep insertion order
+ *  - visible ('everyone' default | 'members' | 'admins'): filtered here, once, for every plugin
+ *  - new_tab (bool): links open in a new tab where the template supports it
+ * Admins can hide single items per region in Admin -> Layout (setting layout_hidden_items).
+ */
 function region_list(string $name, array $items, array $ctx = []): array
 {
     $items = hook('region.' . $name, $items, $ctx);
-    return is_array($items) ? $items : [];
+    if (!is_array($items)) return [];
+    $hidden = layout_hidden_items($name);
+    $out = [];
+    $i = 0;
+    foreach ($items as $id => $item) {
+        if (!is_array($item) || isset($hidden[(string)$id])) continue;
+        $vis = (string)($item['visible'] ?? 'everyone');
+        if (($vis === 'members' && uid() <= 0) || ($vis === 'admins' && !is_admin())) continue;
+        $item['_order'] = $i++;
+        $out[$id] = $item;
+    }
+    uasort($out, static fn(array $a, array $b): int => [(int)($a['weight'] ?? 0), $a['_order']] <=> [(int)($b['weight'] ?? 0), $b['_order']]);
+    foreach ($out as &$item) unset($item['_order']);
+    return $out;
+}
+
+/** Items an admin hid in one list region: id => 1 (setting layout_hidden_items: {region: {id: 1}}). */
+function layout_hidden_items(string $region): array
+{
+    $map = request_cache('layout_hidden_items', static fn(): array => json_decode_array(setting('layout_hidden_items', '{}'))) ?? [];
+    return (array)($map[$region] ?? []);
 }
 
 /** Admin-managed HTML blocks stored in setting layout_blocks: [{id,region,title,html,enabled,sort}] */

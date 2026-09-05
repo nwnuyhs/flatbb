@@ -6,6 +6,7 @@
 /plugins/*
 !/plugins/hello/
 !/plugins/market/
+!/plugins/nav_menu/
 *.zip
 .DS_Store
 Thumbs.db

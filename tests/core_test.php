@@ -79,3 +79,22 @@ function test_language_packs_are_complete(): void
         }
     }
 }
+
+function test_region_list_orders_by_weight_and_filters_visibility(): void
+{
+    hook_add('region.test.links', static function (array $items, array $ctx): array {
+        $items['b'] = ['label' => 'B', 'url' => '/b', 'weight' => 20];
+        $items['a'] = ['label' => 'A', 'url' => '/a', 'weight' => 10];
+        $items['c'] = ['label' => 'C', 'url' => '/c'];                      // no weight = 0, so it comes first
+        $items['staff'] = ['label' => 'Staff', 'url' => '/staff', 'visible' => 'admins'];
+        $items['me'] = ['label' => 'Me', 'url' => '/me', 'visible' => 'members'];
+        return $items;
+    }, 'testplugin');
+    $keys = array_keys(region_list('test.links', []));
+    test_same(['c', 'a', 'b'], $keys, 'guest sees public items in weight order');
+    save_settings(['layout_hidden_items' => json_encode_value(['test.links' => ['a' => 1]])]);
+    request_cache('layout_hidden_items', null, true);
+    test_same(['c', 'b'], array_keys(region_list('test.links', [])), 'hidden item is dropped');
+    save_settings(['layout_hidden_items' => '{}']);
+    request_cache('layout_hidden_items', null, true);
+}

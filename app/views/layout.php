@@ -60,7 +60,7 @@ $unread = notifications_unread();
     </a>
     <?= region('header.left') ?>
     <nav class="topnav" data-slot="header.nav">
-      <?php foreach ($nav as $item): ?><a href="<?= h((string)$item['url']) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?>><?= h((string)$item['label']) ?></a><?php endforeach; ?>
+      <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= h((string)($item['label'] ?? '')) ?></a><?php endforeach; ?>
     </nav>
     <div class="topbar-right">
       <?= region('header.right.before_search') ?>
@@ -90,7 +90,7 @@ $unread = notifications_unread();
 </header>
 <div class="container page-grid">
   <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left">
-    <?php if ($nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)$item['url']) ?>"><?= icon((string)($item['icon'] ?? 'external')) ?><span><?= h((string)$item['label']) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
+    <?php if ($nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= icon((string)($item['icon'] ?? 'external')) ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
     <?= raw($left) ?>
   </aside><?php endif; ?>
   <main class="col-main" data-slot="main">

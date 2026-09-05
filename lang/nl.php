@@ -372,6 +372,7 @@ return [
     'Settings saved.' => 'Instellingen opgeslagen.',
     'Show in this position' => 'Op deze positie tonen',
     'Show my points on my public profile' => 'Mijn punten op mijn openbare profiel tonen',
+    'Show this item' => 'Dit item tonen',
     'Sign In' => 'Inloggen',
     'Sign in' => 'Inloggen',
     'Sign in to reply.' => 'Log in om te reageren.',

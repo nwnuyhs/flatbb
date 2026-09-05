@@ -40,7 +40,7 @@ app/               request handlers: one file per area, functions named <area>_<
   admin.php admin_content.php admin_system.php
 app/views/         PHP templates rendered by view('name', $vars). layout.php is the page shell.
 assets/            app.css (CSS variables, three-column grid), app.js (vanilla, data-* driven), favicon.svg
-plugins/<id>/      plugins. plugin.php returns the manifest. hello/ is the reference example.
+plugins/<id>/      plugins. plugin.php returns the manifest. hello/ is the minimal example, nav_menu/ the typical one (table + admin page + list region).
 lang/<code>.php    translations (English keys are the source strings; t('text'); php flatbb lang:sync <code> refreshes a pack)
 data/              runtime: config.php, flatbb.sqlite, cache/ — never web-accessible, never commit
 uploads/           user files, web-accessible, PHP execution blocked
