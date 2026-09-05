@@ -246,6 +246,7 @@ function user_rename(array $user, string $new, int $by = 0): string
     request_cache('users_full', null, true);
     request_cache('users', null, true);
     request_cache('me', null, true);
+    save_settings(['stats_cache' => '']); // the Newest members card caches usernames for five minutes
     fire('user.after_rename', ['user_id' => (int)$user['id'], 'old' => (string)$user['username'], 'new' => $new, 'by' => $by]);
     return '';
 }
