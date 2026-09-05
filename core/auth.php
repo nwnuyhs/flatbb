@@ -27,7 +27,7 @@ function me(): ?array
         if (!ctype_digit($id) || !ctype_digit($exp) || (int)$exp < now()) return null;
         $user = user_by_id((int)$id);
         if ($user === null || (int)$user['status'] !== 1) return null;
-        if (!hash_equals(auth_signature((int)$id, (int)$exp, $user['password']), $sig)) return null;
+        if (!hash_equals(auth_signature((int)$id, (int)$exp, auth_key($user)), $sig)) return null;
         if (now() - (int)$user['last_seen'] > 300) {
             db_update('fb_users', ['last_seen' => now()], 'id=?', [(int)$id]);
         }
@@ -40,10 +40,25 @@ function auth_signature(int $uid, int $exp, string $password_hash): string
     return hash_hmac('sha256', $uid . '.' . $exp . '.' . $password_hash, secret());
 }
 
+/** What a session signature is bound to: the password hash plus a per-user salt (changing either signs out every device). */
+function auth_key(array $user): string
+{
+    return (string)$user['password'] . (string)($user['auth_salt'] ?? '');
+}
+
+/** Sign a user out on every device by rotating the salt; the password stays. Fires user.logout_everywhere. */
+function user_logout_everywhere(int $id): void
+{
+    db_update('fb_users', ['auth_salt' => random_token(8)], 'id=?', [$id]);
+    request_cache('users_full', null, true);
+    request_cache('users', null, true); // the current request keeps its identity (me() is cached); every cookie fails from the next request on
+    fire('user.logout_everywhere', ['user_id' => $id]);
+}
+
 function login_user(array $user, bool $remember = true): void
 {
     $exp = now() + ($remember ? 86400 * 30 : 86400);
-    app_cookie('fb_auth', $user['id'] . '.' . $exp . '.' . auth_signature((int)$user['id'], $exp, $user['password']), $exp);
+    app_cookie('fb_auth', $user['id'] . '.' . $exp . '.' . auth_signature((int)$user['id'], $exp, auth_key($user)), $exp);
     request_cache('me', null, true);
     request_cache('me', static fn(): array => $user);
 }

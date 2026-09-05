@@ -107,6 +107,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `user.after_save` | event | After the profile was saved. | `app/user.php` |
 | `user.before_save` | filter | Profile fields before saving. | `app/user.php` |
 | `user.link_after` | filter | HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access. | `core/render.php`, `app/views/card_newest.php`, `app/views/profile.php` |
+| `user.logout_everywhere` | event | After every session of a user was invalidated (ctx: user_id). | `core/auth.php` |
 | `user.prefs_save` | filter | Preferences array before saving. | `app/user.php` |
 | `user.profile_tab` | filter | HTML for a custom profile tab (ctx: user, tab). | `app/user.php` |
 | `user.settings_post` | event | POST handler for a custom settings tab. | `app/user.php` |

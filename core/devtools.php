@@ -203,6 +203,7 @@ function docs_hook_descriptions(): array
         'admin.settings_save' => 'Filter settings before they are saved.',
         'admin.category_save' => 'Filter category data before saving.',
         'admin.user_saved' => 'After an admin edited a user.',
+        'user.logout_everywhere' => 'After every session of a user was invalidated (ctx: user_id).',
         'admin.action' => 'After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here.',
         'security.csp' => 'Content Security Policy directives (name => list of sources): add the CDNs your plugin loads scripts, styles or fonts from.',
         'user.link_after' => 'HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access.',

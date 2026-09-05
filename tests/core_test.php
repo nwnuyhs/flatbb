@@ -181,3 +181,14 @@ function test_sudo_signature_is_bound_to_user_and_password(): void
     test_assert(!hash_equals($sig, sudo_signature(array_merge($u, ['password' => 'other']), $exp)), 'changes with the password hash');
     test_assert(!hash_equals($sig, sudo_signature($u, $exp + 1)), 'changes with the expiry');
 }
+
+function test_logout_everywhere_invalidates_old_session_signatures(): void
+{
+    $u = user_by_name('admin');
+    $exp = now() + 600;
+    $old = auth_signature((int)$u['id'], $exp, auth_key($u));
+    user_logout_everywhere((int)$u['id']);
+    $fresh = user_by_id((int)$u['id']);
+    test_assert((string)$fresh['auth_salt'] !== '', 'salt set');
+    test_assert(!hash_equals($old, auth_signature((int)$u['id'], $exp, auth_key($fresh))), 'old signature no longer matches');
+}

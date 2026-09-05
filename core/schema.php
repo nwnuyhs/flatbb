@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 5; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 6; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -38,6 +38,7 @@ function schema_tables(): array
             'unread_notifications' => 'uint',
             'prefs' => 'text',           // JSON
             'former_names' => 'text',    // JSON list of {name, at}: old profile URLs keep working after a rename
+            'auth_salt' => 'string',     // part of the session signature; user_logout_everywhere() rotates it
             'reset_token' => 'string',   // sha256 of the password-reset token
             'reset_expires' => 'uint',
         ],
