@@ -63,7 +63,7 @@ function site_stats(): array
             'posts' => (int)val('SELECT COUNT(*) FROM fb_posts WHERE is_deleted=0 AND floor>0'),
             'users' => (int)val('SELECT COUNT(*) FROM fb_users'),
             'online' => (int)val('SELECT COUNT(*) FROM fb_users WHERE last_seen>?', [now() - 900]),
-            'newest_users' => q('SELECT username, avatar FROM fb_users ORDER BY id DESC LIMIT 8')->fetchAll(PDO::FETCH_ASSOC), // newest first, for the "Newest members" sidebar card
+            'newest_users' => q('SELECT id, username, avatar FROM fb_users ORDER BY id DESC LIMIT 8')->fetchAll(PDO::FETCH_ASSOC), // newest first, for the "Newest members" sidebar card
             'newest' => '',
             'at' => now(),
         ];
