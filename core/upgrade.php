@@ -53,7 +53,7 @@ function upgrade_http_get(string $url, int $max_bytes, ?string &$error = null): 
 /** Files and directories replaced by an upgrade (relative to ROOT). */
 function upgrade_paths(): array
 {
-    return ['index.php', 'flatbb', '.htaccess', 'nginx.conf.example', 'CLAUDE.md', 'AGENTS.md', 'README.md', 'LICENSE', 'core', 'app', 'assets', 'lang', 'docs', 'plugins/hello', 'plugins/market', '.claude', '.github', 'tests'];
+    return ['index.php', 'flatbb', '.htaccess', 'nginx.conf.example', 'CLAUDE.md', 'AGENTS.md', 'README.md', 'LICENSE', 'core', 'app', 'assets', 'lang', 'docs', 'plugins/hello', 'plugins/market', 'plugins/nav_menu', '.claude', '.github', 'tests'];
 }
 
 /**
