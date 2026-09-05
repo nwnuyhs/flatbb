@@ -18,6 +18,7 @@ function admin_page_categories(): never
             if ($target !== null) db_update('fb_topics', ['category_id' => (int)$target['id']], 'category_id=?', [$id]);
             db_update('fb_categories', ['parent_id' => 0], 'parent_id=?', [$id]);
             db_delete('fb_categories', 'id=?', [$id]);
+            admin_log('category.delete', '#' . $id);
             request_cache('categories', null, true);
             if ($target !== null) category_refresh_stats((int)$target['id']);
             flash(t('Category deleted.'));
@@ -40,6 +41,7 @@ function admin_page_categories(): never
         if ($id > 0) db_update('fb_categories', $data, 'id=?', [$id]);
         else db_insert('fb_categories', $data);
         request_cache('categories', null, true);
+        admin_log('category.save', '#' . $id . ' ' . (string)($data['name'] ?? ''));
         flash(t('Category saved.'));
         redirect($list_url);
     }
@@ -100,6 +102,7 @@ function admin_page_tags(): never
         if (post_str('action', 20) === 'delete') {
             db_delete('fb_topic_tags', 'tag_id=?', [$id]);
             db_delete('fb_tags', 'id=?', [$id]);
+            admin_log('tag.delete', '#' . $id);
             flash(t('Tag deleted.'));
         } else {
             $name = tag_normalize(post_str('name', 30));
@@ -110,9 +113,11 @@ function admin_page_tags(): never
                 db_delete('fb_topic_tags', 'tag_id=?', [$id]);
                 db_delete('fb_tags', 'id=?', [$id]);
                 db_update('fb_tags', ['topic_count' => (int)val('SELECT COUNT(*) FROM fb_topic_tags WHERE tag_id=?', [(int)$dupe['id']])], 'id=?', [(int)$dupe['id']]);
+                admin_log('tag.merge', '#' . $id, 'into ' . $name);
                 flash(t('Tag merged into %s.', $name));
             } else {
                 db_update('fb_tags', ['name' => $name, 'slug' => $name], 'id=?', [$id]);
+                admin_log('tag.rename', '#' . $id, $name);
                 flash(t('Tag renamed.'));
             }
         }

@@ -236,7 +236,12 @@
       mentionTimer = setTimeout(function () {
         request(FB.users + (FB.users.indexOf('?') > -1 ? '&' : '?') + 'q=' + encodeURIComponent(m[1])).then(function (r) {
           if (!r.ok || !r.users.length) { menu.classList.add('hidden'); return; }
-          menu.innerHTML = r.users.map(function (u) { return '<button type="button" data-name="' + u.username + '">' + (u.avatar ? '<img src="' + u.avatar + '" alt="">' : '') + u.username + '</button>'; }).join('');
+          menu.textContent = '';
+          r.users.forEach(function (u) {
+            var b = document.createElement('button'); b.type = 'button'; b.dataset.name = u.username;
+            if (u.avatar) { var im = document.createElement('img'); im.src = u.avatar; im.alt = ''; b.appendChild(im); }
+            b.appendChild(document.createTextNode(u.username)); menu.appendChild(b);
+          });
           menu.classList.remove('hidden');
         });
       }, 150);

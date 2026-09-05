@@ -203,6 +203,8 @@ function docs_hook_descriptions(): array
         'admin.settings_save' => 'Filter settings before they are saved.',
         'admin.category_save' => 'Filter category data before saving.',
         'admin.user_saved' => 'After an admin edited a user.',
+        'admin.action' => 'After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here.',
+        'security.csp' => 'Content Security Policy directives (name => list of sources): add the CDNs your plugin loads scripts, styles or fonts from.',
         'user.link_after' => 'HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access.',
         'user.after_rename' => 'After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically.',
         'admin.plugin_ops' => 'Extra buttons on a plugin row.',
@@ -301,7 +303,7 @@ function security_scan(array $files): array
 {
     $found = [];
     $root = str_replace('\\', '/', ROOT) . '/';
-    $allow_globals = ['core/helpers.php', 'core/auth.php', 'core/router.php', 'core/upload.php'];
+    $allow_globals = ['core/helpers.php', 'core/auth.php', 'core/security.php', 'core/router.php', 'core/upload.php'];
     $allow_exec = ['core/devtools.php'];
     $safe = ['h', 't', 'raw', 'icon', 'region', 'slot', 'csrf_field', 'form_row', 'input', 'select', 'textarea', 'checkbox', 'avatar', 'user_link', 'human_time', 'human_number', 'human_size', 'action_form', 'editor', 'category_badge', 'tag_badge', 'tabs', 'view', 'plugin_assets_tag', 'logo_mark', 'pagination', 'md', 'date', 'json_encode_value', 'uid', 'is_array', 'isset', 'extension_loaded', 'count', 'number_format', 'layout_blocks_html'];
     foreach ($files as $file) {

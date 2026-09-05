@@ -18,17 +18,19 @@ function admin_page_plugins(): never
                     if (!is_array($f) || ($f['error'] ?? 1) !== UPLOAD_ERR_OK) fail(t('Choose a plugin zip file.'), admin_url('plugins', ['upload' => 1]));
                     if ((int)$f['size'] > 20 * 1048576) fail(t('The package is larger than 20 MB.'), admin_url('plugins', ['upload' => 1]));
                     $pid = plugin_install_zip((string)$f['tmp_name']);
+                    admin_log('plugin.upload', $pid, (string)$f['name']);
                     flash(t('%s installed. Enable it when you are ready.', $pid));
                     break;
-                case 'enable': plugin_enable($id); flash(t('Plugin enabled.')); break;
-                case 'disable': plugin_disable($id); flash(t('Plugin disabled.')); break;
-                case 'uninstall': plugin_uninstall($id); flash(t('Plugin uninstalled. Its files are still in plugins/%s.', $id)); break;
-                case 'delete': plugin_uninstall($id); plugin_delete_files($id); flash(t('Plugin removed.')); break;
+                case 'enable': plugin_enable($id); admin_log('plugin.enable', $id); flash(t('Plugin enabled.')); break;
+                case 'disable': plugin_disable($id); admin_log('plugin.disable', $id); flash(t('Plugin disabled.')); break;
+                case 'uninstall': plugin_uninstall($id); admin_log('plugin.uninstall', $id); flash(t('Plugin uninstalled. Its files are still in plugins/%s.', $id)); break;
+                case 'delete': plugin_uninstall($id); plugin_delete_files($id); admin_log('plugin.delete', $id); flash(t('Plugin removed.')); break;
                 case 'settings':
                     $post = [];
                     foreach ($_POST as $k => $v) if (str_starts_with((string)$k, 'plugin_')) $post[substr((string)$k, 7)] = $v;
                     plugin_save_settings($id, plugin_settings_from_post($id, $post));
                     fire('plugin.settings_saved', ['id' => $id]);
+                    admin_log('plugin.settings', $id);
                     flash(t('Settings saved.'));
                     redirect(admin_url('plugins', ['settings' => $id]));
                 default: fail(t('Unknown action.'));
@@ -117,6 +119,7 @@ function admin_page_layout(): never
         if ($action === 'block_delete') {
             $blocks = array_values(array_filter($blocks, static fn(array $b): bool => (string)($b['id'] ?? '') !== $bid));
             save_settings(['layout_blocks' => json_encode_value($blocks)]);
+            admin_log('layout.block_delete', (string)post_int('id'));
             flash(t('Block deleted.'));
             redirect($list_url);
         }
@@ -136,6 +139,7 @@ function admin_page_layout(): never
         unset($b);
         if (!$found) $blocks[] = $data;
         save_settings(['layout_blocks' => json_encode_value(array_values($blocks))]);
+        admin_log('layout.block_save', (string)post_int('id'));
         flash(t('Block saved.'));
         redirect($list_url);
     }
@@ -255,7 +259,7 @@ function admin_page_tools(): never
                 plugin_assets_build();
                 flash(t('Cache cleared.'));
                 break;
-            case 'schema': schema_install(); flash(t('Schema upgraded.')); break;
+            case 'schema': schema_install(); admin_log('tools.schema'); flash(t('Schema upgraded.')); break;
             case 'update_check':
                 $i = upgrade_check(true);
                 flash(!empty($i['error']) ? t('Update check failed: %s', (string)$i['error']) : t('Latest release: %s (installed %s).', (string)$i['version'], FLATBB_VERSION), !empty($i['error']) ? 'error' : 'info');
@@ -263,6 +267,7 @@ function admin_page_tools(): never
             case 'upgrade':
                 try {
                     $v = upgrade_apply(null);
+                    admin_log('tools.upgrade', $v);
                     flash(t('Upgraded to flatbb %s. A backup of the previous files is in data/.', $v));
                 } catch (Throwable $e) {
                     fail(t('Upgrade failed: %s', $e->getMessage()), admin_url('tools'));
@@ -273,6 +278,7 @@ function admin_page_tools(): never
                 try {
                     set_time_limit(0);
                     $r = migrate_import_sqlite($file);
+                    admin_log('tools.import', $file);
                     flash(t('Imported %d tables in %ss. Copy uploads/ and plugins/ manually if you have not yet.', count($r['tables']), (string)$r['seconds']));
                 } catch (Throwable $e) {
                     fail(t('Import failed: %s', $e->getMessage()), admin_url('tools'));
@@ -294,6 +300,7 @@ function admin_page_tools(): never
         $html .= '<tr><td><b>' . h($label) . '</b><br><small class="muted">' . h($desc) . '</small></td><td style="text-align:right">' . action_form(admin_url('tools'), '<button class="btn btn-sm">' . t('Run') . '</button>', ['action' => $action]) . '</td></tr>';
     }
     $html .= '</tbody></table></div>';
+    $html .= admin_tools_security_html();
     $latest = json_decode_array(setting('core_update_cache', ''));
     $newer = !empty($latest['version']) && version_compare((string)$latest['version'], FLATBB_VERSION, '>');
     $html .= '<div class="admin-form" style="margin-top:16px"><h3>' . t('Updates') . '</h3><p>' . t('Installed: flatbb %s.', FLATBB_VERSION) . ' ' . (!empty($latest['version']) ? t('Latest: %s (checked %s).', (string)$latest['version'], human_time((int)($latest['checked_at'] ?? 0))) : t('Not checked yet.')) . '</p><div class="btn-row">'
@@ -303,4 +310,23 @@ function admin_page_tools(): never
     $html .= '<form method="post" action="' . h(admin_url('tools')) . '" class="admin-form" style="margin-top:16px" data-confirm="' . t('This empties the current database tables and replaces them with the SQLite data. Continue?') . '">' . csrf_field() . '<input type="hidden" name="action" value="import_sqlite"><h3>' . t('Import from SQLite') . '</h3><p class="muted">' . t('Moving from SQLite to MySQL: install this copy on MySQL, enable the same plugins, then import the old data/flatbb.sqlite file. Ids are preserved; the search index and counters are rebuilt. Copy uploads/ yourself.') . '</p>'
         . form_row(t('Path to the SQLite file on this server'), input('sqlite_file', '', ['placeholder' => DATA_DIR . '/old-flatbb.sqlite'])) . '<button type="submit" class="btn btn-danger">' . t('Import') . '</button></form>';
     admin_page(t('Tools'), $html, 'tools');
+}
+
+/** Tools page: the last admin actions and the last CSP reports (the security plugin shows the full history). */
+function admin_tools_security_html(): string
+{
+    $rows = [];
+    foreach (admin_log_recent(15) as $l) {
+        $rows[] = [human_time((int)$l['created_at']), user_link($l['user'] ?? null, 'user-link plain'), '<code>' . h((string)$l['action']) . '</code> ' . h((string)$l['target']) . ((string)$l['detail'] !== '' ? '<br><small class="muted">' . h(cut((string)$l['detail'], 120)) . '</small>' : ''), '<small class="muted">' . h((string)$l['ip']) . '</small>'];
+    }
+    $html = '<div class="admin-form" style="margin-top:16px"><h3>' . t('Recent admin actions') . '</h3><p class="muted small">' . t('Who changed what, with the real address of the browser that did it. Kept for 180 days.') . '</p>'
+        . admin_table([t('When'), t('Who'), t('Action'), 'IP'], $rows, t('Nothing logged yet.')) . '</div>';
+    $mode = setting('csp_mode', 'report');
+    $reports = csp_reports(10);
+    $rrows = [];
+    foreach ($reports as $r) $rrows[] = [h((string)($r['at'] ?? '')), '<code>' . h((string)($r['directive'] ?? '')) . '</code>', h((string)($r['blocked'] ?? '')), '<small class="muted">' . h((string)($r['page'] ?? '')) . '</small>'];
+    $html .= '<div class="admin-form" style="margin-top:16px"><h3>' . t('Content Security Policy') . '</h3><p class="muted small">'
+        . h(match ($mode) { 'enforce' => t('Enforced: the browser blocks scripts that are not part of the forum or a plugin.'), 'off' => t('Off. Turn it on under Settings → Security.'), default => t('Report only: violations are logged here but nothing is blocked. Switch to Enforce under Settings → Security once the list stays empty for a while.') })
+        . '</p>' . ($mode === 'off' ? '' : admin_table([t('When'), t('Directive'), t('Blocked'), t('Page')], $rrows, t('No reports.'))) . '</div>';
+    return $html;
 }

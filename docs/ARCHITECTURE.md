@@ -64,6 +64,10 @@ Plugin admin pages are `/admin/ext/<id>/<key>`; they are linked from the plugin'
 - Templates: `<?= ?>` output must go through `h()`, `t()`, a core HTML helper or `raw()` (intentional HTML). `php flatbb security:check` enforces these three rules statically for core, app and plugins; `plugin:check` applies them to a plugin.
 - Rate limits: post interval, new-account limits, registration per IP, login attempts per IP.
 - Files: extension whitelist + finfo sniffing, random names, `uploads/` blocks PHP execution, `data/` is not web-accessible.
+- Response headers (core/security.php): nosniff, SAMEORIGIN framing, referrer policy, and a nonce-based Content Security Policy (`csp_mode` setting: off / report only / enforce; violations land in `data/csp-report.log`, shown under Tools). Inline scripts carry `csp_nonce()`; plugins use `script_tag()` and extend the policy through `security.csp`.
+- Real client IP: `client_ip()` reads the forwarded address only when `REMOTE_ADDR` is a trusted proxy (`trusted_proxies` setting, "cloudflare" expands to Cloudflare's ranges).
+- Admin action log: `admin_log()` writes to `fb_admin_log` (who, real IP, action, target, detail; pruned after 180 days) and fires `admin.action`.
+- Confirm mode: Settings, Users, Groups, Plugins, Tools and Layout require the admin's password again every ten minutes (`need_sudo()`, signed `fb_sudo` cookie bound to the password hash).
 
 ## Adding a core feature (for maintainers)
 

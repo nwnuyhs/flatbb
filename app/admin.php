@@ -12,6 +12,7 @@ function admin_index(string $page = 'dashboard'): never
     need_admin();
     $fn = 'admin_page_' . str_replace('-', '_', $page);
     if (!preg_match('/^[a-z][a-z0-9-]*$/', $page) || !function_exists($fn)) not_found();
+    if (in_array($page, ['settings', 'users', 'groups', 'plugins', 'tools', 'layout'], true)) need_sudo(); // confirm mode: password re-entered within ten minutes
     $fn();
 }
 
@@ -147,6 +148,10 @@ function admin_settings_fields(): array
             'upload_max_mb' => ['number', t('Max upload size (MB)'), '', null, 1, 100],
             'upload_types' => ['text', t('Allowed extensions'), t('Comma separated.')],
         ]],
+        'security' => [t('Security'), [
+            'csp_mode' => ['select', t('Content Security Policy'), t('Report only logs violations to data/csp-report.log (see Tools) without blocking anything; switch to Enforce once the log stays clean. Inline scripts in the extra HTML fields need nonce="{nonce}".'), ['off' => t('Off'), 'report' => t('Report only'), 'enforce' => t('Enforce')]],
+            'trusted_proxies' => ['text', t('Trusted proxies'), t('Behind Cloudflare enter "cloudflare"; otherwise list the proxy IPs or CIDRs. The real visitor address is then read from the proxy headers (throttling, IP records and bans depend on it).')],
+        ]],
         'advanced' => [t('Advanced'), [
             'rewrite' => ['checkbox', t('Clean URLs (requires rewrite rules)'), t('Only enable when /__rewrite_check returns "ok" on your server.')],
             'seo_keywords' => ['text', t('Meta keywords')],
@@ -187,6 +192,7 @@ function admin_page_settings(): never
             };
         }
         save_settings(hook('admin.settings_save', $save, ['section' => $key]));
+        admin_log('settings', $key, implode(', ', array_keys($save)));
         flash(t('Settings saved.'));
         redirect(admin_url('settings', ['section' => $key]));
     }
@@ -238,6 +244,7 @@ function admin_page_users(): never
             db_update('fb_users', ['password' => password_hash($np, PASSWORD_DEFAULT)], 'id=?', [(int)$u['id']]);
         }
         if (post_int('points_delta') !== 0) points_add((int)$u['id'], max(-100000, min(100000, post_int('points_delta'))), 'manual', 0, post_str('points_note', 120) ?: t('by %s', (string)me()['username']));
+        admin_log('user.save', '#' . (int)$u['id'] . ' ' . (string)$u['username'], 'group ' . (string)$group['slug'] . ', status ' . (post_int('status') ? 1 : 0) . ($np !== '' ? ', password changed' : '') . ($new_name !== '' && $new_name !== (string)$u['username'] ? ', renamed to ' . $new_name : ''));
         fire('admin.user_saved', ['user_id' => (int)$u['id']]);
         flash(t('User saved.'));
         redirect($list_url);
@@ -291,6 +298,7 @@ function admin_page_groups(): never
             if ($g === null || in_array($g['slug'], ['admin', 'member'], true)) fail(t('This group cannot be deleted.'));
             if (val('SELECT 1 FROM fb_users WHERE group_id=?', [$id])) fail(t('Move its members to another group first.'));
             db_delete('fb_groups', 'id=?', [$id]);
+            admin_log('group.delete', (string)$g['slug']);
             flash(t('Group deleted.'));
             redirect($list_url);
         }
@@ -308,6 +316,7 @@ function admin_page_groups(): never
             if (val('SELECT 1 FROM fb_groups WHERE slug=?', [$slug])) fail(t('Slug already used.'));
             db_insert('fb_groups', $data);
         }
+        admin_log('group.save', $slug, 'admin ' . (int)$data['is_admin'] . ', mod ' . (int)$data['is_mod'] . ', ' . implode(' ', json_decode_array((string)$data['permissions'])));
         flash(t('Group saved.'));
         redirect($list_url);
     }
@@ -334,4 +343,33 @@ function admin_page_groups(): never
         $drawer = ['title' => (int)$edit['id'] ? (string)$edit['name'] : t('New group'), 'sub' => (int)$edit['id'] ? t('Edit group') : '', 'body' => $body, 'back' => $list_url];
     }
     admin_page(t('Groups'), $html, 'groups', ['action' => admin_drawer_link(admin_url('groups', ['edit' => 0]), t('New group'), 'btn btn-primary', 'plus'), 'drawer' => $drawer]);
+}
+
+/* ---------------------------------------------------------------- confirm mode */
+
+/** GET|POST /admin/confirm: the admin re-enters the password before a high-risk page (see need_sudo()). */
+function admin_page_confirm(): never
+{
+    $me = need_admin();
+    $back = get_str('back', 300) ?: post_str('back', 300);
+    if (!preg_match('~^/(?!/)~', $back)) $back = '/admin';
+    $self = admin_url('confirm', ['back' => $back]);
+    if (is_post()) {
+        check_csrf();
+        if (!login_throttle_ok()) fail(t('Too many attempts. Please wait a minute.'), $self);
+        if (!password_verify(post_secret('password'), (string)$me['password'])) {
+            login_throttle_hit();
+            fail(t('Current password is incorrect.'), $self);
+        }
+        sudo_grant($me);
+        admin_log('confirm', '', 'password confirmed for ' . $back);
+        $p = parse_url($back) ?: [];
+        parse_str((string)($p['query'] ?? ''), $params);
+        redirect(url((string)($p['path'] ?? '/admin'), $params));
+    }
+    $body = '<form method="post" action="' . h(admin_url('confirm')) . '" class="admin-form">' . csrf_field() . '<input type="hidden" name="back" value="' . h($back) . '">'
+        . '<p class="muted">' . t('This area changes who can do what on your forum. Confirm your password to continue; you will not be asked again for ten minutes.') . '</p>'
+        . form_row(t('Password'), input('password', '', ['type' => 'password', 'required' => true, 'autofocus' => true, 'autocomplete' => 'current-password']))
+        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('shield') . t('Confirm') . '</button></div></form>';
+    admin_page(t('Confirm your password'), $body, '');
 }

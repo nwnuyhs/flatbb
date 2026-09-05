@@ -80,10 +80,10 @@ function random_token(int $bytes = 16): string
     return bin2hex(random_bytes($bytes));
 }
 
+/** The visitor's address; behind a trusted proxy (setting trusted_proxies) the forwarded address. See core/security.php. */
 function client_ip(): string
 {
-    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
-    return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+    return client_ip_resolve($_SERVER);
 }
 
 function is_post(): bool
@@ -276,6 +276,8 @@ function setting_defaults(): array
         'upload_max_mb' => '5',
         'upload_types' => 'jpg,jpeg,png,gif,webp,pdf,zip,txt',
         'rewrite' => '0',
+        'csp_mode' => 'report',
+        'trusted_proxies' => '',
         'theme' => 'auto',
         'brand_color' => '#e7672e',
         'footer_text' => '',

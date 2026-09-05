@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 4; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 5; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -185,6 +185,15 @@ function schema_tables(): array
             'note' => 'string',
             'created_at' => 'uint',
         ],
+        'fb_admin_log' => [
+            'id' => 'id',
+            'user_id' => 'uint',
+            'ip' => 'string',
+            'action' => 'key',       // settings, user.save, plugin.enable, ...
+            'target' => 'string',
+            'detail' => 'text',
+            'created_at' => 'uint',
+        ],
         'fb_search' => [
             'id' => 'id',
             'topic_id' => 'uint',
@@ -202,7 +211,9 @@ function schema_indexes(): array
         ['fb_users', 'ux_users_username', ['username_lower'], true],
         ['fb_users', 'ix_users_email', ['email']],
         ['fb_users', 'ix_users_group', ['group_id']],
-        ['fb_users', 'ix_users_points', ['points']], // leaderboards (the points plugin used to create it)
+        ['fb_users', 'ix_users_points', ['points']],
+        ['fb_admin_log', 'ix_admin_log_time', ['created_at']],
+        ['fb_admin_log', 'ix_admin_log_user', ['user_id', 'id']], // leaderboards (the points plugin used to create it)
         ['fb_groups', 'ux_groups_slug', ['slug'], true],
         ['fb_categories', 'ux_categories_slug', ['slug'], true],
         ['fb_tags', 'ux_tags_slug', ['slug'], true],

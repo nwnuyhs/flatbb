@@ -135,3 +135,49 @@ function test_markdown_autolink_stops_before_emphasis_markers(): void
     test_assert(str_contains($html, '<em><a href="https://example.com/a_b"'), 'underscore inside the URL is kept, the closing * is not');
     test_assert(str_contains($html, '<strong><a href="https://example.com/x"'), '__ around a link works too');
 }
+
+function test_client_ip_trusts_only_listed_proxies(): void
+{
+    test_assert(ip_in_cidr('104.16.5.9', '104.16.0.0/13'), 'ipv4 cidr');
+    test_assert(!ip_in_cidr('104.32.0.1', '104.16.0.0/13'), 'ipv4 outside');
+    test_assert(ip_in_cidr('2606:4700::1', '2606:4700::/32'), 'ipv6 cidr');
+    test_assert(ip_in_cidr('10.0.0.1', '10.0.0.1'), 'bare address');
+    $server = ['REMOTE_ADDR' => '172.68.10.10', 'HTTP_CF_CONNECTING_IP' => '203.0.113.7', 'HTTP_X_FORWARDED_FOR' => '198.51.100.1, 172.68.10.10'];
+    save_settings(['trusted_proxies' => '']);
+    request_cache('trusted_proxies', null, true);
+    test_same('172.68.10.10', client_ip_resolve($server), 'without trusted proxies the headers are ignored');
+    save_settings(['trusted_proxies' => 'cloudflare']);
+    request_cache('trusted_proxies', null, true);
+    test_same('203.0.113.7', client_ip_resolve($server), 'behind cloudflare the CF header wins');
+    test_same('198.51.100.1', client_ip_resolve(['REMOTE_ADDR' => '172.68.10.10', 'HTTP_X_FORWARDED_FOR' => '198.51.100.1']), 'x-forwarded-for as fallback');
+    test_same('8.8.8.8', client_ip_resolve(['REMOTE_ADDR' => '8.8.8.8', 'HTTP_CF_CONNECTING_IP' => '203.0.113.7']), 'a spoofed header from an untrusted address is ignored');
+    save_settings(['trusted_proxies' => '']);
+    request_cache('trusted_proxies', null, true);
+}
+
+function test_admin_log_records_actions(): void
+{
+    admin_log('test.action', 'thing #1', 'detail');
+    $row = one("SELECT * FROM fb_admin_log WHERE action='test.action' ORDER BY id DESC");
+    test_assert($row !== null, 'row written');
+    test_same('thing #1', (string)$row['target']);
+}
+
+function test_csp_policy_has_nonce_and_no_unsafe_inline_scripts(): void
+{
+    $p = csp_policy();
+    test_assert(in_array("'nonce-" . csp_nonce() . "'", $p['script-src'], true), 'nonce in script-src');
+    test_assert(!in_array("'unsafe-inline'", $p['script-src'], true), 'no unsafe-inline for scripts');
+    test_assert(str_contains(script_tag('x()'), 'nonce="' . csp_nonce() . '"'), 'script_tag carries the nonce');
+    test_same("'none'", $p['object-src'][0]);
+}
+
+function test_sudo_signature_is_bound_to_user_and_password(): void
+{
+    $u = user_by_name('admin');
+    $exp = now() + 600;
+    $sig = sudo_signature($u, $exp);
+    test_assert(hash_equals($sig, sudo_signature($u, $exp)), 'stable');
+    test_assert(!hash_equals($sig, sudo_signature(array_merge($u, ['password' => 'other']), $exp)), 'changes with the password hash');
+    test_assert(!hash_equals($sig, sudo_signature($u, $exp + 1)), 'changes with the expiry');
+}

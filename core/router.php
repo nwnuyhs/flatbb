@@ -59,6 +59,7 @@ function routes_core(): array
         '/notifications/read' => 'notification_read',
         '/search' => 'search_page',
         '/upload' => 'upload_handle',
+        '/csp-report' => 'csp_report_handle',
         '/admin' => 'admin_index',
         '/admin/{page}' => 'admin_index',
         '/admin/ext/{plugin}/{page}' => 'admin_ext',
@@ -153,7 +154,9 @@ function is_active_path(string $path): bool
 /** Match the current request and call the handler. */
 function dispatch(): void
 {
+    router_csrf_exempt_add(['/csp-report']); // sent by the browser, no session
     if (current_path() === '/__rewrite_check') router_rewrite_check();
+    if (is_installed()) security_headers();
     if (!is_installed()) {
         setup_index();
         return;

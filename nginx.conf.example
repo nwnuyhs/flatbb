@@ -16,6 +16,10 @@ location ^~ /lang/  { return 404; }
 location ^~ /docs/  { return 404; }
 location ^~ /tests/ { return 404; }
 location ~ ^/(flatbb|CLAUDE\.md|AGENTS\.md|README\.md|LICENSE)$ { return 404; }
+
+# uploaded files and plugin sources are never executed (regex locations are matched in order: keep these above the PHP block)
+location ~* ^/uploads/.*\.(php|phtml|phar)$ { return 404; }
+location ~* ^/plugins/.*\.php$ { return 404; }
 location ~ ^/plugins/.*\.php$ { return 404; }
 location ~ ^/uploads/.*\.(php|phtml|phar)$ { return 404; }
 

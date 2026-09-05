@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.18');
+define('FLATBB_VERSION', '0.1.19');
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');
 define('APP_DIR', ROOT . '/app');
@@ -71,7 +71,7 @@ set_exception_handler(static function (Throwable $e): void {
     exit;
 });
 
-foreach (['helpers', 'db', 'schema', 'lang', 'auth', 'hook', 'plugin', 'render', 'markdown', 'upload', 'search', 'cron', 'router', 'points', 'devtools', 'migrate', 'upgrade'] as $file) {
+foreach (['helpers', 'db', 'schema', 'lang', 'auth', 'security', 'hook', 'plugin', 'render', 'markdown', 'upload', 'search', 'cron', 'router', 'points', 'devtools', 'migrate', 'upgrade'] as $file) {
     require CORE_DIR . '/' . $file . '.php';
 }
 

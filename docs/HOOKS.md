@@ -10,6 +10,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `account.after_login` | event | After a successful login. | `app/account.php` |
 | `account.after_register` | event | After a new account was created. | `app/account.php` |
 | `account.register_validate` | filter | Add validation errors to registration. | `app/account.php` |
+| `admin.action` | event | After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here. | `core/security.php` |
 | `admin.category_save` | filter | Filter category data before saving. | `app/admin_content.php` |
 | `admin.plugin_ops` | filter | Extra buttons on a plugin row. | `app/admin_system.php` |
 | `admin.settings_fields` | filter | Add a settings section: $value['myid'] = ['Label', ['key' => [type, label, help, options, min, max]]]. Each section is a tab in Admin → Settings. | `app/admin.php` |
@@ -93,6 +94,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.user.settings.tabs` | list region | Settings page tabs (list) | `app/user.php` |
 | `regions.known` | filter | Register extra regions for Admin → Layout. | `core/hook.php` |
 | `schema.install` | event | After core tables are created/upgraded. | `core/schema.php` |
+| `security.csp` | filter | Content Security Policy directives (name => list of sources): add the CDNs your plugin loads scripts, styles or fonts from. | `core/security.php` |
 | `topic.after_action` | event | After pin/lock/move/restore (ctx: topic_id, action). | `app/topic.php` |
 | `topic.after_delete` | event | After a topic was soft-deleted. | `app/topic.php` |
 | `topic.after_save` | event | After a topic was created or edited (ctx: topic_id, post_id, new). | `app/topic.php` |
@@ -104,7 +106,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `user.after_rename` | event | After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically. | `core/auth.php` |
 | `user.after_save` | event | After the profile was saved. | `app/user.php` |
 | `user.before_save` | filter | Profile fields before saving. | `app/user.php` |
-| `user.link_after` | filter | HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access. | `core/render.php`, `app/views/profile.php` |
+| `user.link_after` | filter | HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access. | `core/render.php`, `app/views/card_newest.php`, `app/views/profile.php` |
 | `user.prefs_save` | filter | Preferences array before saving. | `app/user.php` |
 | `user.profile_tab` | filter | HTML for a custom profile tab (ctx: user, tab). | `app/user.php` |
 | `user.settings_post` | event | POST handler for a custom settings tab. | `app/user.php` |
