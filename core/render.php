@@ -186,7 +186,7 @@ function user_link(?array $user, string $class = 'user-link'): string
     if ($user === null) return '<span class="' . h($class) . ' user-deleted">' . t('deleted') . '</span>';
     $g = str_contains($class, 'plain') ? null : group_by_id((int)($user['group_id'] ?? 0)); // "plain": no group colour (lists)
     $style = !empty($g['color']) ? ' style="color:' . h($g['color']) . '"' : '';
-    return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . '>' . h($user['username']) . '</a>';
+    return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . '>' . h($user['username']) . '</a>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]);
 }
 
 function category_badge(?array $cat, bool $link = true): string

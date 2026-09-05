@@ -3,7 +3,7 @@
   <header class="profile-head">
     <?= avatar($user, 72, false) ?>
     <div class="profile-info">
-      <h1><?= h($user['username']) ?> <?php if ($group): ?><span class="flag" style="<?= !empty($group['color']) ? 'color:' . h($group['color']) : '' ?>"><?= h($group['name']) ?></span><?php endif; ?><?php if ((int)$user['status'] !== 1): ?><span class="flag flag-danger"><?= t('Suspended') ?></span><?php endif; ?></h1>
+      <h1><?= h($user['username']) ?><?= raw(hook('user.link_after', '', ['user' => $user, 'class' => 'profile-name'])) ?> <?php if ($group): ?><span class="flag" style="<?= !empty($group['color']) ? 'color:' . h($group['color']) : '' ?>"><?= h($group['name']) ?></span><?php endif; ?><?php if ((int)$user['status'] !== 1): ?><span class="flag flag-danger"><?= t('Suspended') ?></span><?php endif; ?></h1>
       <?php if ($user['bio'] !== '' && $user['bio'] !== null): ?><p class="profile-bio"><?= h($user['bio']) ?></p><?php endif; ?>
       <div class="profile-meta">
         <span><?= icon('clock') ?><?= t('Joined %s', date('M j, Y', (int)$user['created_at'])) ?></span>
