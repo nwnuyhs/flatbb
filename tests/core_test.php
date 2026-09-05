@@ -126,3 +126,12 @@ function test_user_rename_keeps_old_name_for_redirects(): void
     test_assert(user_rename($u, 'renamed_user') !== '', 'same name is refused');
     test_same(1, count(user_former_names($u)));
 }
+
+function test_markdown_autolink_stops_before_emphasis_markers(): void
+{
+    $html = md('Upload it at **https://www.flatbb.com/market/publish**. Then *https://example.com/a_b* and __https://example.com/x__');
+    test_assert(str_contains($html, '<strong><a href="https://www.flatbb.com/market/publish"'), 'bold wraps the link, the URL has no trailing **');
+    test_assert(!str_contains($html, 'publish**') && !str_contains($html, 'publish</strong>"'), 'no emphasis marker or tag inside the href');
+    test_assert(str_contains($html, '<em><a href="https://example.com/a_b"'), 'underscore inside the URL is kept, the closing * is not');
+    test_assert(str_contains($html, '<strong><a href="https://example.com/x"'), '__ around a link works too');
+}

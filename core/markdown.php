@@ -160,8 +160,8 @@ function md_inline(string $s): string
         $u = md_safe_url(html_entity_decode($m[2], ENT_QUOTES, 'UTF-8'));
         return $u === '' ? $m[0] : md_link($u, $m[1]);
     }, $s) ?? $s;
-    // autolinks
-    $s = preg_replace_callback('/(?<![="\'>\w])(https?:\/\/[^\s<]+[^\s<.,;:!?)\'"])/i', static function (array $m): string {
+    // autolinks: a URL never ends with punctuation or an emphasis marker, so **https://x.y/z** keeps the bold outside the link
+    $s = preg_replace_callback('/(?<![="\'>A-Za-z0-9])(https?:\/\/[^\s<]+[^\s<.,;:!?)\'"*_~])/i', static function (array $m): string {
         $raw = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
         return md_link($raw, h(cut($raw, 60)));
     }, $s) ?? $s;
