@@ -536,6 +536,7 @@ return [
     'You cannot remove your own admin rights.' => 'No puedes quitarte tus propios privilegios de administrador.',
     'You do not have permission to do that.' => 'No tienes permiso para hacer eso.',
     'You have an unsent draft.' => 'Tienes un borrador sin enviar.',
+    'You signed up through a connected account. Set a password to sign in with it as well.' => 'Te registraste con una cuenta conectada. Define una contraseña para poder iniciar sesión también con ella.',
     'Your group cannot create topics.' => 'Tu grupo no puede crear temas.',
     'Your group cannot reply.' => 'Tu grupo no puede responder.',
     'Your own post' => 'Tu propio mensaje',

@@ -536,6 +536,7 @@ return [
     'You cannot remove your own admin rights.' => 'Je kunt je eigen beheerdersrechten niet verwijderen.',
     'You do not have permission to do that.' => 'Je hebt geen rechten om dat te doen.',
     'You have an unsent draft.' => 'Je hebt een niet-verzonden concept.',
+    'You signed up through a connected account. Set a password to sign in with it as well.' => 'Je hebt je geregistreerd via een gekoppeld account. Stel een wachtwoord in om ook daarmee te kunnen inloggen.',
     'Your group cannot create topics.' => 'Je groep kan geen topics aanmaken.',
     'Your group cannot reply.' => 'Je groep kan niet reageren.',
     'Your own post' => 'Je eigen bericht',

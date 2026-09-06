@@ -119,7 +119,7 @@ function user_settings(string $tab = 'profile'): never
         } elseif ($tab === 'password') {
             $old = post_secret('old_password');
             $new = post_secret('password');
-            if (!password_verify($old, (string)$me['password'])) fail(t('Current password is incorrect.'), $back);
+            if ((string)$me['password'] !== '' && !password_verify($old, (string)$me['password'])) fail(t('Current password is incorrect.'), $back); // '' = no password yet (social sign-up)
             if (strlen($new) < 8) fail(t('Password must be at least 8 characters.'), $back);
             $hash = password_hash($new, PASSWORD_DEFAULT);
             db_update('fb_users', ['password' => $hash], 'id=?', [(int)$me['id']]);

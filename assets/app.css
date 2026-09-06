@@ -362,7 +362,7 @@ a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
 .post-row { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
 .post-row:last-child { border: 0; }
 .post-excerpt { color: var(--text-muted); font-size: var(--font-size-sm); margin: 4px 0 6px; }
-.settings .tabs { margin-bottom: 16px; display: inline-flex; }
+.settings .tabs { margin-bottom: 16px; display: flex; }
 .settings-form { max-width: 560px; padding: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .search-big { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; }
 .search-big input { border: 0; padding: 6px 0; font-size: var(--font-size-lg); }

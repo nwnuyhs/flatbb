@@ -315,6 +315,7 @@ function user_by_former_name(string $name): ?array
 function user_create(string $username, string $email, string $password, int $group_id = 0): int
 {
     if ($group_id <= 0) $group_id = (int)val("SELECT id FROM fb_groups WHERE slug='member'");
+    save_settings(['stats_cache' => '']); // Statistics and Newest members cards cache for five minutes
     return db_insert('fb_users', [
         'username' => $username,
         'username_lower' => mb_strtolower($username),

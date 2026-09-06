@@ -26,7 +26,7 @@
       <?= form_row(t('Upload a new avatar'), input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It will be cropped to a square.')) ?>
       <?php if ($user['avatar'] !== ''): ?><div class="form-row"><?= checkbox('remove', false, t('Remove current avatar')) ?></div><?php endif; ?>
     <?php elseif ($tab === 'password'): ?>
-      <?= form_row(t('Current password'), input('old_password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])) ?>
+      <?php if ((string)$user['password'] === ''): ?><p class="muted"><?= t('You signed up through a connected account. Set a password to sign in with it as well.') ?></p><?php else: ?><?= form_row(t('Current password'), input('old_password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])) ?><?php endif; ?>
       <?= form_row(t('New password'), input('password', '', ['type' => 'password', 'required' => true, 'minlength' => 8, 'autocomplete' => 'new-password'])) ?>
     <?php elseif ($tab === 'preferences'): ?>
       <?= form_row(t('Theme'), select('theme', ['auto' => t('Follow system'), 'light' => t('Light'), 'dark' => t('Dark')], (string)($prefs['theme'] ?? 'auto'))) ?>
