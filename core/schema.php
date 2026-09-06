@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 6; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 7; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -39,6 +39,7 @@ function schema_tables(): array
             'prefs' => 'text',           // JSON
             'former_names' => 'text',    // JSON list of {name, at}: old profile URLs keep working after a rename
             'auth_salt' => 'string',     // part of the session signature; user_logout_everywhere() rotates it
+            'email_verified' => 'uint',  // 1 when the address was confirmed with a code (register_verify)
             'reset_token' => 'string',   // sha256 of the password-reset token
             'reset_expires' => 'uint',
         ],
@@ -186,6 +187,15 @@ function schema_tables(): array
             'note' => 'string',
             'created_at' => 'uint',
         ],
+        'fb_email_codes' => [
+            'id' => 'id',
+            'email' => 'key',
+            'code_hash' => 'string',
+            'ip' => 'string',
+            'attempts' => 'uint',
+            'sent_at' => 'uint',
+            'expires_at' => 'uint',
+        ],
         'fb_admin_log' => [
             'id' => 'id',
             'user_id' => 'uint',
@@ -213,6 +223,7 @@ function schema_indexes(): array
         ['fb_users', 'ix_users_email', ['email']],
         ['fb_users', 'ix_users_group', ['group_id']],
         ['fb_users', 'ix_users_points', ['points']],
+        ['fb_email_codes', 'ux_email_codes', ['email'], true],
         ['fb_admin_log', 'ix_admin_log_time', ['created_at']],
         ['fb_admin_log', 'ix_admin_log_user', ['user_id', 'id']], // leaderboards (the points plugin used to create it)
         ['fb_groups', 'ux_groups_slug', ['slug'], true],

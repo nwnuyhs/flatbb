@@ -11,7 +11,12 @@
       <?php if (user_rename_allowed()): ?>
       <?= form_row(t('Username'), input('username', (string)$user['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), user_rename_next($user) > now() ? t('You can change your username again on %s.', date('Y-m-d', user_rename_next($user))) : t('Letters, numbers, dot, dash or underscore. Links to your old profile name keep working.')) ?>
       <?php endif; ?>
+      <?php if (register_verify_on()): ?>
+      <div class="form-row"><label><?= t('Email') ?></label><div class="code-row"><input type="email" name="email" value="<?= h((string)$user['email']) ?>" autocomplete="email"><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="email"><?= t('Send code') ?></button></div><div class="form-help"><?= (int)$user['email_verified'] === 1 ? t('Verified.') : t('Not verified yet.') ?> <?= t('A code is only needed when you change the address.') ?></div></div>
+      <?= form_row(t('Verification code'), input('code', '', ['inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'placeholder' => '123456'])) ?>
+      <?php else: ?>
       <?= form_row(t('Email'), input('email', (string)$user['email'], ['type' => 'email'])) ?>
+      <?php endif; ?>
       <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>
       <?= form_row(t('Location'), input('location', (string)$user['location'])) ?>

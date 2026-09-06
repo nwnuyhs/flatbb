@@ -222,3 +222,14 @@ function test_manifest_parser_reads_data_and_refuses_code(): void
         test_same($id, (string)($p['id'] ?? ''), $id . ' manifest is static (' . (string)$e3 . ')');
     }
 }
+
+function test_email_codes_issue_check_and_throttle(): void
+{
+    $code = email_code_issue('Verify@Example.com', '203.0.113.9', $err);
+    test_assert(strlen($code) === 6 && ctype_digit($code), 'six digits: ' . (string)$err);
+    test_assert(email_code_issue('verify@example.com', '203.0.113.9', $err2) === '' && $err2 !== null, 'one per minute per address');
+    test_assert(!email_code_check('verify@example.com', '000000') || $code === '000000', 'wrong code refused');
+    test_assert(email_code_check('verify@example.com', $code), 'right code accepted (case-insensitive address)');
+    test_assert(!email_code_check('verify@example.com', $code), 'a code is consumed');
+    test_assert(email_code_issue('not an address', '203.0.113.9', $err3) === '' && $err3 !== null, 'invalid address refused');
+}

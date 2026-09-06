@@ -13,6 +13,14 @@ function api_dispatch(string $action): never
             need_login();
             check_csrf();
             json_ok(['html' => md(post_str('body'))]);
+        case 'send_code':
+            require_post();
+            if (!register_verify_on()) json_error(t('Email verification is off.'));
+            $email = mb_strtolower(post_str('email', 120));
+            if (uid() <= 0 && $email !== '' && val('SELECT 1 FROM fb_users WHERE email=?', [$email])) json_error(t('That email is already registered.'));
+            $err = email_code_send($email, client_ip());
+            if ($err !== '') json_error($err);
+            json_ok(['sent' => true, 'message' => t('Code sent. Check your inbox (and the spam folder).')]);
         case 'users':
             need_login();
             $q = mb_strtolower(get_str('q', 30));

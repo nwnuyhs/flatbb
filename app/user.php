@@ -83,6 +83,9 @@ function user_settings(string $tab = 'profile'): never
             $email = mb_strtolower(post_str('email', 120));
             if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) fail(t('Please enter a valid email address.'), $back);
             if ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [$email, (int)$me['id']])) fail(t('That email is already registered.'), $back);
+            $email_changed = $email !== (string)$me['email'];
+            if ($email_changed && $email !== '' && register_verify_on() && !email_code_check($email, post_str('code', 12))) fail(t('The verification code is wrong or expired. Ask for a new one.'), $back);
+            if ($email_changed) db_update('fb_users', ['email_verified' => $email !== '' && register_verify_on() ? 1 : 0], 'id=?', [(int)$me['id']]);
             $data = hook('user.before_save', ['email' => $email, 'bio' => post_str('bio', 1000), 'website' => $website, 'location' => post_str('location', 80), 'signature' => post_str('signature', 300)], ['user' => $me]);
             db_update('fb_users', $data, 'id=?', [(int)$me['id']]);
             $renamed = false;

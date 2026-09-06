@@ -43,8 +43,11 @@ function account_register(): never
         $invite = post_str('invite', 60);
         if (!username_valid($name)) $errors[] = t('Username must be 2-30 characters: letters, numbers, dot, dash or underscore.');
         elseif (user_by_name($name) !== null) $errors[] = t('That username is already taken.');
+        $verify = register_verify_on();
+        if ($verify && $email === '') $errors[] = t('An email address is required.');
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = t('Please enter a valid email address.');
         elseif ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=?', [$email])) $errors[] = t('That email is already registered.');
+        elseif ($verify && !email_code_check($email, post_str('code', 12))) $errors[] = t('The verification code is wrong or expired. Ask for a new one.');
         if (strlen($pass) < 8) $errors[] = t('Password must be at least 8 characters.');
         if (setting('invite_code', '') !== '' && !hash_equals(setting('invite_code'), $invite)) $errors[] = t('Invalid invite code.');
         if (post_str('website', 200) !== '') $errors[] = 'Spam detected.'; // honeypot
@@ -52,6 +55,7 @@ function account_register(): never
         $errors = hook('account.register_validate', $errors, ['username' => $name, 'email' => $email]);
         if ($errors === []) {
             $uid = user_create($name, $email, $pass);
+            if ($verify) db_update('fb_users', ['email_verified' => 1], 'id=?', [$uid]);
             $user = user_by_id($uid);
             login_user($user);
             fire('account.after_register', ['user' => $user]);

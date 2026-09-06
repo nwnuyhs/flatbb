@@ -69,6 +69,21 @@
     }
   });
 
+  /* ---------- email verification codes ---------- */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-send-code]'); if (!b) return;
+    var form = b.closest('form'), input = form && form.querySelector('[name="' + (b.getAttribute('data-email') || 'email') + '"]');
+    if (!input || !input.value) { if (input) input.focus(); return; }
+    var fd = new FormData(); fd.append('email', input.value); fd.append('_token', FB.csrf);
+    b.disabled = true;
+    request(b.getAttribute('data-send-code'), { method: 'POST', body: fd }).then(function (r) {
+      if (!r.ok) { b.disabled = false; toast(r.error || FB.i18n.failed, 'error'); return; }
+      toast(r.message || 'Sent', 'success');
+      var left = 60, label = b.textContent;
+      var tick = setInterval(function () { left--; b.textContent = label + ' (' + left + ')'; if (left <= 0) { clearInterval(tick); b.textContent = label; b.disabled = false; } }, 1000);
+    });
+  });
+
   /* ---------- ajax forms ---------- */
   document.addEventListener('submit', function (e) {
     var form = e.target;

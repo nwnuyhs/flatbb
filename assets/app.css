@@ -41,6 +41,7 @@ small, .small { font-size: var(--font-size-sm); }
 .mono { font-family: var(--mono); }
 .icon { width: 1.15em; height: 1.15em; vertical-align: -.2em; flex: none; }
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 20px; }
+.code-row { display: flex; gap: 8px; } .code-row input { flex: 1; min-width: 0; } .code-row .btn { white-space: nowrap; }
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--brand); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: 1; }
 .flag { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--brand-soft); color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; vertical-align: middle; }
 .flag-danger { background: var(--danger-soft); color: var(--danger); }

@@ -138,6 +138,7 @@ function admin_settings_fields(): array
         'registration' => [t('Registration'), [
             'allow_register' => ['checkbox', t('Allow new registrations')],
             'invite_code' => ['text', t('Invite code'), t('When set, registration requires this code.')],
+            'register_verify' => ['checkbox', t('Require email verification'), t('New members confirm their address with a six-digit code before the account is created; changing the address later needs a code too. Mail is delivered by: %s.', mail_transport_label())],
             'allow_rename' => ['checkbox', t('Members may change their own username'), t('Administrators can always rename users from the Users page. Old profile links redirect to the new name.')],
             'rename_days' => ['number', t('Days between username changes'), t('Applies to members renaming themselves.'), null, 0, 3650],
         ]],

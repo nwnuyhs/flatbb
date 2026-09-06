@@ -64,6 +64,7 @@ Plugin admin pages are `/admin/ext/<id>/<key>`; they are linked from the plugin'
 - Templates: `<?= ?>` output must go through `h()`, `t()`, a core HTML helper or `raw()` (intentional HTML). `php flatbb security:check` enforces these three rules statically for core, app and plugins; `plugin:check` applies them to a plugin.
 - Rate limits: post interval, new-account limits, registration per IP, login attempts per IP.
 - Files: extension whitelist + finfo sniffing, random names, `uploads/` blocks PHP execution, `data/` is not web-accessible.
+- Email verification (core/verify.php): with `register_verify` on, registration and address changes need a six-digit code mailed through `mail_send()` (a mail plugin delivers it via `mail.send`); codes are hashed, expire after ten minutes, five attempts, throttled per address and visitor. `fb_users.email_verified` records the outcome.
 - Plugin manifests are read statically (core/manifest.php, PHP tokenizer) for disabled plugins and marketplace uploads; only enabled plugins are included.
 - Response headers (core/security.php): nosniff, SAMEORIGIN framing, referrer policy, and a nonce-based Content Security Policy (`csp_mode` setting: off / report only / enforce; violations land in `data/csp-report.log`, shown under Tools). Inline scripts carry `csp_nonce()`; plugins use `script_tag()` and extend the policy through `security.csp`.
 - Real client IP: `client_ip()` reads the forwarded address only when `REMOTE_ADDR` is a trusted proxy (`trusted_proxies` setting, "cloudflare" expands to Cloudflare's ranges).

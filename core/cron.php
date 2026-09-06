@@ -88,6 +88,7 @@ function cron_cleanup(): string
     $n = db_delete('fb_notifications', 'is_read=1 AND created_at<?', [now() - 86400 * 90]);
     $n += db_delete('fb_attachments', 'post_id=0 AND created_at<?', [now() - 86400 * 2]);
     $n += db_delete('fb_admin_log', 'created_at<?', [now() - 86400 * 180]);
+    $n += email_code_cleanup();
     return $n . ' rows';
 }
 
