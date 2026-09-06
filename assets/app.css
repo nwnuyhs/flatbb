@@ -526,7 +526,7 @@ body.adrawer-open { overflow: hidden; }
   .topic-rows { margin: 0 -12px; border-left: 0; border-right: 0; border-radius: 0; }
   .topic-row { gap: 8px; padding: 10px; }
   .row-avatar .avatar { width: 32px; height: 32px; font-size: 14px; }
-  .row-title { font-size: var(--font-size-md); margin-bottom: 2px; }
+  .row-title { font-size: 15px; margin-bottom: 5px; }
   .row-meta { gap: 8px; font-size: var(--font-size-xs); }
   .row-cat, .row-meta .row-tag { display: none; }
   .row-meta .meta.meta-cat { display: inline-flex; color: var(--text-muted); }
