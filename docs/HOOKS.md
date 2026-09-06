@@ -9,6 +9,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | --- | --- | --- | --- |
 | `account.after_login` | event | After a successful login. | `app/account.php` |
 | `account.after_register` | event | After a new account was created. | `app/account.php` |
+| `account.login_challenge` | filter | After the password was checked: return a URL to send the user to a second step (two-factor) instead of signing them in; the plugin finishes with login_pending_user() + login_user(). | `app/account.php` |
 | `account.login_validate` | filter | Add errors to a sign-in attempt before the password is checked (ctx: username); a non-empty list refuses it. | `app/account.php` |
 | `account.register_validate` | filter | Add validation errors to registration. | `app/account.php` |
 | `admin.action` | event | After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here. | `core/security.php` |

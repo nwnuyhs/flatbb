@@ -233,3 +233,14 @@ function test_email_codes_issue_check_and_throttle(): void
     test_assert(!email_code_check('verify@example.com', $code), 'a code is consumed');
     test_assert(email_code_issue('not an address', '203.0.113.9', $err3) === '' && $err3 !== null, 'invalid address refused');
 }
+
+function test_pending_login_cookie_round_trip(): void
+{
+    $u = user_by_name('admin');
+    login_pending_set($u, true);
+    $p = login_pending_user();
+    test_assert($p !== null && (int)$p['user']['id'] === (int)$u['id'] && $p['remember'] === true, 'pending user restored');
+    $_COOKIE['fb_pending'] = substr((string)$_COOKIE['fb_pending'], 0, -4) . 'zzzz';
+    test_assert(login_pending_user() === null, 'tampered cookie refused');
+    login_pending_clear();
+}

@@ -40,6 +40,35 @@ function auth_signature(int $uid, int $exp, string $password_hash): string
     return hash_hmac('sha256', $uid . '.' . $exp . '.' . $password_hash, secret());
 }
 
+/**
+ * Pending login: the password was right but a plugin asked for a second step (account.login_challenge). The user id
+ * travels in a signed five-minute cookie; login_pending_user() gives the user back to the plugin that finishes the sign-in.
+ */
+function login_pending_set(array $user, bool $remember): void
+{
+    $exp = now() + 300;
+    $r = $remember ? 1 : 0;
+    app_cookie('fb_pending', (int)$user['id'] . '.' . $exp . '.' . $r . '.' . hash_hmac('sha256', (int)$user['id'] . '.' . $exp . '.' . $r . '.pending', secret() . auth_key($user)), $exp);
+}
+
+/** ['user' => row, 'remember' => bool] for a valid pending cookie, else null. */
+function login_pending_user(): ?array
+{
+    $raw = (string)($_COOKIE['fb_pending'] ?? '');
+    if (substr_count($raw, '.') !== 3) return null;
+    [$id, $exp, $r, $sig] = explode('.', $raw);
+    if (!ctype_digit($id) || !ctype_digit($exp) || (int)$exp < now()) return null;
+    $user = user_by_id((int)$id);
+    if ($user === null || (int)$user['status'] !== 1) return null;
+    if (!hash_equals(hash_hmac('sha256', (int)$id . '.' . $exp . '.' . $r . '.pending', secret() . auth_key($user)), $sig)) return null;
+    return ['user' => $user, 'remember' => $r === '1'];
+}
+
+function login_pending_clear(): void
+{
+    app_cookie('fb_pending', '', now() - 3600);
+}
+
 /** What a session signature is bound to: the password hash plus a per-user salt (changing either signs out every device). */
 function auth_key(array $user): string
 {

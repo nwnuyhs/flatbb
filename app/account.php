@@ -25,7 +25,10 @@ function account_login(): never
             $user['password'] = password_hash($pass, PASSWORD_DEFAULT);
             db_update('fb_users', ['password' => $user['password']], 'id=?', [(int)$user['id']]);
         }
-        login_user($user, post_int('remember', 1) === 1);
+        $remember = post_int('remember', 1) === 1;
+        $step = (string)hook('account.login_challenge', '', ['user' => $user, 'back' => $back]); // a plugin may ask for a second step (two-factor)
+        if ($step !== '') { login_pending_set($user, $remember); redirect($step); }
+        login_user($user, $remember);
         fire('account.after_login', ['user' => $user]);
         redirect($back !== '' ? url($back) : url('/'));
     }

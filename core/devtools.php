@@ -208,6 +208,7 @@ function docs_hook_descriptions(): array
         'admin.settings_fields' => 'Add a settings section: $value[\'myid\'] = [\'Label\', [\'key\' => [type, label, help, options, min, max]]]. Each section is a tab in Admin → Settings.',
         'admin.settings_save' => 'Filter settings before they are saved.',
         'admin.category_save' => 'Filter category data before saving.',
+        'account.login_challenge' => 'After the password was checked: return a URL to send the user to a second step (two-factor) instead of signing them in; the plugin finishes with login_pending_user() + login_user().',
         'account.login_validate' => 'Add errors to a sign-in attempt before the password is checked (ctx: username); a non-empty list refuses it.',
         'admin.user_saved' => 'After an admin edited a user.',
         'user.logout_everywhere' => 'After every session of a user was invalidated (ctx: user_id).',
