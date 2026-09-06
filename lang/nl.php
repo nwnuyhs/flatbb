@@ -192,6 +192,7 @@ return [
     'Horizontal rule' => 'Horizontale lijn',
     'How to trigger' => 'Hoe te activeren',
     'ID / version' => 'ID / versie',
+    'Icon' => 'Pictogram',
     'If that email address belongs to an account, a reset link is on its way. Check your spam folder too.' => 'Als dat e-mailadres bij een account hoort, is er een herstellink onderweg. Controleer ook je spammap.',
     'Image' => 'Afbeelding',
     'Image processing is not available on this server.' => 'Beeldverwerking is niet beschikbaar op deze server.',
@@ -571,5 +572,6 @@ return [
     'suspended' => 'geschorst',
     'topics' => 'topics',
     '— choose —' => '— kies —',
+    '— folder (default)' => '— map (standaard)',
     '— none (top level)' => '— geen (hoofdniveau)',
 ];

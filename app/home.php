@@ -113,12 +113,12 @@ function category_bar(string $active): string
     $cur = current_path();
     $here = str_starts_with($cur, '/c/') ? category_by_slug(substr($cur, 3)) : null;
     $here_id = $here !== null ? ((int)$here['parent_id'] > 0 ? (int)$here['parent_id'] : (int)$here['id']) : 0;
-    $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'active' => $here_id === 0, 'weight' => 0]];
-    foreach (category_tree()[0] ?? [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => $c['name'], 'url' => category_url($c), 'active' => (int)$c['id'] === $here_id, 'color' => (string)$c['color'], 'weight' => $i + 1];
+    $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'icon' => 'grid', 'active' => $here_id === 0, 'weight' => 0]];
+    foreach (category_tree()[0] ?? [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => $c['name'], 'url' => category_url($c), 'icon' => (string)($c['icon'] ?? '') ?: 'folder', 'active' => (int)$c['id'] === $here_id, 'weight' => $i + 1];
     $items = region_list('main.categories', $items, ['active' => $active, 'category' => $here]);
     if (count($items) < 2) return '';
     $html = '';
-    foreach ($items as $it) $html .= '<a class="cat-pill' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['color']) ? '<span class="cat-dot" style="background:' . h((string)$it['color']) . '"></span>' : '') . h((string)$it['label']) . '</a>';
+    foreach ($items as $it) $html .= '<a class="cat-item' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['icon']) ? icon((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span></a>';
     return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
 }
 

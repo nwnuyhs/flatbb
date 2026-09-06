@@ -32,6 +32,7 @@ function admin_page_categories(): never
         $data = [
             'name' => $name, 'slug' => $slug, 'description' => post_str('description', 500), 'parent_id' => (int)($parent['id'] ?? 0),
             'color' => preg_match('/^#[0-9a-f]{6}$/i', post_str('color', 7)) ? strtolower(post_str('color', 7)) : '#999999', 'sort' => post_int('sort'),
+            'icon' => isset(icon_paths()[post_str('icon', 30)]) ? post_str('icon', 30) : '',
             'view_groups' => implode(',', array_map('intval', post_list('view_groups'))),
             'post_groups' => implode(',', array_map('intval', post_list('post_groups'))),
             'is_hidden' => post_int('is_hidden') ? 1 : 0,
@@ -60,7 +61,7 @@ function admin_page_categories(): never
     $html = admin_table([t('Category'), t('Slug'), t('Topics'), t('Sort'), t('Access'), ''], $rows);
     $drawer = null;
     if (($eid = get_int('edit', -1)) >= 0) {
-        $edit = category_by_id($eid) ?? ['id' => 0, 'name' => '', 'slug' => '', 'description' => '', 'parent_id' => 0, 'color' => '#999999', 'sort' => 10, 'view_groups' => '', 'post_groups' => '', 'is_hidden' => 0];
+        $edit = category_by_id($eid) ?? ['id' => 0, 'name' => '', 'slug' => '', 'description' => '', 'parent_id' => 0, 'color' => '#999999', 'icon' => '', 'sort' => 10, 'view_groups' => '', 'post_groups' => '', 'is_hidden' => 0];
         $parents = ['0' => t('— none (top level)')];
         foreach (categories() as $c) if ((int)$c['parent_id'] === 0 && (int)$c['id'] !== (int)$edit['id']) $parents[(string)$c['id']] = $c['name'];
         $gv = explode(',', (string)$edit['view_groups']); $gp = explode(',', (string)$edit['post_groups']);
@@ -72,7 +73,7 @@ function admin_page_categories(): never
         $body = '<form method="post" action="' . h($list_url) . '">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
             . form_row(t('Name'), input('name', (string)$edit['name'], ['required' => true]))
             . form_row(t('Description'), textarea('description', (string)$edit['description'], ['rows' => 2]))
-            . '<div class="form-grid">' . form_row(t('Slug'), input('slug', (string)$edit['slug']), t('URL: /c/slug')) . form_row(t('Parent'), select('parent_id', $parents, (string)$edit['parent_id'])) . form_row(t('Color'), input('color', (string)$edit['color'], ['type' => 'color'])) . form_row(t('Sort'), input('sort', (string)$edit['sort'], ['type' => 'number'])) . '</div>'
+            . '<div class="form-grid">' . form_row(t('Slug'), input('slug', (string)$edit['slug']), t('URL: /c/slug')) . form_row(t('Parent'), select('parent_id', $parents, (string)$edit['parent_id'])) . form_row(t('Color'), input('color', (string)$edit['color'], ['type' => 'color'])) . form_row(t('Icon'), select('icon', ['' => t('— folder (default)')] + array_combine(array_keys(icon_paths()), array_keys(icon_paths())), (string)($edit['icon'] ?? ''))) . form_row(t('Sort'), input('sort', (string)$edit['sort'], ['type' => 'number'])) . '</div>'
             . '<div class="form-row"><label>' . t('Who can view') . '</label>' . $vc . '<div class="form-help">' . t('Nothing checked = everyone including guests.') . '</div></div>'
             . '<div class="form-row"><label>' . t('Who can create topics') . '</label>' . $pc . '<div class="form-help">' . t('Nothing checked = any member with the "post" permission.') . '</div></div>'
             . '<div class="form-row">' . checkbox('is_hidden', (int)$edit['is_hidden'] === 1, t('Hidden (admins only)')) . '</div>'

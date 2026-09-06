@@ -192,6 +192,7 @@ return [
     'Horizontal rule' => 'Horizontale Linie',
     'How to trigger' => 'Wie ausgelöst wird',
     'ID / version' => 'ID / Version',
+    'Icon' => 'Symbol',
     'If that email address belongs to an account, a reset link is on its way. Check your spam folder too.' => 'Wenn diese E-Mail-Adresse zu einem Konto gehört, ist ein Link zum Zurücksetzen unterwegs. Prüfen Sie auch Ihren Spam-Ordner.',
     'Image' => 'Bild',
     'Image processing is not available on this server.' => 'Die Bildverarbeitung ist auf diesem Server nicht verfügbar.',
@@ -571,5 +572,6 @@ return [
     'suspended' => 'gesperrt',
     'topics' => 'Themen',
     '— choose —' => '— auswählen —',
+    '— folder (default)' => '— Ordner (Standard)',
     '— none (top level)' => '— keine (oberste Ebene)',
 ];
