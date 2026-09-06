@@ -119,7 +119,7 @@ function category_list(string $slug, string $mode, string $period = 'week'): nev
         $list = topic_list_fetch($scope . ' AND ' . $where, $params, 't.last_post_at DESC', $p, false, $join);
         $page_url = $base . '/unread';
     } else {
-        $list = topic_list_fetch($scope, [], 'is_pinned DESC, last_post_at DESC', $p, $p['page'] === 1);
+        $list = topic_list_fetch($scope, [], 'is_pinned DESC, pinned_at DESC, last_post_at DESC', $p, $p['page'] === 1);
         $page_url = $base;
     }
     $children = array_filter(categories(), static fn(array $x): bool => (int)$x['parent_id'] === (int)$c['id'] && category_can_view($x));

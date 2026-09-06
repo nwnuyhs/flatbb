@@ -180,6 +180,7 @@ function docs_hook_descriptions(): array
         'topic.after_delete' => 'After a topic was soft-deleted.',
         'topic.after_action' => 'After pin/lock/move/restore (ctx: topic_id, action).',
         'topic.view' => 'Filter the topic row shown on the topic page (ctx: posts).',
+        'topic.title' => 'Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB.',
         'topic.posts' => 'Filter the posts of the current page (batch-loaded, attach extra data here).',
         'topic_list.rows' => 'Filter topic rows of any list (batch-loaded, attach extra data here).',
         'post.before_save' => 'New reply data (body, reply_to_id) before insert.',

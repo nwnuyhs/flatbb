@@ -267,6 +267,7 @@ return [
     'More' => 'Más',
     'Move its %d topics to' => 'Mover sus %d temas a',
     'Move its members to another group first.' => 'Primero mueve sus miembros a otro grupo.',
+    'Move to top' => 'Mover arriba del todo',
     'Move to…' => 'Mover a…',
     'Moving from SQLite to MySQL: install this copy on MySQL, enable the same plugins, then import the old data/flatbb.sqlite file. Ids are preserved; the search index and counters are rebuilt. Copy uploads/ yourself.' => 'Migración de SQLite a MySQL: instala esta copia en MySQL, activa los mismos plugins y luego importa el archivo data/flatbb.sqlite anterior. Los ids se conservan; el índice de búsqueda y los contadores se reconstruyen. Copia uploads/ tú mismo.',
     'MySQL rejected the user name or password. Retype the password by hand: browsers often auto-fill this field with a saved password from another site.' => 'MySQL rechazó el usuario o la contraseña. Vuelve a escribir la contraseña a mano: los navegadores suelen rellenar este campo con una contraseña guardada de otro sitio.',

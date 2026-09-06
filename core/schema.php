@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 7; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 8; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -93,6 +93,7 @@ function schema_tables(): array
             'last_post_at' => 'uint',
             'last_user_id' => 'uint',
             'is_pinned' => 'bool',
+            'pinned_at' => 'uint',         // pinned topics sort by this, newest pin first; 0 when not pinned
             'is_locked' => 'bool',
             'is_deleted' => 'bool',
             'hot_score' => 'float',
@@ -260,6 +261,7 @@ function schema_install(): void
     foreach (schema_indexes() as $ix) db_create_index($ix[0], $ix[1], $ix[2], $ix[3] ?? false);
     db_create_fulltext('fb_search', 'ft_search', ['title', 'body']);
     search_index_install();
+    q('UPDATE fb_topics SET pinned_at=created_at WHERE is_pinned=1 AND pinned_at=0'); // topics pinned before pinned_at existed keep a deterministic order
     fire('schema.install', []);
     db_upsert('fb_settings', ['key' => 'schema_version', 'value' => (string)SCHEMA_VERSION], ['key']);
     request_cache('settings', null, true);

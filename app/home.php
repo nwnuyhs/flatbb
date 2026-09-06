@@ -13,7 +13,7 @@ function home_index(): never
 function home_latest(): never
 {
     $p = topic_list_page();
-    $list = topic_list_fetch('', [], 'is_pinned DESC, last_post_at DESC', $p, $p['page'] === 1);
+    $list = topic_list_fetch('', [], 'is_pinned DESC, pinned_at DESC, last_post_at DESC', $p, $p['page'] === 1);
     topic_list_page_render(t('Latest'), $list, 'latest', static fn(int $n): string => url('/latest', $n > 1 ? ['page' => $n] : []));
 }
 
@@ -85,7 +85,7 @@ function topic_list_fetch(string $where, array $params, string $order, array $p,
     $total = (int)val("SELECT COUNT(*) FROM fb_topics t {$join} WHERE {$sql_where}", $params);
     $pg = paginate_calc($total, $p['page'], $p['per_page']);
     // callers may write "last_post_at DESC"; qualify with the t alias so joins stay unambiguous
-    $order = preg_replace('/(?<![.\w])(is_pinned|last_post_at|created_at|like_count|reply_count|view_count|hot_score|id)\b/', 't.$1', $order) ?? $order;
+    $order = preg_replace('/(?<![.\w])(is_pinned|pinned_at|last_post_at|created_at|like_count|reply_count|view_count|hot_score|id)\b/', 't.$1', $order) ?? $order;
     $rows = all("SELECT t.* FROM fb_topics t {$join} WHERE {$sql_where} ORDER BY {$order} LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], $params);
     return ['topics' => topic_list_attach($rows), 'pagination' => $pg];
 }

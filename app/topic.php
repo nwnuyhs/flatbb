@@ -33,7 +33,7 @@ function topic_create(int $category_id, int $user_id, string $title, string $bod
         $data = hook('topic.before_save', ['category_id' => $category_id, 'user_id' => $user_id, 'title' => $title, 'body' => $body, 'tags' => $tags], []);
         $tid = db_insert('fb_topics', [
             'category_id' => (int)$data['category_id'], 'user_id' => $user_id, 'title' => $data['title'], 'slug' => slugify($data['title']),
-            'is_pinned' => $pinned ? 1 : 0, 'created_at' => now(), 'updated_at' => now(), 'last_post_at' => now(), 'last_user_id' => $user_id, 'meta' => '{}',
+            'is_pinned' => $pinned ? 1 : 0, 'pinned_at' => $pinned ? now() : 0, 'created_at' => now(), 'updated_at' => now(), 'last_post_at' => now(), 'last_user_id' => $user_id, 'meta' => '{}',
         ]);
         $pid = db_insert('fb_posts', [
             'topic_id' => $tid, 'user_id' => $user_id, 'floor' => 0, 'body' => $data['body'], 'body_html' => md($data['body']),
@@ -271,7 +271,7 @@ function post_update(array $post, string $body, int $editor_id): void
     fire('post.after_save', ['topic_id' => (int)$post['topic_id'], 'post_id' => (int)$post['id'], 'new' => false]);
 }
 
-/** POST /t/{id}/action  action=pin|unpin|lock|unlock|delete|restore|move */
+/** POST /t/{id}/action  action=pin|unpin|lock|unlock|delete|restore|move (pin on a pinned topic moves it to the top of the pinned ones) */
 function topic_action(string $id): never
 {
     need_login();
@@ -282,8 +282,8 @@ function topic_action(string $id): never
     $own_ok = $action === 'delete' && can_manage_topic($topic);
     if (!is_mod() && !$own_ok) forbidden();
     switch ($action) {
-        case 'pin': db_update('fb_topics', ['is_pinned' => 1], 'id=?', [(int)$topic['id']]); break;
-        case 'unpin': db_update('fb_topics', ['is_pinned' => 0], 'id=?', [(int)$topic['id']]); break;
+        case 'pin': db_update('fb_topics', ['is_pinned' => 1, 'pinned_at' => now()], 'id=?', [(int)$topic['id']]); break;
+        case 'unpin': db_update('fb_topics', ['is_pinned' => 0, 'pinned_at' => 0], 'id=?', [(int)$topic['id']]); break;
         case 'lock': db_update('fb_topics', ['is_locked' => 1], 'id=?', [(int)$topic['id']]); break;
         case 'unlock': db_update('fb_topics', ['is_locked' => 0], 'id=?', [(int)$topic['id']]); break;
         case 'delete':

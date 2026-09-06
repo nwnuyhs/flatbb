@@ -2,7 +2,7 @@
 /**
  * Topic rows: avatar, title, one meta line under the title, category tag on the right.
  * Variables: topics, empty.
- * In-loop slots (no DB queries allowed in their hooks): topic_list.item.title_suffix, topic_list.item.meta, topic_list.item.after
+ * In-loop slots and filters (no DB queries allowed in their hooks): topic.title, topic_list.item.title_suffix, topic_list.item.meta, topic_list.item.after
  */
 ?>
 <div class="topic-rows" data-slot="topic_list">
@@ -16,7 +16,7 @@
       <h3 class="row-title">
         <?php if ((int)$t['is_pinned']): ?><span class="row-icon" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
         <?php if ((int)$t['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
-        <a href="<?= h(topic_url($t)) ?>"><?= h($t['title']) ?></a>
+        <a href="<?= h(topic_url($t)) ?>"><?= raw(hook('topic.title', h($t['title']), ['topic' => $t, 'where' => 'list'])) ?></a>
         <?= slot('topic_list.item.title_suffix', $ctx) ?>
       </h3>
       <div class="row-meta">

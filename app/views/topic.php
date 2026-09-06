@@ -17,7 +17,7 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
     <h1 class="topic-title">
       <?php if ((int)$topic['is_pinned']): ?><span class="row-icon" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
       <?php if ((int)$topic['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
-      <?= h($topic['title']) ?>
+      <?= raw(hook('topic.title', h($topic['title']), ['topic' => $topic, 'where' => 'page'])) ?>
     </h1>
     <div class="topic-meta">
       <?= category_badge($topic['category']) ?>
@@ -35,6 +35,7 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
         <div class="dropdown-menu">
           <?php if (is_mod()): ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('pin') . ((int)$topic['is_pinned'] ? t('Unpin') : t('Pin')) . '</button>', ['action' => (int)$topic['is_pinned'] ? 'unpin' : 'pin']) ?>
+            <?php if ((int)$topic['is_pinned']): ?><?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('arrow-up') . t('Move to top') . '</button>', ['action' => 'pin']) ?><?php endif; ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('lock') . ((int)$topic['is_locked'] ? t('Unlock') : t('Lock')) . '</button>', ['action' => (int)$topic['is_locked'] ? 'unlock' : 'lock']) ?>
             <form method="post" action="<?= h(url('/t/' . $topic['id'] . '/action')) ?>" class="dropdown-form"><?= csrf_field() ?><input type="hidden" name="action" value="move"><select name="category_id" onchange="this.form.submit()"><option value=""><?= t('Move to…') ?></option><?php foreach (categories() as $c): if ((int)$c['id'] === (int)$topic['category_id']) continue; ?><option value="<?= (int)$c['id'] ?>"><?= h($c['name']) ?></option><?php endforeach; ?></select></form>
           <?php endif; ?>

@@ -105,6 +105,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `topic.after_save` | event | After a topic was created or edited (ctx: topic_id, post_id, new). | `app/topic.php` |
 | `topic.before_save` | filter | New topic data (category_id, user_id, title, body, tags) before insert. | `app/topic.php` |
 | `topic.posts` | filter | Filter the posts of the current page (batch-loaded, attach extra data here). | `app/topic.php` |
+| `topic.title` | filter | Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB. | `app/views/topic.php`, `app/views/topic_rows.php` |
 | `topic.view` | filter | Filter the topic row shown on the topic page (ctx: posts). | `app/topic.php` |
 | `topic_list.rows` | filter | Filter topic rows of any list (batch-loaded, attach extra data here). | `app/home.php` |
 | `upgrade.after_apply` | event |  | `core/upgrade.php` |
