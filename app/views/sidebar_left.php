@@ -23,9 +23,9 @@ $cur = current_path();
 <div class="side-section" data-slot="sidebar.left.categories">
   <h4><?= t('Categories') ?></h4>
   <?php foreach ($tree[0] as $c): ?>
-    <a class="side-link cat-link<?= $cur === '/c/' . $c['slug'] ? ' active' : '' ?>" href="<?= h(category_url($c)) ?>"><span class="cat-dot" style="background:<?= h($c['color'] ?: '#999') ?>"></span><span><?= h($c['name']) ?></span><small><?= human_number((int)$c['topic_count']) ?></small></a>
+    <a class="side-link cat-link<?= $cur === '/c/' . $c['slug'] ? ' active' : '' ?>" href="<?= h(category_url($c)) ?>"><?= raw(category_icon($c)) ?><span><?= h($c['name']) ?></span><small><?= human_number((int)$c['topic_count']) ?></small></a>
     <?php foreach ($tree[(int)$c['id']] ?? [] as $child): ?>
-      <a class="side-link cat-link cat-child<?= $cur === '/c/' . $child['slug'] ? ' active' : '' ?>" href="<?= h(category_url($child)) ?>"><span class="cat-dot" style="background:<?= h($child['color'] ?: '#999') ?>"></span><span><?= h($child['name']) ?></span><small><?= human_number((int)$child['topic_count']) ?></small></a>
+      <a class="side-link cat-link cat-child<?= $cur === '/c/' . $child['slug'] ? ' active' : '' ?>" href="<?= h(category_url($child)) ?>"><?= raw(category_icon($child)) ?><span><?= h($child['name']) ?></span><small><?= human_number((int)$child['topic_count']) ?></small></a>
     <?php endforeach; ?>
   <?php endforeach; ?>
 </div>

@@ -95,6 +95,7 @@ $unread = notifications_unread();
   </aside><?php endif; ?>
   <main class="col-main" data-slot="main">
     <?php if ($flash): ?><div class="flash flash-<?= h($flash['type']) ?>" data-flash><?= h($flash['message']) ?></div><?php endif; ?>
+    <?= raw($top) ?>
     <?php if ($breadcrumbs !== []): ?><nav class="breadcrumbs"><a href="<?= h(url('/')) ?>"><?= t('Home') ?></a><?php foreach ($breadcrumbs as $b): ?><span>/</span><?= $b[1] !== '' ? '<a href="' . h($b[1]) . '">' . h($b[0]) . '</a>' : '<span>' . h($b[0]) . '</span>' ?><?php endforeach; ?></nav><?php endif; ?>
     <?= region('main.before', ['title' => $title]) ?>
     <?= raw($main) ?>

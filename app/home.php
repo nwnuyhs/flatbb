@@ -99,12 +99,13 @@ function topic_list_page_render(string $title, array $list, string $active, call
         'heading' => $opts['heading'] ?? '',
         'empty' => $opts['empty'] ?? t('No topics yet.'),
     ]);
-    page($title, $main, ['class' => 'page-list page-' . $active] + $opts);
+    page($title, $main, ['class' => 'page-list page-' . $active, 'top' => category_bar($active)] + $opts);
 }
 
 /**
- * Category bar above the list tabs (region main.categories, list): All + top-level categories, the current one highlighted
- * (a child page highlights its parent). Setting category_bar: mobile (default; the left column is hidden there) | always | off.
+ * Category bar at the top of list pages (page option 'top'; region main.categories, list): All + top-level categories, the
+ * current one highlighted (a child page highlights its parent). Setting category_bar: mobile (default; the left column is
+ * hidden there) | always | off. Icons appear only for categories that have one.
  */
 function category_bar(string $active): string
 {
@@ -113,16 +114,16 @@ function category_bar(string $active): string
     $cur = current_path();
     $here = str_starts_with($cur, '/c/') ? category_by_slug(substr($cur, 3)) : null;
     $here_id = $here !== null ? ((int)$here['parent_id'] > 0 ? (int)$here['parent_id'] : (int)$here['id']) : 0;
-    $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'icon' => 'grid', 'active' => $here_id === 0, 'weight' => 0]];
-    foreach (category_tree()[0] ?? [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => $c['name'], 'url' => category_url($c), 'icon' => (string)($c['icon'] ?? '') ?: 'folder', 'active' => (int)$c['id'] === $here_id, 'weight' => $i + 1];
+    $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'active' => $here_id === 0, 'weight' => 0]];
+    foreach (category_tree()[0] ?? [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => $c['name'], 'url' => category_url($c), 'icon' => (string)($c['icon'] ?? ''), 'active' => (int)$c['id'] === $here_id, 'weight' => $i + 1];
     $items = region_list('main.categories', $items, ['active' => $active, 'category' => $here]);
     if (count($items) < 2) return '';
     $html = '';
-    foreach ($items as $it) $html .= '<a class="cat-item' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['icon']) ? icon((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span></a>';
+    foreach ($items as $it) $html .= '<a class="cat-item' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['icon']) && isset(icon_paths()[(string)$it['icon']]) ? icon((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span></a>';
     return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
 }
 
-/** Tabs above topic lists (region main.tabs), preceded by the category bar. */
+/** Tabs above topic lists (region main.tabs). */
 function list_tabs(string $active, array $extra = []): string
 {
     $items = [
@@ -133,5 +134,5 @@ function list_tabs(string $active, array $extra = []): string
     $items += $extra;
     $items = region_list('main.tabs', $items, ['active' => $active]);
     $toolbar = region('main.toolbar', ['active' => $active], uid() > 0 && can('post') ? '<a class="btn btn-primary" href="' . h(url('/new-topic')) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
-    return category_bar($active) . '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
+    return '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
 }

@@ -76,5 +76,5 @@ function tag_view(string $name): never
         'pagination' => pagination($list['pagination'], static fn(int $n): string => url('/tag/' . $tag['slug'], $n > 1 ? ['page' => $n] : [])),
         'heading' => '', 'empty' => t('No topics with this tag yet.'),
     ]);
-    page('#' . $tag['name'], $main, ['class' => 'page-list page-tag']);
+    page('#' . $tag['name'], $main, ['class' => 'page-list page-tag', 'top' => category_bar('tag')]);
 }

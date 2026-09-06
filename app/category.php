@@ -90,11 +90,11 @@ function category_view(string $slug): never
     $list = topic_list_fetch('category_id IN (' . implode(',', $ids) . ')', [], 'is_pinned DESC, last_post_at DESC', $p, $p['page'] === 1);
     $children = array_filter(categories(), static fn(array $x): bool => (int)$x['parent_id'] === (int)$c['id'] && category_can_view($x));
     $heading = view('category_head', ['category' => $c, 'children' => $children, 'can_post' => category_can_post($c)]);
-    $extra = ['category' => ['label' => $c['name'], 'url' => category_url($c), 'icon' => 'folder', 'active' => true]];
+    $extra = ['category' => ['label' => $c['name'], 'url' => category_url($c), 'icon' => (string)$c['icon'] ?: 'folder', 'active' => true]];
     $main = view('topic_list', [
         'title' => $c['name'], 'tabs' => list_tabs('category', $extra), 'sub_tabs' => '', 'topics' => $list['topics'],
         'pagination' => pagination($list['pagination'], static fn(int $n): string => url('/c/' . $c['slug'], $n > 1 ? ['page' => $n] : [])),
         'heading' => $heading, 'empty' => t('No topics in this category yet.'),
     ]);
-    page($c['name'], $main, ['class' => 'page-list page-category', 'description' => (string)$c['description'], 'breadcrumbs' => [[t('Categories'), url('/categories')], [$c['name'], '']]]);
+    page($c['name'], $main, ['class' => 'page-list page-category', 'top' => category_bar('category'), 'description' => (string)$c['description'], 'breadcrumbs' => [[t('Categories'), url('/categories')], [$c['name'], '']]]);
 }

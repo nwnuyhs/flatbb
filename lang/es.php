@@ -416,6 +416,7 @@ return [
     'Show in this position' => 'Mostrar en esta posición',
     'Show my points on my public profile' => 'Mostrar mis puntos en mi perfil público',
     'Show this item' => 'Mostrar este elemento',
+    'Shown before the name in menus and the category bar.' => 'Se muestra antes del nombre en los menús y en la barra de categorías.',
     'Sign In' => 'Iniciar Sesión',
     'Sign in' => 'Iniciar sesión',
     'Sign in to reply.' => 'Inicia sesión para responder.',
@@ -572,6 +573,6 @@ return [
     'suspended' => 'suspendido',
     'topics' => 'temas',
     '— choose —' => '— elegir —',
-    '— folder (default)' => '— carpeta (predeterminado)',
+    '— none' => '— ninguno',
     '— none (top level)' => '— ninguna (nivel superior)',
 ];

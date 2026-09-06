@@ -5,7 +5,8 @@
  * view('topic_list', $vars)   -> renders app/views/topic_list.php with $vars extracted
  * page($title, $main, $opts)  -> full three-column page (see app/views/layout.php)
  *   $opts: left (html|null=default nav|false=hidden), right (html|null=default cards|false=hidden),
- *          class, description, canonical, robots, breadcrumbs (array of [label,url]), head (extra html)
+ *          class, description, canonical, robots, breadcrumbs (array of [label,url]), head (extra html),
+ *          top (html at the top of the main column, above breadcrumbs: the category bar on list pages)
  */
 
 function view(string $__view, array $__vars = []): string
@@ -20,7 +21,7 @@ function view(string $__view, array $__vars = []): string
 
 function page(string $title, string $main, array $opts = []): never
 {
-    $opts += ['left' => null, 'right' => null, 'class' => '', 'description' => '', 'canonical' => '', 'robots' => '', 'breadcrumbs' => [], 'head' => ''];
+    $opts += ['left' => null, 'right' => null, 'class' => '', 'description' => '', 'canonical' => '', 'robots' => '', 'breadcrumbs' => [], 'head' => '', 'top' => ''];
     $opts = hook('page.options', $opts, ['title' => $title]);
     if ($opts['left'] === null) $opts['left'] = view('sidebar_left', []);
     if ($opts['right'] === null) $opts['right'] = view('sidebar_right', ['cards' => sidebar_cards_default()]);
@@ -189,10 +190,17 @@ function user_link(?array $user, string $class = 'user-link'): string
     return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . '>' . h($user['username']) . '</a>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]);
 }
 
+/** The category's icon when the admin picked one in Admin → Categories, else ''. */
+function category_icon(array $cat): string
+{
+    $name = (string)($cat['icon'] ?? '');
+    return $name !== '' && isset(icon_paths()[$name]) ? icon($name) : '';
+}
+
 function category_badge(?array $cat, bool $link = true): string
 {
     if ($cat === null) return '';
-    $inner = '<span class="cat-dot" style="background:' . h($cat['color'] ?: '#999') . '"></span>' . h($cat['name']);
+    $inner = category_icon($cat) . h($cat['name']);
     return $link ? '<a class="cat-badge" href="' . h(category_url($cat)) . '">' . $inner . '</a>' : '<span class="cat-badge">' . $inner . '</span>';
 }
 

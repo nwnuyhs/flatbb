@@ -278,12 +278,12 @@ function schema_seed(string $admin_name, string $admin_email, string $admin_pass
     }
     $admin_group = (int)val("SELECT id FROM fb_groups WHERE slug='admin'");
     $categories = [
-        ['General', 'general', 'Talk about anything and everything.', '#e7672e', 0],
-        ['Announcements', 'announcements', 'Official news and updates.', '#4d698e', 1],
-        ['Help & Support', 'help', 'Ask questions and get help.', '#2a9d8f', 2],
+        ['General', 'general', 'Talk about anything and everything.', 0],
+        ['Announcements', 'announcements', 'Official news and updates.', 1],
+        ['Help & Support', 'help', 'Ask questions and get help.', 2],
     ];
     foreach ($categories as $c) {
-        db_insert_ignore('fb_categories', ['name' => $c[0], 'slug' => $c[1], 'description' => $c[2], 'color' => $c[3], 'sort' => $c[4]]);
+        db_insert_ignore('fb_categories', ['name' => $c[0], 'slug' => $c[1], 'description' => $c[2], 'color' => '', 'sort' => $c[3]]);
     }
     $uid = user_create($admin_name, $admin_email, $admin_password, $admin_group);
     $cat = (int)val("SELECT id FROM fb_categories WHERE slug='general'");

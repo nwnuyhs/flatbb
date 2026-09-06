@@ -416,6 +416,7 @@ return [
     'Show in this position' => 'Op deze positie tonen',
     'Show my points on my public profile' => 'Mijn punten op mijn openbare profiel tonen',
     'Show this item' => 'Dit item tonen',
+    'Shown before the name in menus and the category bar.' => 'Wordt vóór de naam getoond in menu\'s en in de categoriebalk.',
     'Sign In' => 'Inloggen',
     'Sign in' => 'Inloggen',
     'Sign in to reply.' => 'Log in om te reageren.',
@@ -572,6 +573,6 @@ return [
     'suspended' => 'geschorst',
     'topics' => 'topics',
     '— choose —' => '— kies —',
-    '— folder (default)' => '— map (standaard)',
+    '— none' => '— geen',
     '— none (top level)' => '— geen (hoofdniveau)',
 ];
