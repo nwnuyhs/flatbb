@@ -10,6 +10,7 @@
         <span><?= icon('eye') ?><?= t('Seen %s', human_time((int)$user['last_seen'])) ?></span>
         <?php if (!empty($user['location'])): ?><span><?= icon('flag') ?><?= h($user['location']) ?></span><?php endif; ?>
         <?php if (!empty($user['website'])): ?><span><?= icon('external') ?><a href="<?= h($user['website']) ?>" rel="nofollow ugc noopener" target="_blank"><?= h(preg_replace('#^https?://#', '', $user['website'])) ?></a></span><?php endif; ?>
+        <?= slot('user.profile.meta', ['user' => $user, 'self' => $self]) ?>
       </div>
     </div>
     <div class="profile-side">

@@ -38,6 +38,7 @@ $actions = region_list('post.actions', $actions, $ctx);
       <div class="post-meta">
         <a class="post-time" href="<?= h(url('/post/' . $post['id'])) ?>" title="<?= date('Y-m-d H:i', (int)$post['created_at']) ?>"><?= human_time((int)$post['created_at']) ?></a>
         <?php if ((int)$post['edit_count'] > 0): ?><span class="post-edited" title="<?= t('Edited %s', human_time((int)$post['edited_at'])) ?>"><?= icon('edit') ?> <?= t('edited') ?></span><?php endif; ?>
+        <?= slot('post.meta', $ctx) ?>
       </div>
     </div>
     <span class="post-floor">#<?= (int)$post['floor'] + 1 ?></span>

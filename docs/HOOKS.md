@@ -76,6 +76,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.post.after` | inline region (loop, no DB) | After each post (loop, no DB) | `app/views/post.php` |
 | `region.post.before` | inline region (loop, no DB) | Before each post (loop, no DB) | `app/views/post.php` |
 | `region.post.content_after` | inline region (loop, no DB) | After each post body (loop, no DB) | `app/views/post.php` |
+| `region.post.meta` | inline region (loop, no DB) | Post meta line, after the time: level, title, badges (loop, no DB) | `app/views/post.php` |
 | `region.sidebar.left.bottom` | html region | Left column, bottom | `app/views/sidebar_left.php` |
 | `region.sidebar.left.nav` | list region | Left column navigation links (list) | `app/views/sidebar_left.php` |
 | `region.sidebar.left.top` | html region | Left column, top | `app/views/sidebar_left.php` |
@@ -95,6 +96,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.user.profile.actions` | html region |  | `app/views/profile.php` |
 | `region.user.profile.after` | html region | Profile page, below the header | `app/views/profile.php` |
 | `region.user.profile.cards` | list region | Profile page right column cards (list) | `app/user.php` |
+| `region.user.profile.meta` | inline region (loop, no DB) | Profile meta line, after Joined / Seen: level, title, badges (ctx: user, self) | `app/views/profile.php` |
 | `region.user.profile.stats` | list region | Profile header statistics (list of label/value/url) | `app/user.php` |
 | `region.user.profile.tabs` | list region | Profile page tabs (list) | `app/user.php` |
 | `region.user.settings.tabs` | list region | Settings page tabs (list) | `app/user.php` |
