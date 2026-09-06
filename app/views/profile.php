@@ -15,6 +15,7 @@
     <div class="profile-side">
       <?php if ($self): ?><a class="btn btn-sm" href="<?= h(url('/settings')) ?>"><?= icon('settings') ?><?= t('Edit profile') ?></a><?php endif; ?>
       <?php if (is_admin() && !$self): ?><a class="btn btn-sm" href="<?= h(admin_url('users', ['q' => $user['username'], 'edit' => $user['id']])) ?>"><?= icon('shield') ?><?= t('Manage') ?></a><?php endif; ?>
+      <?= region('user.profile.actions', ['user' => $user, 'self' => $self], '', false) ?>
     </div>
     <div class="profile-stats" data-slot="user.profile.stats">
       <?php foreach ($stats as $st): $tag = !empty($st['url']) ? 'a' : 'span'; ?><<?= h($tag) ?><?= !empty($st['url']) ? ' href="' . h((string)$st['url']) . '"' : '' ?> class="pstat"><b><?= h((string)$st['value']) ?></b><span><?= h((string)$st['label']) ?></span><?php if (!empty($st['sub'])): ?><small><?= h((string)$st['sub']) ?></small><?php endif; ?></<?= h($tag) ?>><?php endforeach; ?>

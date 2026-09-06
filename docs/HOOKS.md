@@ -34,6 +34,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `migrate.after_import` | event |  | `core/migrate.php` |
 | `notification.after_create` | event | After a notification was stored. | `app/notification.php` |
 | `notification.before_create` | filter | Filter/veto a notification (return null to skip). | `app/notification.php` |
+| `notification.kinds` | filter | Icon and verb per notification kind (kind => [icon, verb]); plugins register their own kinds. | `app/views/notifications.php` |
 | `notifications.rows` | filter | Filter rows on the notifications page. | `app/notification.php` |
 | `page.before_output` | filter | The whole HTML document before it is sent. Use for page-level placeholder replacement. | `core/render.php` |
 | `page.options` | filter | Filter the page() options (left/right columns, class, meta). | `core/render.php` |
@@ -89,6 +90,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.topic_list.item.after` | inline region (loop, no DB) | After each topic row (loop, no DB) | `app/views/topic_rows.php` |
 | `region.topic_list.item.meta` | inline region (loop, no DB) | In each topic row meta line (loop, no DB) | `app/views/topic_rows.php` |
 | `region.topic_list.item.title_suffix` | inline region (loop, no DB) | After each topic title (loop, no DB) | `app/views/topic_rows.php` |
+| `region.user.profile.actions` | html region |  | `app/views/profile.php` |
 | `region.user.profile.after` | html region | Profile page, below the header | `app/views/profile.php` |
 | `region.user.profile.cards` | list region | Profile page right column cards (list) | `app/user.php` |
 | `region.user.profile.stats` | list region | Profile header statistics (list of label/value/url) | `app/user.php` |
