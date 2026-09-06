@@ -153,7 +153,11 @@ function md_inline(string $s): string
     // images ![alt](url)
     $s = preg_replace_callback('/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/', static function (array $m): string {
         $u = md_safe_url(html_entity_decode($m[2], ENT_QUOTES, 'UTF-8'), true);
-        return $u === '' ? $m[0] : '<img src="' . h($u) . '" alt="' . $m[1] . '" loading="lazy">';
+        if ($u === '') return $m[0];
+        $alt = $m[1];
+        $width = '';
+        if (preg_match('/^(.*?)\|(\d{2,4})$/', $alt, $w)) { $alt = $w[1]; $width = ' width="' . (int)$w[2] . '"'; } // ![alt|300](url): display width in pixels
+        return '<img src="' . h($u) . '" alt="' . $alt . '"' . $width . ' loading="lazy">';
     }, $s) ?? $s;
     // links [text](url)
     $s = preg_replace_callback('/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/', static function (array $m): string {

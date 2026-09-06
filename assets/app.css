@@ -80,6 +80,7 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .form-help { color: var(--text-muted); font-size: var(--font-size-sm); margin-top: 4px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 16px; }
 .form-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.composer .form-actions, .page-compose .form-actions { justify-content: flex-end; }
 .check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .check input { width: auto; }
 .radio-row { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -280,7 +281,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .post-content h2 { font-size: var(--font-size-xl); } .post-content h3 { font-size: var(--font-size-lg); } .post-content h4 { font-size: var(--font-size-md); }
 .post-content blockquote { margin: 0 0 1em; padding: 6px 14px; border-left: 3px solid var(--brand); background: var(--panel-2); color: var(--text-muted); border-radius: 0 4px 4px 0; }
 .post-content blockquote > :last-child { margin-bottom: 0; }
-.post-content img { border-radius: var(--radius-sm); max-height: 600px; }
+.post-content img { border-radius: var(--radius-sm); max-height: 600px; max-width: min(100%, var(--post-img-max, 100%)); height: auto; }
 .post-content ul, .post-content ol { padding-left: 1.6em; margin: 0 0 1em; }
 .post-content .table-wrap { overflow-x: auto; max-width: 100%; margin-bottom: 1em; -webkit-overflow-scrolling: touch; contain: inline-size; } /* contain: the wide table must not widen the column */
 .post-content table { border-collapse: collapse; width: max-content; min-width: 100%; max-width: none; font-size: var(--font-size-sm); }

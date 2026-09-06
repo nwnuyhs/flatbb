@@ -51,7 +51,7 @@ $unread = notifications_unread();
 <?= raw(str_replace('{nonce}', csp_nonce(), setting('head_code'))) ?>
 <?= raw($head) ?>
 </head>
-<body class="<?= h($class) ?><?= $has_left ? '' : ' no-left' ?><?= $has_right ? '' : ' no-right' ?>">
+<body class="<?= h($class) ?><?= $has_left ? '' : ' no-left' ?><?= $has_right ? '' : ' no-right' ?>"<?= (int)setting('post_image_max', '0') > 0 ? ' style="--post-img-max:' . (int)setting('post_image_max') . 'px"' : '' ?>>
 <header class="topbar" data-slot="header">
   <div class="container topbar-inner">
     <?php if ($has_left): ?><button class="icon-btn drawer-toggle" type="button" aria-label="<?= t('Menu') ?>" data-toggle="drawer"><?= icon('menu') ?></button><?php endif; ?>

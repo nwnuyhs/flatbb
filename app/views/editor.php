@@ -31,7 +31,7 @@ $emoji = $cfg['emoji'] ? (array)hook('editor.emoji', ['😀', '😄', '😂', '�
 $help = $cfg['help'] ? (array)hook('editor.help', [
     ['**bold**  *italic*  ~~strike~~', t('Emphasis')], ['## Heading', t('Headings (## to ######)')], ['> quoted text', t('Quote')],
     ['- item / 1. item', t('Lists (indent two spaces to nest)')], ['`code`  ```lang … ```', t('Inline code and code blocks')],
-    ['[text](https://…)  ![alt](image-url)', t('Links and images')], ['| a | b |  then  |---|---|', t('Tables')], ['@username', t('Mention a member')],
+    ['[text](https://…)  ![alt](image-url)', t('Links and images')], ['![alt|300](image-url)', t('Image width in pixels')], ['| a | b |  then  |---|---|', t('Tables')], ['@username', t('Mention a member')],
 ], []) : [];
 $btn = static fn(string $k, array $b): string => !empty($b['html']) ? $b['html'] : '<button type="button" class="tb-btn' . (!empty($b['label']) ? ' tb-labeled' : '') . '" title="' . h((string)$b['title']) . '" data-cmd="' . h((string)$b['cmd']) . '" data-arg="' . h((string)($b['arg'] ?? '')) . '">' . icon((string)$b['icon']) . (!empty($b['label']) ? '<span>' . h((string)$b['label']) . '</span>' : '') . '</button>';
 ?>

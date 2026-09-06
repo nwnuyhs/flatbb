@@ -267,6 +267,7 @@ function setting_defaults(): array
         'per_page' => '25',
         'category_bar' => 'mobile',
         'posts_per_page' => '20',
+        'post_image_max' => '0',
         'allow_register' => '1',
         'invite_code' => '',
         'register_verify' => '0',
