@@ -70,6 +70,7 @@ function regions_known(): array
         'main.categories' => 'Category bar above the list tabs: All + top-level categories (list)',
         'main.tabs' => 'Tabs above topic lists (list)',
         'main.toolbar' => 'Right of the list tabs',
+        'topic_list.before' => 'Between the list tabs and the topic rows (announcements, notices)',
         'topic_list.item.title_suffix' => 'After each topic title (loop, no DB)',
         'topic_list.item.meta' => 'In each topic row meta line (loop, no DB)',
         'topic_list.item.after' => 'After each topic row (loop, no DB)',

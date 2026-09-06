@@ -90,6 +90,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.topic.sidebar.cards` | list region | Topic page right column cards (list) | `app/topic.php` |
 | `region.topic.sidebar.top` | html region | Topic page right column, top | `app/views/sidebar_topic.php` |
 | `region.topic_list.after` | html region | After the topic list, before pagination | `app/views/topic_list.php` |
+| `region.topic_list.before` | html region | Between the list tabs and the topic rows (announcements, notices) | `app/views/topic_list.php` |
 | `region.topic_list.item.after` | inline region (loop, no DB) | After each topic row (loop, no DB) | `app/views/topic_rows.php` |
 | `region.topic_list.item.meta` | inline region (loop, no DB) | In each topic row meta line (loop, no DB) | `app/views/topic_rows.php` |
 | `region.topic_list.item.title_suffix` | inline region (loop, no DB) | After each topic title (loop, no DB) | `app/views/topic_rows.php` |
