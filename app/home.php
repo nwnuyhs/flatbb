@@ -19,24 +19,51 @@ function home_latest(): never
 
 function home_top(string $period = 'week'): never
 {
-    $periods = ['day' => 86400, 'week' => 604800, 'month' => 2592000, 'year' => 31536000, 'all' => 0];
-    if (!isset($periods[$period])) not_found();
+    [$where, $params] = top_scope($period);
     $p = topic_list_page();
-    $where = $periods[$period] > 0 ? 'created_at>?' : '';
-    $params = $periods[$period] > 0 ? [now() - $periods[$period]] : [];
-    $list = topic_list_fetch($where, $params, '(like_count*3+reply_count*2+view_count/20.0) DESC, last_post_at DESC', $p);
-    $sub = tabs(array_map(static fn(string $k): array => ['label' => t(ucfirst($k)), 'url' => url('/top/' . $k), 'active' => $k === $period], array_combine(array_keys($periods), array_keys($periods))), 'tabs tabs-sub');
-    topic_list_page_render(t('Top'), $list, 'top', static fn(int $n): string => url('/top/' . $period, $n > 1 ? ['page' => $n] : []), $sub);
+    $list = topic_list_fetch($where, $params, top_order(), $p);
+    topic_list_page_render(t('Top'), $list, 'top', static fn(int $n): string => url('/top/' . $period, $n > 1 ? ['page' => $n] : []), top_sub_tabs($period, '/top'));
 }
 
 function home_unread(): never
 {
-    $me = need_login();
+    [$join, $where, $params] = unread_scope(need_login());
     $p = topic_list_page();
-    $join = 'LEFT JOIN fb_topic_reads r ON r.topic_id=t.id AND r.user_id=' . (int)$me['id'];
-    $where = '(r.topic_id IS NULL OR r.last_post_id<t.last_post_id) AND t.last_post_at>?';
-    $list = topic_list_fetch($where, [max((int)$me['created_at'], now() - 86400 * 30)], 't.last_post_at DESC', $p, false, $join);
+    $list = topic_list_fetch($where, $params, 't.last_post_at DESC', $p, false, $join);
     topic_list_page_render(t('Unread'), $list, 'unread', static fn(int $n): string => url('/unread', $n > 1 ? ['page' => $n] : []));
+}
+
+/** Top periods: key => seconds back (0 = all time). */
+function top_periods(): array
+{
+    return ['day' => 86400, 'week' => 604800, 'month' => 2592000, 'year' => 31536000, 'all' => 0];
+}
+
+/** Where clause and params for a Top period (404 on an unknown one); '' means no time limit. */
+function top_scope(string $period): array
+{
+    $periods = top_periods();
+    if (!isset($periods[$period])) not_found();
+    return $periods[$period] > 0 ? ['created_at>?', [now() - $periods[$period]]] : ['', []];
+}
+
+function top_order(): string
+{
+    return '(like_count*3+reply_count*2+view_count/20.0) DESC, last_post_at DESC';
+}
+
+/** Period tabs under Top; $base is '/top' or '/c/<slug>/top'. */
+function top_sub_tabs(string $period, string $base): string
+{
+    $keys = array_keys(top_periods());
+    return tabs(array_map(static fn(string $k): array => ['label' => t(ucfirst($k)), 'url' => url($base . '/' . $k), 'active' => $k === $period], array_combine($keys, $keys)), 'tabs tabs-sub');
+}
+
+/** Unread for a member: [join, where, params] — topics with posts they have not seen, last 30 days. */
+function unread_scope(array $me): array
+{
+    $join = 'LEFT JOIN fb_topic_reads r ON r.topic_id=t.id AND r.user_id=' . (int)$me['id'];
+    return [$join, '(r.topic_id IS NULL OR r.last_post_id<t.last_post_id) AND t.last_post_at>?', [max((int)$me['created_at'], now() - 86400 * 30)]];
 }
 
 function topic_list_page(): array
@@ -123,16 +150,19 @@ function category_bar(string $active): string
     return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
 }
 
-/** Tabs above topic lists (region main.tabs). */
-function list_tabs(string $active, array $extra = []): string
+/** Tabs above topic lists (region main.tabs). Inside a category the tabs and New Topic stay in that category. */
+function list_tabs(string $active, array $extra = [], ?array $category = null): string
 {
+    $base = $category !== null ? '/c/' . $category['slug'] : '';
     $items = [
-        'latest' => ['label' => t('Latest'), 'url' => url('/latest'), 'icon' => 'clock', 'active' => $active === 'latest'],
-        'top' => ['label' => t('Top'), 'url' => url('/top'), 'icon' => 'flame', 'active' => $active === 'top'],
+        'latest' => ['label' => t('Latest'), 'url' => url($base !== '' ? $base : '/latest'), 'icon' => 'clock', 'active' => $active === 'latest'],
+        'top' => ['label' => t('Top'), 'url' => url($base . '/top'), 'icon' => 'flame', 'active' => $active === 'top'],
     ];
-    if (uid() > 0) $items['unread'] = ['label' => t('Unread'), 'url' => url('/unread'), 'icon' => 'dot', 'active' => $active === 'unread'];
+    if (uid() > 0) $items['unread'] = ['label' => t('Unread'), 'url' => url($base . '/unread'), 'icon' => 'dot', 'active' => $active === 'unread'];
     $items += $extra;
-    $items = region_list('main.tabs', $items, ['active' => $active]);
-    $toolbar = region('main.toolbar', ['active' => $active], uid() > 0 && can('post') ? '<a class="btn btn-primary" href="' . h(url('/new-topic')) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
+    $ctx = ['active' => $active, 'category' => $category];
+    $items = region_list('main.tabs', $items, $ctx);
+    $new = url('/new-topic', $category !== null ? ['category' => (int)$category['id']] : []);
+    $toolbar = region('main.toolbar', $ctx, uid() > 0 && can('post') ? '<a class="btn btn-primary" href="' . h($new) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
     return '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
 }

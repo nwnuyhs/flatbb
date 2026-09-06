@@ -302,6 +302,7 @@ return [
     'Nothing found. Try different words.' => 'Nichts gefunden. Versuchen Sie andere Wörter.',
     'Nothing logged yet.' => 'Noch nichts protokolliert.',
     'Nothing to preview.' => 'Nichts zum Anzeigen der Vorschau.',
+    'Nothing unread here.' => 'Hier gibt es nichts Ungelesenes.',
     'Notifications' => 'Benachrichtigungen',
     'Notify me when someone mentions me' => 'Benachrichtigen, wenn mich jemand erwähnt',
     'Notify me when someone replies to my topics' => 'Benachrichtigen, wenn jemand auf meine Themen antwortet',

@@ -302,6 +302,7 @@ return [
     'Nothing found. Try different words.' => 'Niets gevonden. Probeer andere woorden.',
     'Nothing logged yet.' => 'Nog niets gelogd.',
     'Nothing to preview.' => 'Niets om te bekijken.',
+    'Nothing unread here.' => 'Niets ongelezen hier.',
     'Notifications' => 'Meldingen',
     'Notify me when someone mentions me' => 'Stuur me een melding als iemand mij vermeldt',
     'Notify me when someone replies to my topics' => 'Stuur me een melding als iemand op mijn topics reageert',

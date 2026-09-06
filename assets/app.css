@@ -523,7 +523,8 @@ body.adrawer-open { overflow: hidden; }
   .list-head > .btn-primary { display: none; }
   .tabs { padding: 3px; }
   .tab { padding: 4px 9px; font-size: var(--font-size-sm); }
-  .topic-row { gap: 10px; padding: 10px 12px; }
+  .topic-rows { margin: 0 -12px; border-left: 0; border-right: 0; border-radius: 0; }
+  .topic-row { gap: 8px; padding: 10px; }
   .row-avatar .avatar { width: 32px; height: 32px; font-size: 14px; }
   .row-title { font-size: var(--font-size-md); margin-bottom: 2px; }
   .row-meta { gap: 8px; font-size: var(--font-size-xs); }
