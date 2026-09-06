@@ -529,7 +529,11 @@ body.adrawer-open { overflow: hidden; }
   .post-avatar .avatar { width: 36px; height: 36px; font-size: 15px; }
   .act span, .tb-preview span { display: none; }
   .act[data-like] span { display: inline; }
-  .profile-head { flex-wrap: wrap; }
+  .profile-head { grid-template-columns: auto 1fr; gap: 4px 12px; padding: 14px; }
+  .profile-head .avatar { width: 56px; height: 56px; font-size: 22px; }
+  .profile-side { grid-column: 1 / -1; flex-wrap: wrap; margin-top: 6px; }
+  .profile-meta { gap: 6px 12px; }
+  .profile-meta span { white-space: nowrap; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .me-stats span { font-size: 10px; }
 }

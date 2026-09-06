@@ -1,6 +1,6 @@
 # flatbb
 
-Source: https://github.com/nwnuyhs/flatbb · Download: https://www.flatbb.com/download · Plugins: https://www.flatbb.com/market
+Website: https://www.flatbb.com · Download: https://www.flatbb.com/download · Plugins: https://www.flatbb.com/market
 
 
 A flat, lightweight, AI-friendly forum. Plain PHP 8.1+, SQLite or MySQL 5.7+, no framework, no Composer, no build step. Three-column layout in the spirit of Discourse and Flarum, a plugin system that AI assistants can work with, and one-command publishing to the plugin marketplace at [www.flatbb.com](https://www.flatbb.com).
