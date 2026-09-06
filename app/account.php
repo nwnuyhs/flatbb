@@ -14,6 +14,8 @@ function account_login(): never
         $pass = post_secret('password');
         $user = str_contains($name, '@') ? one('SELECT * FROM fb_users WHERE email=?', [mb_strtolower($name)]) : user_by_name($name);
         if (!login_throttle_ok()) fail(t('Too many attempts. Please wait a minute.'), url('/login'));
+        $errors = (array)hook('account.login_validate', [], ['username' => $name]); // plugins: challenges, blocks
+        if ($errors !== []) fail(implode(' ', $errors), url('/login', $back !== '' ? ['back' => $back] : []));
         if ($user === null || !password_verify($pass, (string)$user['password'])) {
             login_throttle_hit();
             fail(t('Incorrect username or password.'), url('/login', $back !== '' ? ['back' => $back] : []));
