@@ -124,6 +124,7 @@ function admin_settings_fields(): array
         ]],
         'content' => [t('Content'), [
             'per_page' => ['number', t('Topics per page'), '', null, 5, 100],
+            'category_bar' => ['select', t('Category bar above topic lists'), t('A row of top-level categories above Latest / Top. On phones the left column is hidden, so this is the quickest way into a category.'), ['mobile' => t('Phones only'), 'always' => t('Always'), 'off' => t('Off')]],
             'posts_per_page' => ['number', t('Posts per page'), '', null, 5, 100],
             'post_interval' => ['number', t('Seconds between posts'), '', null, 0, 3600],
             'new_user_limit_hours' => ['number', t('New account restriction (hours)'), t('0 disables the restriction.'), null, 0, 720],

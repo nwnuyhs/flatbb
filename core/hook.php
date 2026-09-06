@@ -67,6 +67,7 @@ function regions_known(): array
         'sidebar.left.nav' => 'Left column navigation links (list)',
         'sidebar.left.bottom' => 'Left column, bottom',
         'main.before' => 'Above the main content on every page',
+        'main.categories' => 'Category bar above the list tabs: All + top-level categories (list)',
         'main.tabs' => 'Tabs above topic lists (list)',
         'main.toolbar' => 'Right of the list tabs',
         'topic_list.item.title_suffix' => 'After each topic title (loop, no DB)',

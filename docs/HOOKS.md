@@ -68,6 +68,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.header.user_menu` | list region | User dropdown menu items (list) | `app/views/layout.php` |
 | `region.main.after` | html region | Below the main content on every page | `app/views/layout.php` |
 | `region.main.before` | html region | Above the main content on every page | `app/views/layout.php` |
+| `region.main.categories` | list region | Category bar above the list tabs: All + top-level categories (list) | `app/home.php` |
 | `region.main.tabs` | list region | Tabs above topic lists (list) | `app/home.php` |
 | `region.main.toolbar` | html region | Right of the list tabs | `app/home.php` |
 | `region.post.actions` | list region | Post action buttons (list, loop, no DB) | `app/views/post.php` |

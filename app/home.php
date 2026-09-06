@@ -102,7 +102,27 @@ function topic_list_page_render(string $title, array $list, string $active, call
     page($title, $main, ['class' => 'page-list page-' . $active] + $opts);
 }
 
-/** Tabs above topic lists (region main.tabs). */
+/**
+ * Category bar above the list tabs (region main.categories, list): All + top-level categories, the current one highlighted
+ * (a child page highlights its parent). Setting category_bar: mobile (default; the left column is hidden there) | always | off.
+ */
+function category_bar(string $active): string
+{
+    $mode = setting('category_bar', 'mobile');
+    if ($mode === 'off' || $active === 'categories') return '';
+    $cur = current_path();
+    $here = str_starts_with($cur, '/c/') ? category_by_slug(substr($cur, 3)) : null;
+    $here_id = $here !== null ? ((int)$here['parent_id'] > 0 ? (int)$here['parent_id'] : (int)$here['id']) : 0;
+    $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'active' => $here_id === 0, 'weight' => 0]];
+    foreach (category_tree()[0] ?? [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => $c['name'], 'url' => category_url($c), 'active' => (int)$c['id'] === $here_id, 'color' => (string)$c['color'], 'weight' => $i + 1];
+    $items = region_list('main.categories', $items, ['active' => $active, 'category' => $here]);
+    if (count($items) < 2) return '';
+    $html = '';
+    foreach ($items as $it) $html .= '<a class="cat-pill' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['color']) ? '<span class="cat-dot" style="background:' . h((string)$it['color']) . '"></span>' : '') . h((string)$it['label']) . '</a>';
+    return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
+}
+
+/** Tabs above topic lists (region main.tabs), preceded by the category bar. */
 function list_tabs(string $active, array $extra = []): string
 {
     $items = [
@@ -113,5 +133,5 @@ function list_tabs(string $active, array $extra = []): string
     $items += $extra;
     $items = region_list('main.tabs', $items, ['active' => $active]);
     $toolbar = region('main.toolbar', ['active' => $active], uid() > 0 && can('post') ? '<a class="btn btn-primary" href="' . h(url('/new-topic')) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
-    return '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
+    return category_bar($active) . '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
 }

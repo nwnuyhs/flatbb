@@ -265,6 +265,7 @@ function setting_defaults(): array
         'site_favicon' => '',
         'site_lang' => '',
         'per_page' => '25',
+        'category_bar' => 'mobile',
         'posts_per_page' => '20',
         'allow_register' => '1',
         'invite_code' => '',
