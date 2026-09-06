@@ -18,4 +18,5 @@
     <button type="submit" class="btn btn-primary btn-block"><?= t('Create account') ?></button>
   </form>
   <p class="auth-alt"><?= t('Already have an account?') ?> <a href="<?= h(url('/login')) ?>"><?= t('Sign in') ?></a></p>
+  <?= raw((string)hook('auth.register.after', '', [])) ?>
 </div>

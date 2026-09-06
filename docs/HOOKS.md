@@ -23,6 +23,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `api.<action>` | filter | Handle /api/<action>; return an array to respond as JSON. | `app/api.php` |
 | `app.boot` | event | Every request after plugins are loaded. Preload data here. | `core/boot.php` |
 | `auth.login.after` | filter | HTML below the sign-in form. | `app/views/login.php` |
+| `auth.register.after` | filter | Html under the registration form (social sign-up buttons). | `app/views/register.php` |
 | `cron.jobs` | filter | Filter the list of scheduled jobs. | `core/cron.php` |
 | `editor.emoji` | filter |  | `app/views/editor.php` |
 | `editor.help` | filter |  | `app/views/editor.php` |

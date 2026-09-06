@@ -10,5 +10,5 @@
     <button type="submit" class="btn btn-primary btn-block"><?= t('Sign in') ?></button>
   </form>
   <?php if (setting('allow_register', '1') === '1'): ?><p class="auth-alt"><?= t('No account yet?') ?> <a href="<?= h(url('/register')) ?>"><?= t('Create one') ?></a></p><?php endif; ?>
-  <?= raw((string)hook('auth.login.after', '', [])) ?>
+  <?= raw((string)hook('auth.login.after', '', ['back' => $back])) ?>
 </div>

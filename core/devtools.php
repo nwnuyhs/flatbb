@@ -223,6 +223,7 @@ function docs_hook_descriptions(): array
         'admin.tools' => 'Add rows to Admin → Tools.',
         'admin.tool' => 'Handle a custom tool action.',
         'plugin.settings_saved' => 'After plugin settings were saved (ctx: id).',
+        'auth.register.after' => 'Html under the registration form (social sign-up buttons).',
         'auth.login.after' => 'HTML below the sign-in form.',
     ];
 }
