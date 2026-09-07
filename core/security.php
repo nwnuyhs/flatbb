@@ -173,16 +173,21 @@ function admin_log_recent(int $n = 20): array
 
 /* ---------------------------------------------------------------- confirm mode (sudo) */
 
-const SUDO_TTL = 600;
+/** How long a password confirmation lasts, in seconds (Settings → Security, minutes; 0 = confirmation switched off). */
+function sudo_ttl(): int
+{
+    return max(0, min(1440, (int)setting('sudo_minutes', '10'))) * 60;
+}
 
 function sudo_signature(array $user, int $exp): string
 {
     return hash_hmac('sha256', (int)$user['id'] . '.' . $exp . '.sudo', secret() . (string)$user['password']);
 }
 
-/** Whether the current admin confirmed the password within the last ten minutes. */
+/** Whether the current admin confirmed the password within the confirmation window (always true when the window is 0 = off). */
 function sudo_ok(): bool
 {
+    if (sudo_ttl() === 0) return me() !== null;
     $me = me();
     $raw = (string)($_COOKIE['fb_sudo'] ?? '');
     if ($me === null || substr_count($raw, '.') !== 2) return false;
@@ -191,10 +196,10 @@ function sudo_ok(): bool
     return hash_equals(sudo_signature($me, (int)$exp), $sig);
 }
 
-/** Remember a successful password confirmation for SUDO_TTL seconds. */
+/** Remember a successful password confirmation for sudo_ttl() seconds. */
 function sudo_grant(array $user): void
 {
-    $exp = now() + SUDO_TTL;
+    $exp = now() + max(60, sudo_ttl());
     app_cookie('fb_sudo', (int)$user['id'] . '.' . $exp . '.' . sudo_signature($user, $exp), $exp);
 }
 

@@ -12,7 +12,7 @@ function admin_index(string $page = 'dashboard'): never
     need_admin();
     $fn = 'admin_page_' . str_replace('-', '_', $page);
     if (!preg_match('/^[a-z][a-z0-9-]*$/', $page) || !function_exists($fn)) not_found();
-    if (in_array($page, ['settings', 'users', 'groups', 'plugins', 'tools', 'layout', 'updates'], true)) need_sudo(); // confirm mode: password re-entered within ten minutes
+    if (in_array($page, ['settings', 'users', 'groups', 'plugins', 'tools', 'layout', 'updates'], true)) need_sudo(); // confirm mode: password re-entered within the window set in Settings → Security
     $fn();
 }
 
@@ -154,6 +154,7 @@ function admin_settings_fields(): array
         ]],
         'security' => [t('Security'), [
             'csp_mode' => ['select', t('Content Security Policy'), t('Report only logs violations to data/csp-report.log (see Tools) without blocking anything; switch to Enforce once the log stays clean. Inline scripts in the extra HTML fields need nonce="{nonce}".'), ['off' => t('Off'), 'report' => t('Report only'), 'enforce' => t('Enforce')]],
+            'sudo_minutes' => ['number', t('Password confirmation window (minutes)'), t('High-risk admin pages (settings, users, plugins, updates…) ask for your password again after this long. 0 switches the confirmation off; keep it on if others can reach your signed-in browser.'), null, 0, 1440],
             'trusted_proxies' => ['text', t('Trusted proxies'), t('Behind Cloudflare enter "cloudflare"; otherwise list the proxy IPs or CIDRs. The real visitor address is then read from the proxy headers (throttling, IP records and bans depend on it).')],
         ]],
         'advanced' => [t('Advanced'), [
@@ -372,7 +373,7 @@ function admin_page_confirm(): never
         redirect(url((string)($p['path'] ?? '/admin'), $params));
     }
     $body = '<form method="post" action="' . h(admin_url('confirm')) . '" class="admin-form">' . csrf_field() . '<input type="hidden" name="back" value="' . h($back) . '">'
-        . '<p class="muted">' . t('This area changes who can do what on your forum. Confirm your password to continue; you will not be asked again for ten minutes.') . '</p>'
+        . '<p class="muted">' . t('This area changes who can do what on your forum. Confirm your password to continue; you will not be asked again for %d minutes.', intdiv(max(60, sudo_ttl()), 60)) . '</p>'
         . form_row(t('Password'), input('password', '', ['type' => 'password', 'required' => true, 'autofocus' => true, 'autocomplete' => 'current-password']))
         . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('shield') . t('Confirm') . '</button></div></form>';
     admin_page(t('Confirm your password'), $body, '');
