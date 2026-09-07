@@ -97,7 +97,7 @@ function regions_known(): array
         'user.profile.stats' => 'Profile header statistics (list of label/value/url)',
         'user.profile.after' => 'Profile page, below the header',
         'user.profile.cards' => 'Profile page right column cards (list)',
-        'user.settings.tabs' => 'Settings page tabs (list)',
+        'user.settings.tabs' => 'Settings page menu (list): id => [label, group account|preferences|security|community|developer|more, weight]',
         'auth.login.extra' => 'Inside the sign-in form',
         'auth.register.extra' => 'Inside the registration form',
         'footer.left' => 'Footer, left',

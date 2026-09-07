@@ -70,8 +70,15 @@ function user_profile(string $name, string $tab = 'topics'): never
 function user_settings(string $tab = 'profile'): never
 {
     $me = need_login();
-    $tabs = ['profile' => t('Profile'), 'avatar' => t('Avatar'), 'password' => t('Password'), 'preferences' => t('Preferences'), 'points' => t('Points')];
+    $tabs = [
+        'profile' => ['label' => t('Profile'), 'group' => 'account', 'weight' => 10],
+        'avatar' => ['label' => t('Avatar'), 'group' => 'account', 'weight' => 20],
+        'password' => ['label' => t('Password'), 'group' => 'account', 'weight' => 30],
+        'preferences' => ['label' => t('Preferences'), 'group' => 'preferences', 'weight' => 40],
+        'points' => ['label' => t('Points'), 'group' => 'community', 'weight' => 60],
+    ];
     $tabs = region_list('user.settings.tabs', $tabs, ['user' => $me]);
+    foreach ($tabs as $k => $item) if (!is_array($item)) $tabs[$k] = ['label' => (string)$item, 'group' => 'more', 'weight' => 100]; // a plugin that only gave a label
     if (!isset($tabs[$tab])) not_found();
     if (is_post()) {
         check_csrf();
@@ -147,7 +154,7 @@ function user_settings(string $tab = 'profile'): never
         $extra = '<p class="points-balance"><b>' . human_number((int)$me['points']) . '</b> ' . t('points') . ' <span class="muted small">' . t('Only you and the staff can see this history.') . '</span></p>'
             . points_log_html($log['rows']) . pagination($log['pagination'], static fn(int $n): string => url('/settings/points', $n > 1 ? ['page' => $n] : []));
     }
-    page(t('Settings'), view('settings', ['user' => $me, 'tab' => $tab, 'tabs' => $tabs, 'prefs' => json_decode_array((string)$me['prefs']), 'extra' => $extra]), ['class' => 'page-settings']);
+    page(t('Settings'), view('settings', ['user' => $me, 'tab' => $tab, 'tabs' => $tabs, 'prefs' => json_decode_array((string)$me['prefs']), 'extra' => $extra]), ['class' => 'page-settings', 'right' => false]);
 }
 
 function user_pref(string $key, mixed $default = null): mixed

@@ -37,6 +37,9 @@
     return t === 'dark';
   }
 
+  /* a select that navigates: <select data-jump><option value="/url"> (settings menu on phones) */
+  document.addEventListener('change', function (e) { var s = e.target.closest('select[data-jump]'); if (s && s.value) window.location.href = s.value; });
+
   /* ---------- global click handling ---------- */
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-toggle]');

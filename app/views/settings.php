@@ -1,7 +1,22 @@
-<?php /** Account settings. Variables: user, tab, tabs, prefs, extra */ ?>
+<?php /** Account settings. Variables: user, tab, tabs (id => label, group, weight), prefs, extra */
+$groups = ['account' => t('Account'), 'preferences' => t('Preferences'), 'security' => t('Security'), 'community' => t('Community'), 'developer' => t('Developer'), 'more' => t('More')];
+$by = [];
+foreach ($tabs as $k => $item) $by[(string)($item['group'] ?? 'more')][$k] = $item;
+foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($g); // a group only plugins know
+?>
 <div class="settings">
   <h1><?= t('Settings') ?></h1>
-  <?= tabs(array_map(static fn(string $k, string $label): array => ['label' => $label, 'url' => url('/settings/' . $k), 'active' => $k === $tab], array_keys($tabs), $tabs)) ?>
+  <div class="settings-grid">
+  <nav class="settings-menu" data-slot="user.settings.tabs">
+    <?php foreach ($groups as $g => $label): if (empty($by[$g])) continue; ?>
+    <h4><?= h($label) ?></h4>
+    <?php foreach ($by[$g] as $k => $item): ?><a class="side-link<?= $k === $tab ? ' active' : '' ?>" href="<?= h(url('/settings/' . $k)) ?>"><span><?= h((string)$item['label']) ?></span></a><?php endforeach; ?>
+    <?php endforeach; ?>
+  </nav>
+  <div class="settings-body">
+  <select class="settings-select" data-jump aria-label="<?= t('Settings') ?>">
+    <?php foreach ($groups as $g => $label): if (empty($by[$g])) continue; ?><optgroup label="<?= h($label) ?>"><?php foreach ($by[$g] as $k => $item): ?><option value="<?= h(url('/settings/' . $k)) ?>"<?= $k === $tab ? ' selected' : '' ?>><?= h((string)$item['label']) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?>
+  </select>
   <?php if ($tab === 'points'): ?>
   <div class="settings-form settings-points"><?= raw($extra) ?></div>
   <?php else: ?>
@@ -38,4 +53,6 @@
     <div class="form-actions"><button type="submit" class="btn btn-primary"><?= t('Save') ?></button></div>
   </form>
   <?php endif; ?>
-</div>
+  </div>
+  </div>
+  </div>
