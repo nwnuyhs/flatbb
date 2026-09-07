@@ -180,6 +180,7 @@ function docs_hook_descriptions(): array
         'topic.after_delete' => 'After a topic was soft-deleted.',
         'topic.after_action' => 'After pin/lock/move/restore (ctx: topic_id, action).',
         'topic.view' => 'Filter the topic row shown on the topic page (ctx: posts).',
+        'composer.values' => 'Filter the values a composer opens with: title, body, category_id, tags for a new topic (ctx mode new), body for a reply (ctx mode reply, topic). Used by drafts plugins.',
         'topic.title' => 'Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB.',
         'topic.posts' => 'Filter the posts of the current page (batch-loaded, attach extra data here).',
         'topic_list.rows' => 'Filter topic rows of any list (batch-loaded, attach extra data here).',

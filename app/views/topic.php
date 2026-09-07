@@ -62,7 +62,8 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
       <?= csrf_field() ?>
       <input type="hidden" name="reply_to" value="" data-reply-to>
       <div class="reply-target hidden" data-reply-target><?= icon('reply') ?><span></span><button type="button" class="link" data-clear-reply><?= t('cancel') ?></button></div>
-      <?= editor('body', '', t('Write your reply…'), ['scope' => 'reply-' . (int)$topic['id'], 'ctx' => ['topic' => $topic]]) ?>
+      <?php $reply_vals = (array)hook('composer.values', ['body' => ''], ['mode' => 'reply', 'topic' => $topic]); ?>
+      <?= editor('body', (string)($reply_vals['body'] ?? ''), t('Write your reply…'), ['scope' => 'reply-' . (int)$topic['id'], 'ctx' => ['topic' => $topic]]) ?>
       <?= region('composer.extra', ['topic' => $topic]) ?>
       <div class="form-actions"><button type="submit" class="btn btn-primary"><?= icon('reply') ?><?= t('Post reply') ?></button></div>
     </form>

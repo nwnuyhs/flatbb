@@ -203,7 +203,8 @@ function topic_new(): never
         redirect(topic_url(topic_by_id($tid)));
     }
     $pre = category_by_id(get_int('category', 0));
-    page(t('New Topic'), view('topic_form', ['topic' => null, 'post' => null, 'categories' => $cats, 'category_id' => (int)($pre['id'] ?? 0), 'tags' => '', 'action' => url('/new-topic')]), ['class' => 'page-compose', 'right' => false]);
+    $vals = (array)hook('composer.values', ['title' => '', 'body' => '', 'category_id' => (int)($pre['id'] ?? 0), 'tags' => ''], ['mode' => 'new']); // a drafts plugin fills these
+    page(t('New Topic'), view('topic_form', ['topic' => null, 'post' => null, 'categories' => $cats, 'category_id' => (int)$vals['category_id'], 'tags' => (string)$vals['tags'], 'title' => (string)$vals['title'], 'body' => (string)$vals['body'], 'action' => url('/new-topic')]), ['class' => 'page-compose', 'right' => false]);
 }
 
 /** POST /t/{id}/reply */

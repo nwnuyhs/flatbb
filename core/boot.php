@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.38');
+define('FLATBB_VERSION', '0.1.39');
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');
 define('APP_DIR', ROOT . '/app');
