@@ -102,6 +102,8 @@ function icon_paths(): array
         'circle' => '<circle cx="12" cy="12" r="9"/>',
         'home' => '<path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/>',
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'chevron-up' => '<path d="m6 15 6-6 6 6"/>',
+        'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
         'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18"/>',
         'flame' => '<path d="M12 22c4.4 0 7-3 7-7 0-3-1.5-5-3-7-.5 2-1.5 3-2.5 3.5C13 9 12 6 12 2 8 5 5 9 5 15c0 4 2.6 7 7 7z"/>',
         'dot' => '<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>',

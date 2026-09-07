@@ -459,6 +459,10 @@ table.admin td form { display: inline; }
 .admin-sub:first-child { margin-top: 0; }
 .chips { display: flex; gap: 10px; flex-wrap: wrap; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); }
+.chip .order { display: inline-flex; margin-inline-start: -2px; }
+.chip .order button { border: 0; background: none; padding: 0 1px; cursor: pointer; color: var(--text-subtle); line-height: 1; }
+.chip .order button:hover { color: var(--text); }
+.chip .order .icon { width: 14px; height: 14px; }
 textarea.mono { font-family: var(--mono); font-size: 12px; }
 
 

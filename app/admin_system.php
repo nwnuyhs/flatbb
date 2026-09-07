@@ -92,6 +92,14 @@ function admin_page_plugins(): never
 
 /* ---------------------------------------------------------------- layout */
 
+/** Every item of a list region as the site shows it: the core's own entries plus what plugins add, in the effective order (hidden ones included). */
+function admin_layout_items(string $region): array
+{
+    try { $items = hook('region.' . $region, layout_core_items($region), []); } catch (Throwable) { $items = []; }
+    $items = array_filter(is_array($items) ? $items : [], 'is_array');
+    return layout_order_items($region, $items);
+}
+
 function admin_page_layout(): never
 {
     $list_url = admin_url('layout');
@@ -107,6 +115,20 @@ function admin_page_layout(): never
             if (!isset(regions_known()[$region]) || $item === '') fail(t('Choose a position.'), $list_url);
             if ($action === 'item_off') $map[$region][$item] = 1; else unset($map[$region][$item]);
             save_settings(['layout_hidden_items' => json_encode_value(array_filter($map))]);
+            json_ok();
+        }
+        if ($action === 'item_up' || $action === 'item_down') {
+            $region = post_str('region', 60);
+            $item = post_str('item', 200);
+            if (!isset(regions_known()[$region]) || $item === '') fail(t('Choose a position.'), $list_url);
+            $ids = array_keys(admin_layout_items($region)); // the order as shown, saved order included
+            $pos = array_search($item, $ids, true);
+            $to = $pos === false ? -1 : ($action === 'item_up' ? $pos - 1 : $pos + 1);
+            if ($pos === false || $to < 0 || $to >= count($ids)) json_ok();
+            [$ids[$pos], $ids[$to]] = [$ids[$to], $ids[$pos]];
+            $map = json_decode_array(setting('layout_item_order', '{}'));
+            $map[$region] = array_values($ids);
+            save_settings(['layout_item_order' => json_encode_value($map)]);
             json_ok();
         }
         if ($action === 'plugin_on' || $action === 'plugin_off') {
@@ -171,15 +193,21 @@ function admin_page_layout(): never
             $on = layout_plugin_enabled('region.' . $name, $pid);
             $chips .= '<span class="chip">' . admin_switch($list_url, ['action' => $on ? 'plugin_off' : 'plugin_on', 'region' => $name, 'plugin' => $pid], $on, t('Show in this position')) . h(plugins()[$pid]['name'] ?? $pid) . '</span>';
         }
-        // single items of list regions (links, tabs, menu entries) can be hidden one by one; loop regions have no items outside a row
-        if (str_contains($desc, '(list)') && isset($by_hook[$name])) {
+        // single items of list regions (links, tabs, menu entries) can be hidden one by one and moved up or down; loop regions have no items outside a row
+        if (str_contains($desc, '(list)')) {
             $hidden = layout_hidden_items($name);
-            try { $items = hook('region.' . $name, [], []); } catch (Throwable) { $items = []; }
-            foreach (is_array($items) ? $items : [] as $iid => $it) {
-                if (!is_array($it)) continue;
+            $items = admin_layout_items($name);
+            $n = count($items);
+            $k = 0;
+            foreach ($items as $iid => $it) {
                 $on = !isset($hidden[(string)$iid]);
                 $label = (string)($it['label'] ?? $iid);
-                $chips .= '<span class="chip chip-item">' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . '</span>';
+                $arrows = $n < 2 ? '' : '<span class="order">'
+                    . ($k > 0 ? action_form($list_url, '<button type="submit" title="' . t('Move up') . '">' . icon('chevron-up') . '</button>', ['action' => 'item_up', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
+                    . ($k < $n - 1 ? action_form($list_url, '<button type="submit" title="' . t('Move down') . '">' . icon('chevron-down') . '</button>', ['action' => 'item_down', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
+                    . '</span>';
+                $chips .= '<span class="chip chip-item">' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . $arrows . '</span>';
+                $k++;
             }
         }
         $rows[] = [

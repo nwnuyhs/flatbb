@@ -15,7 +15,7 @@ $user_menu = $me ? region_list('header.user_menu', [
     'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user'],
     'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark'],
     'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings'],
-] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield']] : []), ['user' => $me]) : [];
+] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'weight' => 100]] : []), ['user' => $me]) : [];
 $footer_links = region_list('footer.links', [
     'categories' => ['label' => t('Categories'), 'url' => url('/categories')],
     'tags' => ['label' => t('Tags'), 'url' => url('/tags')],

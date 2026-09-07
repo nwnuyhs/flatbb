@@ -124,30 +124,59 @@ function region(string $name, array $ctx = [], string $default = '', bool $wrap 
  *  - weight  (int, default 0): lower comes first, equal weights keep insertion order
  *  - visible ('everyone' default | 'members' | 'admins'): filtered here, once, for every plugin
  *  - new_tab (bool): links open in a new tab where the template supports it
- * Admins can hide single items per region in Admin -> Layout (setting layout_hidden_items).
+ * Admins can hide single items per region and put them in any order in Admin -> Layout (settings layout_hidden_items, layout_item_order).
  */
 function region_list(string $name, array $items, array $ctx = []): array
 {
     $items = hook('region.' . $name, $items, $ctx);
     if (!is_array($items)) return [];
     $hidden = layout_hidden_items($name);
-    $sorted = [];
-    $i = 0;
+    $shown = [];
     foreach ($items as $id => $item) {
         if (isset($hidden[(string)$id])) continue;
-        $weight = 0;
         if (is_array($item)) {
             $vis = (string)($item['visible'] ?? 'everyone');
             if (($vis === 'members' && uid() <= 0) || ($vis === 'admins' && !is_admin())) continue;
-            $weight = (int)($item['weight'] ?? 0);
         }
-        // plain HTML items (sidebar cards are rendered views) keep their place: weight 0, always visible
-        $sorted[$id] = ['w' => $weight, 'o' => $i++, 'v' => $item];
+        $shown[$id] = $item; // plain HTML items (sidebar cards are rendered views) keep their place: weight 0, always visible
     }
-    uasort($sorted, static fn(array $a, array $b): int => [$a['w'], $a['o']] <=> [$b['w'], $b['o']]);
+    return layout_order_items($name, $shown);
+}
+
+/**
+ * Sort the items of a list region: the order an admin saved in Admin → Layout comes first (in that order),
+ * then everything else by weight, then registration order. Plain HTML items count as weight 0.
+ */
+function layout_order_items(string $region, array $items): array
+{
+    $saved = array_flip(layout_item_order($region));
+    $sorted = [];
+    $i = 0;
+    foreach ($items as $id => $item) {
+        $w = is_array($item) ? (int)($item['weight'] ?? 0) : 0;
+        $sorted[$id] = ['k' => isset($saved[(string)$id]) ? [0, $saved[(string)$id], 0] : [1, $w, $i++], 'v' => $item];
+    }
+    uasort($sorted, static fn(array $a, array $b): int => $a['k'] <=> $b['k']);
     $out = [];
     foreach ($sorted as $id => $e) $out[$id] = $e['v'];
     return $out;
+}
+
+/** Item ids an admin ordered in one list region, first to last (setting layout_item_order: {region: [id, …]}). */
+function layout_item_order(string $region): array
+{
+    $map = request_cache('layout_item_order', static fn(): array => json_decode_array(setting('layout_item_order', '{}'))) ?? [];
+    return array_values(array_map('strval', (array)($map[$region] ?? [])));
+}
+
+/** The items the core itself puts into a list region (label only), so Admin → Layout can order them next to plugin items. */
+function layout_core_items(string $region): array
+{
+    return match ($region) {
+        'header.user_menu' => ['profile' => ['label' => t('Profile')], 'bookmarks' => ['label' => t('Bookmarks')], 'settings' => ['label' => t('Settings')], 'admin' => ['label' => t('Admin')]],
+        'footer.links' => ['categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')], 'rss' => ['label' => 'RSS']],
+        default => [],
+    };
 }
 
 /** Items an admin hid in one list region: id => 1 (setting layout_hidden_items: {region: {id: 1}}). */
