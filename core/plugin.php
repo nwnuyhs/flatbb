@@ -290,9 +290,14 @@ function plugin_install_zip(string $file): string
     if (!$zip->extractTo(PLUGIN_DIR)) { $zip->close(); throw new RuntimeException(t('Could not write to plugins/.')); }
     $zip->close();
     foreach (glob(PLUGIN_DIR . '/__MACOSX') ?: [] as $junk) upgrade_rmdir($junk);
+    if (function_exists('opcache_invalidate')) { // PHP-FPM may still hold the previous version of these files
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(plugin_path($id), FilesystemIterator::SKIP_DOTS)) as $f) if (str_ends_with($f->getFilename(), '.php')) @opcache_invalidate($f->getPathname(), true);
+    }
     plugin_sync();
     if (plugin_peek($id) === null) throw new RuntimeException(t('The installed files do not contain a valid manifest.'));
     if ($was_enabled) plugin_enable($id);
+    // this request still runs the plugin's previous code (loaded at boot), so the asset bundle is rebuilt by the next one
+    if ($was_enabled) save_settings(['plugin_assets_stale' => '1']);
     fire('plugin.after_install_zip', ['id' => $id]);
     return $id;
 }
@@ -325,6 +330,7 @@ function plugin_assets_build(): void
 
 function plugin_assets_tag(string $type): string
 {
+    if (setting('plugin_assets_stale', '') === '1') { save_settings(['plugin_assets_stale' => '']); plugin_assets_build(); } // a plugin was re-uploaded: fresh code now, rebuild once
     $file = CACHE_DIR . '/plugins.' . $type;
     if (!is_file($file) || filesize($file) === 0) return '';
     $u = h(url('/plugin-assets/' . $type, ['v' => setting('plugin_assets_hash', '0')]));
