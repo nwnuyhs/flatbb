@@ -341,5 +341,27 @@
       b.textContent = r.count; b.classList.toggle('hidden', !r.count);
     });
   }, 60000);
+  /* ---------- mobile drawer: swipe left to close (the panel follows the finger, then snaps) ---------- */
+  (function () {
+    var sx = 0, sy = 0, dx = 0, tracking = false, panel = null;
+    document.addEventListener('touchstart', function (e) {
+      if (!document.body.classList.contains('drawer-open')) return;
+      panel = e.target.closest('.col-left');
+      if (!panel && !e.target.closest('.drawer-backdrop')) return;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; tracking = true;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!tracking) return;
+      dx = e.touches[0].clientX - sx;
+      if (Math.abs(e.touches[0].clientY - sy) > Math.abs(dx)) { dx = 0; return; } // a vertical scroll, not a swipe
+      if (panel && dx < 0) { panel.style.transition = 'none'; panel.style.transform = 'translateX(' + dx + 'px)'; }
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (!tracking) return;
+      tracking = false;
+      if (panel) { panel.style.transition = ''; panel.style.transform = ''; }
+      if (dx < -60) document.body.classList.remove('drawer-open');
+    });
+  })();
   document.dispatchEvent(new CustomEvent('fb:ready'));
 })();
