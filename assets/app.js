@@ -147,6 +147,62 @@
    * Public API for plugins: FB.editor.register('cmd', function (api, arg) {...}) handles buttons declared with
    * that cmd in the composer.toolbar region; FB.editor.get(el) returns the api of an editor element.
    * Every command dispatches a cancelable "fb:editor" event first (detail: {editor, api, cmd, arg}). */
+  /* ---------- clipboard HTML -> Markdown: pasting a rendered post (or a web page) keeps bold, links, lists, code, tables ---------- */
+  function htmlToMd(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    function text(s) { return s.replace(/\s+/g, ' '); }
+    function kids(node, ctx) { var out = ''; node.childNodes.forEach(function (n) { out += one(n, ctx); }); return out; }
+    function one(n, ctx) {
+      if (n.nodeType === 3) return ctx.pre ? n.nodeValue : text(n.nodeValue);
+      if (n.nodeType !== 1) return '';
+      var t = n.tagName.toLowerCase(), inner;
+      switch (t) {
+        case 'br': return '\n';
+        case 'strong': case 'b': inner = kids(n, ctx).trim(); return inner ? '**' + inner + '**' : '';
+        case 'em': case 'i': inner = kids(n, ctx).trim(); return inner ? '*' + inner + '*' : '';
+        case 'del': case 's': case 'strike': inner = kids(n, ctx).trim(); return inner ? '~~' + inner + '~~' : '';
+        case 'code': return ctx.pre ? kids(n, ctx) : '`' + kids(n, ctx) + '`';
+        case 'pre': return '\n\n```\n' + kids(n, { pre: true }).replace(/\n$/, '') + '\n```\n\n';
+        case 'a': inner = kids(n, ctx).trim(); var href = n.getAttribute('href') || ''; return href && inner ? '[' + inner + '](' + href + ')' : inner;
+        case 'img': return '![' + (n.getAttribute('alt') || '') + '](' + (n.getAttribute('src') || '') + ')';
+        case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6': return '\n\n' + '#'.repeat(Math.max(1, +t[1] - 1)) + ' ' + kids(n, ctx).trim() + '\n\n';
+        case 'p': case 'div': case 'section': case 'article': return '\n\n' + kids(n, ctx).trim() + '\n\n';
+        case 'blockquote': return '\n\n' + kids(n, ctx).trim().split('\n').map(function (l) { return '> ' + l; }).join('\n') + '\n\n';
+        case 'ul': case 'ol': return '\n\n' + list(n, t === 'ol', ctx, '') + '\n\n';
+        case 'hr': return '\n\n---\n\n';
+        case 'table': return '\n\n' + table(n, ctx) + '\n\n';
+        case 'script': case 'style': case 'button': return '';
+        default: return kids(n, ctx);
+      }
+    }
+    function list(el, ordered, ctx, indent) {
+      var lines = [], i = 0;
+      el.childNodes.forEach(function (li) {
+        if (li.nodeType !== 1 || li.tagName.toLowerCase() !== 'li') return;
+        var nested = '', line = '';
+        li.childNodes.forEach(function (c) {
+          var tg = c.nodeType === 1 ? c.tagName.toLowerCase() : '';
+          if (tg === 'ul' || tg === 'ol') nested += '\n' + list(c, tg === 'ol', ctx, indent + '  ');
+          else line += one(c, ctx);
+        });
+        lines.push(indent + (ordered ? (++i) + '. ' : '- ') + line.trim().replace(/\n+/g, ' ') + nested);
+      });
+      return lines.join('\n');
+    }
+    function table(el, ctx) {
+      var rows = [];
+      el.querySelectorAll('tr').forEach(function (tr, r) {
+        var cells = [];
+        tr.querySelectorAll('th,td').forEach(function (c) { cells.push(kids(c, ctx).trim().replace(/\n+/g, ' ').replace(/\|/g, '\\|')); });
+        rows.push('| ' + cells.join(' | ') + ' |');
+        if (r === 0) rows.push('|' + cells.map(function () { return '---'; }).join('|') + '|');
+      });
+      return rows.join('\n');
+    }
+    return kids(doc.body, {}).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  FB.htmlToMd = htmlToMd;
+
   var editorCommands = {};
   function editorInit(ed) {
     if (ed.__fbEditor) return ed.__fbEditor;
@@ -219,13 +275,16 @@
       if (em) { api.insert(em.getAttribute('data-emoji-char') + ' '); emojiBox.classList.add('hidden'); }
     });
     ta.addEventListener('input', function () { if (previewOn) { clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 400); } });
+    ta.addEventListener('paste', function (e) {
+      var cd = e.clipboardData; if (!cd) return;
+      var items = cd.items || [], files = [];
+      for (var i = 0; i < items.length; i++) if (items[i].kind === 'file') files.push(items[i].getAsFile());
+      if (files.length) { if (fileInput) { e.preventDefault(); api.upload(files); } return; }
+      var html = cd.getData('text/html');
+      if (html && /<(b|strong|em|i|a|img|h[1-6]|ul|ol|pre|code|blockquote|table)\b/i.test(html)) { var md = htmlToMd(html); if (md) { e.preventDefault(); api.insert(md); } }
+    });
     if (fileInput) {
       fileInput.addEventListener('change', function () { api.upload(fileInput.files); fileInput.value = ''; });
-      ta.addEventListener('paste', function (e) {
-        var items = (e.clipboardData || {}).items || [], files = [];
-        for (var i = 0; i < items.length; i++) if (items[i].kind === 'file') files.push(items[i].getAsFile());
-        if (files.length) { e.preventDefault(); api.upload(files); }
-      });
       ta.addEventListener('dragover', function (e) { e.preventDefault(); ed.classList.add('dragover'); });
       ta.addEventListener('dragleave', function () { ed.classList.remove('dragover'); });
       ta.addEventListener('drop', function (e) { e.preventDefault(); ed.classList.remove('dragover'); if (e.dataTransfer.files.length) api.upload(e.dataTransfer.files); });
