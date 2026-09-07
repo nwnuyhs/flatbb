@@ -8,9 +8,7 @@ $deleted = (int)$post['is_deleted'] === 1;
 $ctx = ['post' => $post, 'topic' => $topic];
 $actions = [];
 if (uid() > 0 && !$deleted) {
-    $actions['like'] = (int)$post['user_id'] === uid()
-        ? ['html' => '<span class="act act-static" title="' . t('Your own post') . '">' . icon('heart') . '<span>' . ((int)$post['like_count'] ?: '') . '</span></span>']
-        : ['html' => action_form(url('/post/' . $post['id'] . '/like'), '<button type="submit" class="act' . ($post['liked'] ? ' active' : '') . '" data-like title="' . ($post['liked'] ? t('Unlike') : t('Like')) . '">' . icon('heart') . '<span data-count>' . ((int)$post['like_count'] ?: '') . '</span></button>', [], 'inline')];
+    $actions['like'] = ['html' => action_form(url('/post/' . $post['id'] . '/like'), '<button type="submit" class="act' . ($post['liked'] ? ' active' : '') . '" data-like title="' . ($post['liked'] ? t('Unlike') : t('Like')) . '">' . icon('heart') . '<span data-count>' . ((int)$post['like_count'] ?: '') . '</span></button>', [], 'inline')];
     if (can('reply') && ((int)$topic['is_locked'] === 0 || is_mod())) {
         $actions['reply'] = ['html' => '<button type="button" class="act" data-reply-to-post="' . (int)$post['id'] . '" data-username="' . h($u['username'] ?? '') . '">' . icon('reply') . '<span>' . t('Reply') . '</span></button>'];
         $actions['quote'] = ['html' => '<button type="button" class="act" data-quote-post="' . (int)$post['id'] . '">' . icon('quote') . '<span>' . t('Quote') . '</span></button>'];
@@ -53,6 +51,7 @@ $actions = region_list('post.actions', $actions, $ctx);
     <?php else: ?>
       <div class="post-content"><?= raw($post['body_html']) ?></div>
     <?php endif; ?>
+    <?php if ((int)$post['floor'] === 0 && !empty($topic['tags'])): ?><div class="post-tags"><?php foreach ($topic['tags'] as $tg): ?><?= tag_badge($tg) ?><?php endforeach; ?></div><?php endif; ?>
     <?= slot('post.content_after', $ctx) ?>
     <footer class="post-actions" data-slot="post.actions">
       <?php foreach ($actions as $a): ?><?= raw($a['html'] ?? '') ?><?php endforeach; ?>

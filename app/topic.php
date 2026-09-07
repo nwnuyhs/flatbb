@@ -365,7 +365,6 @@ function post_like(string $id): never
     require_post();
     $post = post_by_id((int)$id);
     if ($post === null || (int)$post['is_deleted'] === 1 || post_topic_visible($post) === null) not_found();
-    if ((int)$post['user_id'] === (int)$me['id']) fail(t('You cannot like your own post.'));
     $liked = (bool)val('SELECT 1 FROM fb_likes WHERE user_id=? AND post_id=?', [(int)$me['id'], (int)$post['id']]);
     tx(static function () use ($liked, $me, $post): void {
         if ($liked) {

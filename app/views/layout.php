@@ -60,7 +60,7 @@ $unread = notifications_unread();
     </a>
     <?= region('header.left') ?>
     <nav class="topnav" data-slot="header.nav">
-      <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= h((string)($item['label'] ?? '')) ?></a><?php endforeach; ?>
+      <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($item['icon']) ? icon((string)$item['icon']) : '' ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?>
     </nav>
     <div class="topbar-right">
       <?= region('header.right.before_search') ?>

@@ -100,7 +100,8 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .logo img { height: 32px; width: auto; }
 .logo-mark { display: block; flex: none; }
 .topnav { display: flex; gap: 4px; }
-.topnav a { padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: 500; }
+.topnav a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: 500; }
+.topnav a .icon { width: 16px; height: 16px; opacity: .8; }
 .topnav a:hover, .topnav a.active { background: var(--panel-2); color: var(--text); }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
 .search-form { display: flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 0 12px; height: 36px; width: 220px; color: var(--text-subtle); margin-right: 6px; }
@@ -282,6 +283,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .post-content blockquote { margin: 0 0 1em; padding: 6px 14px; border-left: 3px solid var(--brand); background: var(--panel-2); color: var(--text-muted); border-radius: 0 4px 4px 0; }
 .post-content blockquote > :last-child { margin-bottom: 0; }
 .post-content img { border-radius: var(--radius-sm); max-height: 600px; max-width: min(100%, var(--post-img-max, 100%)); height: auto; }
+.post-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 2px; }
 .post-content ul, .post-content ol { padding-left: 1.6em; margin: 0 0 1em; }
 .post-content .table-wrap { overflow-x: auto; max-width: 100%; margin-bottom: 1em; -webkit-overflow-scrolling: touch; contain: inline-size; } /* contain: the wide table must not widen the column */
 .post-content table { border-collapse: collapse; width: max-content; min-width: 100%; max-width: none; font-size: var(--font-size-sm); }

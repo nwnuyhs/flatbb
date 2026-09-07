@@ -21,7 +21,6 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
     </h1>
     <div class="topic-meta">
       <?= category_badge($topic['category']) ?>
-      <?php foreach ($topic['tags'] as $tg): ?><?= tag_badge($tg) ?><?php endforeach; ?>
       <span class="stat"><?= icon('reply') ?><?= (int)$topic['reply_count'] ?></span>
       <span class="stat"><?= icon('eye') ?><?= (int)$topic['view_count'] ?></span>
       <span class="stat"><?= icon('heart') ?><?= (int)$topic['like_count'] ?></span>
