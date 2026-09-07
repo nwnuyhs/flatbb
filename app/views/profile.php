@@ -6,8 +6,8 @@
       <h1><?= h($user['username']) ?><?= raw(hook('user.link_after', '', ['user' => $user, 'class' => 'profile-name'])) ?> <?php if ($group): ?><span class="flag" style="<?= !empty($group['color']) ? 'color:' . h($group['color']) : '' ?>"><?= h($group['name']) ?></span><?php endif; ?><?php if ((int)$user['status'] !== 1): ?><span class="flag flag-danger"><?= t('Suspended') ?></span><?php endif; ?></h1>
       <?php if ($user['bio'] !== '' && $user['bio'] !== null): ?><p class="profile-bio"><?= h($user['bio']) ?></p><?php endif; ?>
       <div class="profile-meta">
-        <span><?= icon('clock') ?><?= t('Joined %s', date('M j, Y', (int)$user['created_at'])) ?></span>
-        <span><?= icon('eye') ?><?= t('Seen %s', human_time((int)$user['last_seen'])) ?></span>
+        <span><?= icon('clock') ?><?= t('Joined %s', time_tag((int)$user['created_at'], 'date')) ?></span>
+        <span><?= icon('eye') ?><?= t('Seen %s', time_tag((int)$user['last_seen'])) ?></span>
         <?php if (!empty($user['location'])): ?><span><?= icon('flag') ?><?= h($user['location']) ?></span><?php endif; ?>
         <?php if (!empty($user['website'])): ?><span><?= icon('external') ?><a href="<?= h($user['website']) ?>" rel="nofollow ugc noopener" target="_blank"><?= h(preg_replace('#^https?://#', '', $user['website'])) ?></a></span><?php endif; ?>
         <?= slot('user.profile.meta', ['user' => $user, 'self' => $self]) ?>

@@ -139,8 +139,11 @@ function user_settings(string $tab = 'profile'): never
             $prefs['notify_reply'] = post_int('notify_reply') ? 1 : 0;
             $prefs['notify_mention'] = post_int('notify_mention') ? 1 : 0;
             $prefs['show_points'] = post_int('show_points') ? 1 : 0;
+            $prefs['lang'] = isset(lang_available()[post_str('lang', 10)]) ? post_str('lang', 10) : '';
             $prefs = hook('user.prefs_save', $prefs, ['user' => $me]);
             db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$me['id']]);
+            $me['prefs'] = json_encode_value($prefs);
+            lang_set((string)$prefs['lang']); // the header switcher and this select stay in step
             flash(t('Preferences saved.'));
         } else {
             fire('user.settings_post', ['user' => $me, 'tab' => $tab]);

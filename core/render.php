@@ -102,6 +102,7 @@ function icon_paths(): array
         'circle' => '<circle cx="12" cy="12" r="9"/>',
         'home' => '<path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/>',
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18"/>',
         'flame' => '<path d="M12 22c4.4 0 7-3 7-7 0-3-1.5-5-3-7-.5 2-1.5 3-2.5 3.5C13 9 12 6 12 2 8 5 5 9 5 15c0 4 2.6 7 7 7z"/>',
         'dot' => '<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>',
         'folder' => '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -180,6 +181,16 @@ function avatar(?array $user, int $size = 32, bool $link = true): string
     }
     if (!$link || $user === null) return $img;
     return '<a class="avatar-link" href="' . h(user_url($user)) . '" title="' . h($name) . '">' . $img . '</a>';
+}
+
+/**
+ * <time> for a unix timestamp. The server prints the site time zone (relative text, or an absolute date after a month) with the
+ * absolute time as tooltip; app.js re-renders both in the visitor's own time zone. $fmt: rel | date (Sep 7, 2026) | month (Sep 2026) | full (2026-09-07 14:05).
+ */
+function time_tag(int $ts, string $fmt = 'rel', string $class = ''): string
+{
+    $text = match ($fmt) { 'date' => date('M j, Y', $ts), 'month' => date('M Y', $ts), 'full' => date('Y-m-d H:i', $ts), default => human_time($ts) };
+    return '<time datetime="' . date('c', $ts) . '" data-fmt="' . h($fmt) . '" title="' . date('Y-m-d H:i', $ts) . '"' . ($class !== '' ? ' class="' . h($class) . '"' : '') . '>' . h($text) . '</time>';
 }
 
 function user_link(?array $user, string $class = 'user-link'): string

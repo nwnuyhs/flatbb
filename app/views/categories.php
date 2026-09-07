@@ -10,7 +10,7 @@
     </div>
     <div class="cat-stats"><span><b><?= human_number((int)$c['topic_count']) ?></b> <?= t('topics') ?></span><span><b><?= human_number((int)$c['post_count']) ?></b> <?= t('replies') ?></span></div>
     <div class="cat-last">
-      <?php if ($lt && !(int)$lt['is_deleted']): ?><a href="<?= h(topic_url($lt)) ?>"><?= h(cut($lt['title'], 50)) ?></a><small><?= isset($users[(int)$lt['last_user_id']]) ? user_link($users[(int)$lt['last_user_id']]) : '' ?> · <?= human_time((int)$lt['last_post_at']) ?></small><?php endif; ?>
+      <?php if ($lt && !(int)$lt['is_deleted']): ?><a href="<?= h(topic_url($lt)) ?>"><?= h(cut($lt['title'], 50)) ?></a><small><?= isset($users[(int)$lt['last_user_id']]) ? user_link($users[(int)$lt['last_user_id']]) : '' ?> · <?= time_tag((int)$lt['last_post_at']) ?></small><?php endif; ?>
     </div>
   </article>
 <?php endforeach; ?>

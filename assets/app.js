@@ -390,6 +390,24 @@
   window.addEventListener('popstate', function () { if ($('#drawer')) window.location.reload(); });
   if ($('#drawer')) document.body.classList.add('adrawer-open');
 
+  /* ---------- times in the visitor's own time zone: <time datetime data-fmt> (the server printed the site zone as a fallback) ---------- */
+  (function () {
+    var times = $$('time[datetime][data-fmt]'); if (!times.length || !window.Intl || !Intl.DateTimeFormat) return;
+    var loc = (root.getAttribute('lang') || 'en') + '-u-ca-gregory', now = Date.now(), day = 864e5;
+    function fmt(d, o) { try { return new Intl.DateTimeFormat(loc, o).format(d); } catch (e) { return ''; } }
+    times.forEach(function (el) {
+      var d = new Date(el.getAttribute('datetime')); if (isNaN(d.getTime())) return;
+      var full = fmt(d, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      if (full) el.title = full;
+      var f = el.getAttribute('data-fmt'), age = now - d.getTime(), text = '';
+      if (f === 'full') text = full;
+      else if (f === 'month') text = fmt(d, { year: 'numeric', month: 'short' });
+      else if (f === 'date') text = fmt(d, { year: 'numeric', month: 'short', day: 'numeric' });
+      else if (age > 30 * day) text = fmt(d, age > 365 * day ? { year: 'numeric', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' });
+      if (text) el.textContent = text;
+    });
+  })();
+
   /* ---------- misc ---------- */
   var flash = $('[data-flash]');
   if (flash) setTimeout(function () { flash.classList.add('fade'); }, 4000);

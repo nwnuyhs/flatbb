@@ -69,6 +69,16 @@ $unread = notifications_unread();
       </form>
       <a class="icon-btn search-toggle" href="<?= h(url('/search')) ?>" aria-label="<?= t('Search') ?>"><?= icon('search') ?></a>
       <?= region('header.right.after_search') ?>
+      <?php $langs = lang_available(); if (count($langs) > 1): ?>
+      <div class="dropdown lang-menu" data-dropdown>
+        <button class="icon-btn dropdown-toggle" type="button" aria-label="<?= t('Language') ?>" title="<?= t('Language') ?>" aria-haspopup="true"><?= icon('globe') ?></button>
+        <div class="dropdown-menu">
+          <form method="post" action="<?= h(url('/language')) ?>"><?= csrf_field() ?><input type="hidden" name="back" value="<?= h(current_path()) ?>">
+          <?php foreach ($langs as $code => $name): ?><button type="submit" name="code" value="<?= h($code) ?>"<?= $code === lang_code() ? ' class="active"' : '' ?>><?= h($name) ?></button><?php endforeach; ?>
+          </form>
+        </div>
+      </div>
+      <?php endif; ?>
       <button class="icon-btn theme-toggle" type="button" aria-label="<?= t('Toggle theme') ?>" data-toggle="theme"><?= icon('sun', 'theme-sun') ?><?= icon('moon', 'theme-moon') ?></button>
       <?php if ($me): ?>
         <?php if (can('post')): ?><a class="icon-btn" href="<?= h(url('/new-topic')) ?>" aria-label="<?= t('New Topic') ?>" title="<?= t('New Topic') ?>"><?= icon('plus') ?></a><?php endif; ?>

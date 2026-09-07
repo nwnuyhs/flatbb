@@ -10,7 +10,7 @@
       <article class="search-result">
         <h3 class="row-title"><a href="<?= h(url('/post/' . $r['post']['id'])) ?>"><?= h($r['topic']['title']) ?></a><?php if ((int)$r['post']['floor'] > 0): ?><small class="muted"> #<?= (int)$r['post']['floor'] + 1 ?></small><?php endif; ?></h3>
         <p class="snippet"><?= raw($r['snippet']) ?></p>
-        <div class="row-meta"><?= category_badge($r['category']) ?><?= user_link($r['user']) ?><span class="row-time"><?= human_time((int)$r['post']['created_at']) ?></span></div>
+        <div class="row-meta"><?= category_badge($r['category']) ?><?= user_link($r['user']) ?><span class="row-time"><?= time_tag((int)$r['post']['created_at']) ?></span></div>
       </article>
     <?php endforeach; ?>
     <?php if ($results === []): ?><div class="empty"><?= icon('search') ?><p><?= t('Nothing found. Try different words.') ?></p></div><?php endif; ?>

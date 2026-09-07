@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.43');
+define('FLATBB_VERSION', '0.1.44');
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');
 define('APP_DIR', ROOT . '/app');
@@ -89,6 +89,8 @@ function app_boot(): void
     // an in-place upgrade copies the files while the old code is still loaded: new tables, columns and indexes are created here,
     // on the first request that runs the new code (schema helpers are idempotent; SCHEMA_VERSION is bumped with every schema change)
     if (setting('schema_version', '') !== (string)SCHEMA_VERSION) schema_install();
+    $tz = setting('site_tz', 'UTC');
+    if ($tz !== 'UTC' && in_array($tz, timezone_identifiers_list(), true)) date_default_timezone_set($tz); // server-side dates (emails, feeds, logs); browsers show their own zone
     plugins_load();
     fire('app.boot', []);
 }

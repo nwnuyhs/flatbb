@@ -1,5 +1,5 @@
 <?php
-/** fa translation of flatbb. Keys are the English source strings; empty = not translated yet. Regenerate with: php flatbb lang:sync fa */
+/** فارسی translation of flatbb. Keys are the English source strings; empty = not translated yet. Regenerate with: php flatbb lang:sync fa */
 return [
     '__name' => 'فارسی',
     '__dir' => 'rtl',
@@ -120,6 +120,7 @@ return [
     'Database connection failed: %s' => 'اتصال به پایگاه داده ناموفق بود: %s',
     'Days between username changes' => 'فاصلهٔ روزها بین تغییر نام کاربری',
     'Debug mode is on (data/config.php): error details are shown to visitors.' => 'حالت اشکال‌زدایی روشن است (data/config.php): جزئیات خطا به بازدیدکنندگان نشان داده می‌شود.',
+    'Default interface language. Visitors pick their own from the globe in the header or in Settings → Preferences. Packs live in lang/.' => 'زبان پیش‌فرض رابط کاربری. بازدیدکنندگان زبان خود را از آیکون کرهٔ زمین در سربرگ یا در «تنظیمات ← ترجیحات» انتخاب می‌کنند. بسته‌ها در lang/ هستند.',
     'Default theme' => 'پوستهٔ پیش‌فرض',
     'Delete' => 'حذف',
     'Delete block' => 'حذف بلوک',
@@ -215,9 +216,9 @@ return [
     'Installation failed: %s' => 'نصب ناموفق بود: %s',
     'Installed' => 'نصب‌شده',
     'Installed: flatbb %s.' => 'نصب‌شده: flatbb %s.',
-    'Interface language for everyone. Packs live in lang/.' => 'زبان رابط کاربری برای همه. بسته‌ها در lang/ هستند.',
     'Interval' => 'بازه',
     'Invalid invite code.' => 'کد دعوت نامعتبر است.',
+    'Invalid request.' => 'درخواست نامعتبر.',
     'Invalid tag name.' => 'نام برچسب نامعتبر است.',
     'Invalid token' => 'توکن نامعتبر',
     'Invalid zip file.' => 'فایل zip نامعتبر است.',
@@ -433,6 +434,7 @@ return [
     'Sign up' => 'ثبت‌نام',
     'Signature' => 'امضا',
     'Site' => 'سایت',
+    'Site default' => 'پیش‌فرض سایت',
     'Site name' => 'نام سایت',
     'Slug' => 'نامک',
     'Slug already used.' => 'این نامک قبلاً استفاده شده است.',
@@ -476,6 +478,7 @@ return [
     'This reply was deleted.' => 'این پاسخ حذف شده است.',
     'This reset link is invalid or has expired. Request a new one.' => 'این پیوند بازنشانی نامعتبر یا منقضی است. پیوند تازه‌ای درخواست کنید.',
     'This topic is locked.' => 'این موضوع قفل است.',
+    'Time zone' => 'منطقهٔ زمانی',
     'Title' => 'عنوان',
     'Title (admin only)' => 'عنوان (فقط مدیر)',
     'Title must be between 3 and 200 characters.' => 'عنوان باید بین ۳ تا ۲۰۰ نویسه باشد.',
@@ -515,6 +518,7 @@ return [
     'Uploads' => 'بارگذاری‌ها',
     'Use the pages above.' => 'از صفحه‌های بالا استفاده کنید.',
     'Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.' => 'برای بازنشانی گذرواژه و اعلان‌ها استفاده می‌شود. برای ارسال مطمئن یک افزونهٔ SMTP نصب کنید؛ بدون آن از mail() در PHP استفاده می‌شود.',
+    'Used where the browser cannot help: emails, feeds, the admin log and the time shown without JavaScript. Visitors see times in their own time zone.' => 'جایی به کار می‌رود که مرورگر کمکی نمی‌کند: ایمیل‌ها، خوراک‌ها، گزارش مدیریت و زمانی که بدون جاوااسکریپت نمایش داده می‌شود. بازدیدکنندگان زمان‌ها را در منطقهٔ زمانی خودشان می‌بینند.',
     'User' => 'کاربر',
     'User not found.' => 'کاربر پیدا نشد.',
     'User saved.' => 'کاربر ذخیره شد.',

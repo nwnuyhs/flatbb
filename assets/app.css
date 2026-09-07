@@ -121,6 +121,9 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .dropdown-menu a:hover, .dropdown-menu button:hover { background: var(--panel-2); }
 .dropdown-menu button.danger { color: var(--danger); }
 .dropdown-menu form { margin: 0; }
+.lang-menu .dropdown-toggle { width: 36px; height: 36px; padding: 0; }
+.lang-menu .dropdown-menu { min-width: 150px; }
+.dropdown-menu button.active { color: var(--brand); font-weight: 600; }
 .dropdown-head { padding: 6px 10px; font-weight: 600; color: var(--text-muted); font-size: var(--font-size-sm); border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; }
 
 /* ---------- three-column grid ---------- */

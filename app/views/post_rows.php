@@ -5,7 +5,7 @@
   <article class="post-row">
     <h3 class="row-title"><a href="<?= h(url('/post/' . $p['id'])) ?>"><?= h($t['title']) ?></a></h3>
     <div class="post-excerpt"><?= h(md_excerpt((string)$p['body'], 220)) ?></div>
-    <div class="row-meta"><?= category_badge(category_by_id((int)$t['category_id'])) ?><span class="row-time"><?= human_time((int)$p['created_at']) ?></span><?php if ((int)$p['like_count'] > 0): ?><span class="stat"><?= icon('heart') ?><?= (int)$p['like_count'] ?></span><?php endif; ?></div>
+    <div class="row-meta"><?= category_badge(category_by_id((int)$t['category_id'])) ?><span class="row-time"><?= time_tag((int)$p['created_at']) ?></span><?php if ((int)$p['like_count'] > 0): ?><span class="stat"><?= icon('heart') ?><?= (int)$p['like_count'] ?></span><?php endif; ?></div>
   </article>
 <?php endforeach; ?>
 </div>

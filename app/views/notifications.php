@@ -11,7 +11,7 @@
         <span class="notif-title"><?php if ($n['from']): ?><b><?= h($n['from']['username']) ?></b> <?php endif; ?><?= h($verb) ?><?php if ($n['topic']): ?> · <em><?= h(cut($n['topic']['title'], 60)) ?></em><?php endif; ?></span>
         <?php if ($n['content'] !== ''): ?><span class="notif-excerpt"><?= h(cut((string)$n['content'], 140)) ?></span><?php endif; ?>
       </span>
-      <span class="notif-time"><?= human_time((int)$n['created_at']) ?></span>
+      <span class="notif-time"><?= time_tag((int)$n['created_at']) ?></span>
     </a>
   <?php endforeach; ?>
   </div>

@@ -320,7 +320,7 @@ function security_scan(array $files): array
     $root = str_replace('\\', '/', ROOT) . '/';
     $allow_globals = ['core/helpers.php', 'core/auth.php', 'core/security.php', 'core/router.php', 'core/upload.php'];
     $allow_exec = ['core/devtools.php'];
-    $safe = ['h', 't', 'raw', 'icon', 'region', 'slot', 'csrf_field', 'form_row', 'input', 'select', 'textarea', 'checkbox', 'avatar', 'user_link', 'human_time', 'human_number', 'human_size', 'action_form', 'editor', 'category_badge', 'tag_badge', 'tabs', 'view', 'plugin_assets_tag', 'logo_mark', 'pagination', 'md', 'date', 'json_encode_value', 'uid', 'is_array', 'isset', 'extension_loaded', 'count', 'number_format', 'layout_blocks_html'];
+    $safe = ['h', 't', 'raw', 'icon', 'region', 'slot', 'csrf_field', 'form_row', 'input', 'select', 'textarea', 'checkbox', 'avatar', 'user_link', 'human_time', 'time_tag', 'human_number', 'human_size', 'action_form', 'editor', 'category_badge', 'tag_badge', 'tabs', 'view', 'plugin_assets_tag', 'logo_mark', 'pagination', 'md', 'date', 'json_encode_value', 'uid', 'is_array', 'isset', 'extension_loaded', 'count', 'number_format', 'layout_blocks_html'];
     foreach ($files as $file) {
         $rel = str_starts_with($file, $root) ? substr($file, strlen($root)) : $file;
         $src = (string)file_get_contents($file);

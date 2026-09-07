@@ -39,6 +39,18 @@ function human_time(int $ts): string
     return date(now() - $ts > 86400 * 365 ? 'M j, Y' : 'M j', $ts);
 }
 
+/** Time zone choices for Settings → General: identifier => 'Region/City (UTC+03:00)'. */
+function tz_options(): array
+{
+    $out = [];
+    $at = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+    foreach (timezone_identifiers_list() as $id) {
+        $off = (new DateTimeZone($id))->getOffset($at);
+        $out[$id] = $id . ' (UTC' . ($off === 0 ? '' : ($off < 0 ? '-' : '+') . sprintf('%02d:%02d', intdiv(abs($off), 3600), intdiv(abs($off) % 3600, 60))) . ')';
+    }
+    return $out;
+}
+
 function human_size(int $bytes): string
 {
     if ($bytes < 1024) return $bytes . ' B';
@@ -181,6 +193,13 @@ function flash_take(): ?array
     return is_array($v) && count($v) === 2 ? ['type' => (string)$v[0], 'message' => (string)$v[1]] : null;
 }
 
+/** A cookie value, trimmed to $max characters ('' when absent). */
+function cookie_str(string $name, int $max = 200): string
+{
+    $v = $_COOKIE[$name] ?? '';
+    return is_string($v) ? mb_substr($v, 0, $max) : '';
+}
+
 function app_cookie(string $name, string $value, int $expires, bool $httponly = true): void
 {
     if (headers_sent()) return;
@@ -264,6 +283,7 @@ function setting_defaults(): array
         'site_logo' => '',
         'site_favicon' => '',
         'site_lang' => '',
+        'site_tz' => 'UTC',
         'per_page' => '25',
         'category_bar' => 'mobile',
         'posts_per_page' => '20',

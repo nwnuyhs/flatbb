@@ -34,7 +34,7 @@ $actions = region_list('post.actions', $actions, $ctx);
         <?php $g = $u ? group_by_id((int)$u['group_id']) : null; if ($g && ((int)$g['is_admin'] || (int)$g['is_mod'])): ?><span class="flag" style="<?= !empty($g['color']) ? 'color:' . h($g['color']) : '' ?>"><?= h($g['name']) ?></span><?php endif; ?>
       </div>
       <div class="post-meta">
-        <a class="post-time" href="<?= h(url('/post/' . $post['id'])) ?>" title="<?= date('Y-m-d H:i', (int)$post['created_at']) ?>"><?= human_time((int)$post['created_at']) ?></a>
+        <a class="post-time" href="<?= h(url('/post/' . $post['id'])) ?>"><?= time_tag((int)$post['created_at']) ?></a>
         <?php if ((int)$post['edit_count'] > 0): ?><span class="post-edited" title="<?= t('Edited %s', human_time((int)$post['edited_at'])) ?>"><?= icon('edit') ?> <?= t('edited') ?></span><?php endif; ?>
         <?= slot('post.meta', $ctx) ?>
       </div>

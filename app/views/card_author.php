@@ -8,7 +8,7 @@
       <a href="<?= h(user_url($user)) ?>/replies"><b><?= (int)$user['post_count'] ?></b><span><?= t('Replies') ?></span></a>
       <span><b><?= (int)$user['like_count'] ?></b><span><?= t('Likes') ?></span></span>
     </div>
-    <div class="muted small"><?= t('Joined %s', date('M Y', (int)$user['created_at'])) ?> · <?= t('Seen %s', human_time((int)$user['last_seen'])) ?></div>
+    <div class="muted small"><?= t('Joined %s', time_tag((int)$user['created_at'], 'month')) ?> · <?= t('Seen %s', time_tag((int)$user['last_seen'])) ?></div>
   </div>
 </section>
 <?php endif; ?>

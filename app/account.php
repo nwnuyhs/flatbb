@@ -117,6 +117,17 @@ function account_reset(string $token): never
     page(t('Choose a new password'), view('reset', ['token' => $token, 'user' => $user]), ['class' => 'page-auth', 'left' => false, 'right' => false, 'robots' => 'noindex']);
 }
 
+/** POST /language (code, back): the header language switcher. Sets the cookie and the member's preference, then returns to the page. */
+function account_lang(): never
+{
+    require_post();
+    $code = post_str('code', 10);
+    if (!isset(lang_available()[$code])) fail(t('Invalid request.'));
+    lang_set($code);
+    $back = post_str('back', 300);
+    redirect(str_starts_with($back, '/') && !str_starts_with($back, '//') ? url($back) : url('/'));
+}
+
 function account_logout(): never
 {
     require_post();

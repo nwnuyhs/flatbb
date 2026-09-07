@@ -56,6 +56,7 @@ function routes_core(): array
         '/login' => 'account_login',
         '/register' => 'account_register',
         '/logout' => 'account_logout',
+        '/language' => 'account_lang',
         '/forgot' => 'account_forgot',
         '/reset/{token}' => 'account_reset',
         '/notifications' => 'notification_index',
