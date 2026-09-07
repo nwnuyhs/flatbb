@@ -15,6 +15,7 @@ return [
     '%ds ago' => 'vor %ds',
     '%s installed. Enable it when you are ready.' => '%s installiert. Aktivieren Sie es, wenn Sie bereit sind.',
     '%s on enable' => '%s bei Aktivierung',
+    '%s updated.' => '%s aktualisiert.',
     '0 = as wide as the post. Writers can size a single image with ![alt|300](url).' => '0 = so breit wie der Beitrag. Ein einzelnes Bild lässt sich mit ![alt|300](url) verkleinern.',
     '0 disables drafts. Drafts live in the writer\'s browser.' => '0 deaktiviert Entwürfe. Entwürfe werden im Browser des Verfassers gespeichert.',
     '0 disables the restriction.' => '0 deaktiviert die Beschränkung.',

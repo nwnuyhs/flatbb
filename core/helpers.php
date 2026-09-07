@@ -285,6 +285,7 @@ function setting_defaults(): array
         'site_lang' => '',
         'site_tz' => 'UTC',
         'sudo_minutes' => '10',
+        'plugin_sync_pending' => '',
         'per_page' => '25',
         'category_bar' => 'mobile',
         'posts_per_page' => '20',

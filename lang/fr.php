@@ -15,6 +15,7 @@ return [
     '%ds ago' => 'il y a %d s',
     '%s installed. Enable it when you are ready.' => '%s installé. Activez-le quand vous serez prêt.',
     '%s on enable' => '%s à l\'activation',
+    '%s updated.' => '%s mis à jour.',
     '0 = as wide as the post. Writers can size a single image with ![alt|300](url).' => '0 = aussi large que le message. Une image précise se règle avec ![alt|300](url).',
     '0 disables drafts. Drafts live in the writer\'s browser.' => '0 désactive les brouillons. Les brouillons sont stockés dans le navigateur de l\'auteur.',
     '0 disables the restriction.' => '0 désactive la restriction.',

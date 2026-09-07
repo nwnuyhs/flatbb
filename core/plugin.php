@@ -209,6 +209,11 @@ function plugin_sync(): array
     return $found;
 }
 
+/**
+ * Enable a plugin. The request that uploaded a new zip still holds the previous manifest (plugin_read_manifest() caches
+ * per request), so the version recorded here stays the old one on purpose: plugin_sync() on the next request sees the
+ * difference, runs the install routine with the new code loaded and records the new version (see plugin_sync_pending).
+ */
 function plugin_enable(string $id): void
 {
     $m = plugin_read_manifest($id);
@@ -297,7 +302,7 @@ function plugin_install_zip(string $file): string
     if (plugin_peek($id) === null) throw new RuntimeException(t('The installed files do not contain a valid manifest.'));
     if ($was_enabled) plugin_enable($id);
     // this request still runs the plugin's previous code (loaded at boot), so the asset bundle is rebuilt by the next one
-    if ($was_enabled) save_settings(['plugin_assets_stale' => '1']);
+    if ($was_enabled) save_settings(['plugin_assets_stale' => '1', 'plugin_sync_pending' => '1']);
     fire('plugin.after_install_zip', ['id' => $id]);
     return $id;
 }
@@ -330,6 +335,11 @@ function plugin_assets_build(): void
 
 function plugin_assets_tag(string $type): string
 {
+    if (setting('plugin_sync_pending', '') === '1') { // a plugin was re-uploaded: this request runs its new code, so its install routine and version are brought up to date once
+        save_settings(['plugin_sync_pending' => '', 'plugin_assets_stale' => '']);
+        plugin_sync();
+        return plugin_assets_tag($type);
+    }
     if (setting('plugin_assets_stale', '') === '1') { save_settings(['plugin_assets_stale' => '']); plugin_assets_build(); } // a plugin was re-uploaded: fresh code now, rebuild once
     $file = CACHE_DIR . '/plugins.' . $type;
     if (!is_file($file) || filesize($file) === 0) return '';

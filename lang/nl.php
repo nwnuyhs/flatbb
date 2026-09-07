@@ -15,6 +15,7 @@ return [
     '%ds ago' => '%d s geleden',
     '%s installed. Enable it when you are ready.' => '%s is geïnstalleerd. Schakel de plugin in wanneer je er klaar voor bent.',
     '%s on enable' => '%s bij inschakelen',
+    '%s updated.' => '%s bijgewerkt.',
     '0 = as wide as the post. Writers can size a single image with ![alt|300](url).' => '0 = zo breed als het bericht. Eén afbeelding stel je in met ![alt|300](url).',
     '0 disables drafts. Drafts live in the writer\'s browser.' => '0 schakelt concepten uit. Concepten worden in de browser van de schrijver bewaard.',
     '0 disables the restriction.' => '0 schakelt de beperking uit.',

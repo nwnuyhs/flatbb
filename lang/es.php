@@ -15,6 +15,7 @@ return [
     '%ds ago' => 'hace %ds',
     '%s installed. Enable it when you are ready.' => '%s instalado. Actívalo cuando estés listo.',
     '%s on enable' => '%s al activar',
+    '%s updated.' => '%s actualizado.',
     '0 = as wide as the post. Writers can size a single image with ![alt|300](url).' => '0 = tan ancha como la publicación. Una imagen concreta se ajusta con ![alt|300](url).',
     '0 disables drafts. Drafts live in the writer\'s browser.' => '0 desactiva los borradores. Los borradores se guardan en el navegador de quien escribe.',
     '0 disables the restriction.' => '0 desactiva la restricción.',

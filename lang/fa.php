@@ -16,6 +16,7 @@ return [
     '%ds ago' => '%d ثانیه پیش',
     '%s installed. Enable it when you are ready.' => '%s نصب شد. هر وقت آماده بودید آن را فعال کنید.',
     '%s on enable' => '%s پس از فعال‌سازی',
+    '%s updated.' => '%s به‌روز شد.',
     '0 = as wide as the post. Writers can size a single image with ![alt|300](url).' => '۰ = به پهنای نوشته. نویسندگان می‌توانند اندازهٔ یک تصویر را با ![alt|300](url) تعیین کنند.',
     '0 disables drafts. Drafts live in the writer\'s browser.' => '۰ پیش‌نویس‌ها را غیرفعال می‌کند. پیش‌نویس‌ها در مرورگر نویسنده نگه داشته می‌شوند.',
     '0 disables the restriction.' => '۰ محدودیت را برمی‌دارد.',
