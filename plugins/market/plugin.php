@@ -132,11 +132,17 @@ function market_admin_page(string $page): never
     admin_page(t('Plugin market'), $html, 'ext.market.market');
 }
 
-/** "Publish" button on Admin → Plugins rows (needs a token in the market settings). */
+/** Ids the marketplace runs itself or ships as an example: it refuses them, so no Publish button. */
+function market_reserved_ids(): array
+{
+    return ['market', 'market_server', 'hello', 'quality'];
+}
+
+/** "Publish" button on Admin → Plugins rows (the form asks for the token the first time). */
 function market_plugin_ops(string $ops, array $ctx): string
 {
     $id = (string)($ctx['plugin']['id'] ?? '');
-    if ($id === '' || $id === 'market' || $id === 'market_server') return $ops;
+    if ($id === '' || in_array($id, market_reserved_ids(), true)) return $ops;
     return $ops . '<a class="btn btn-sm" href="' . h(url('/admin/ext/market/publish', ['id' => $id])) . '">' . icon('upload') . t('Publish') . '</a>';
 }
 
@@ -146,6 +152,7 @@ function market_admin_publish(string $page): never
     need_admin();
     $id = is_post() ? post_str('id', 40) : get_str('id', 40);
     if (!isset(plugins()[$id])) fail(t('Plugin not found.'), url('/admin/plugins'));
+    if (in_array($id, market_reserved_ids(), true)) fail(t('%s is part of the marketplace itself and cannot be published.', $id), url('/admin/plugins'));
     $saved = (string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: '');
     if (is_post()) {
         $pasted = trim(post_str('token', 120));
@@ -186,7 +193,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.0.5',
+    'version' => '1.0.6',
     'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
