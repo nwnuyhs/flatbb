@@ -280,13 +280,14 @@ function lang_sync(string $code): array
     $old = is_file($file) ? (array)include $file : [];
     $keys = lang_keys();
     $new = ['__name' => (string)($old['__name'] ?? $code)];
+    if (($old['__dir'] ?? '') === 'rtl') $new['__dir'] = 'rtl';
     $added = $removed = $empty = 0;
     foreach ($keys as $k) {
         $new[$k] = (string)($old[$k] ?? '');
         if (!array_key_exists($k, $old)) $added++;
         if ($new[$k] === '') $empty++;
     }
-    foreach ($old as $k => $v) if ($k !== '__name' && !in_array($k, $keys, true)) $removed++;
+    foreach ($old as $k => $v) if ($k !== '__name' && $k !== '__dir' && !in_array($k, $keys, true)) $removed++;
     $php = "<?php\n/** " . $new['__name'] . " translation of flatbb. Keys are the English source strings; empty = not translated yet. Regenerate with: php flatbb lang:sync " . $code . " */\nreturn [\n";
     foreach ($new as $k => $v) $php .= '    ' . var_export($k, true) . ' => ' . var_export($v, true) . ",\n";
     $php .= "];\n";

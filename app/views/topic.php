@@ -14,7 +14,7 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
 ?>
 <article class="topic-page" data-topic-id="<?= (int)$topic['id'] ?>">
   <header class="topic-head" data-slot="topic.header">
-    <h1 class="topic-title">
+    <h1 class="topic-title" dir="auto">
       <?php if ((int)$topic['is_pinned']): ?><span class="row-icon" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
       <?php if ((int)$topic['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
       <?= raw(hook('topic.title', h($topic['title']), ['topic' => $topic, 'where' => 'page'])) ?>

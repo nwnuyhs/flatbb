@@ -416,13 +416,14 @@
       if (!tracking) return;
       dx = e.touches[0].clientX - sx;
       if (Math.abs(e.touches[0].clientY - sy) > Math.abs(dx)) { dx = 0; return; } // a vertical scroll, not a swipe
-      if (panel && dx < 0) { panel.style.transition = 'none'; panel.style.transform = 'translateX(' + dx + 'px)'; }
+      var toward = document.documentElement.getAttribute('dir') === 'rtl' ? -dx : dx; // the drawer sits on the start edge
+      if (panel && toward < 0) { panel.style.transition = 'none'; panel.style.transform = 'translateX(' + dx + 'px)'; }
     }, { passive: true });
     document.addEventListener('touchend', function () {
       if (!tracking) return;
       tracking = false;
       if (panel) { panel.style.transition = ''; panel.style.transform = ''; }
-      if (dx < -60) document.body.classList.remove('drawer-open');
+      if ((document.documentElement.getAttribute('dir') === 'rtl' ? -dx : dx) < -60) document.body.classList.remove('drawer-open');
     });
   })();
   document.dispatchEvent(new CustomEvent('fb:ready'));

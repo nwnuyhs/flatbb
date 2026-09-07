@@ -25,7 +25,7 @@ $brand = preg_match('/^#[0-9a-f]{6}$/i', setting('brand_color', '#e7672e')) ? se
 $unread = notifications_unread();
 ?>
 <!doctype html>
-<html lang="<?= h(lang_code()) ?>" data-theme="<?= h($theme) ?>">
+<html lang="<?= h(lang_code()) ?>" dir="<?= h(lang_direction()) ?>" data-theme="<?= h($theme) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

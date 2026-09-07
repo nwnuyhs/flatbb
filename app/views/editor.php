@@ -44,7 +44,7 @@ $btn = static fn(string $k, array $b): string => !empty($b['html']) ? $b['html']
   </div>
   <?php if ($emoji !== []): ?><div class="editor-emoji hidden" data-emoji><?php foreach ($emoji as $e): ?><button type="button" data-emoji-char="<?= h((string)$e) ?>"><?= h((string)$e) ?></button><?php endforeach; ?></div><?php endif; ?>
   <div class="editor-body">
-    <textarea name="<?= h($name) ?>" class="editor-input" rows="10" placeholder="<?= h($placeholder) ?>" required><?= h($value) ?></textarea>
+    <textarea name="<?= h($name) ?>" class="editor-input" rows="10" dir="auto" placeholder="<?= h($placeholder) ?>" required><?= h($value) ?></textarea>
     <div class="editor-preview post-content" data-preview hidden></div>
   </div>
   <?php if ($cfg['upload']): ?><input type="file" class="hidden" data-upload-input multiple<?= $cfg['accept'] !== '' ? ' accept="' . h((string)$cfg['accept']) . '"' : '' ?>><?php endif; ?>

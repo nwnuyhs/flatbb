@@ -201,6 +201,7 @@ function myid_uninstall(array $manifest): void
 - Use CSS variables only: `--bg --panel --panel-2 --line --line-soft --text --text-muted --text-subtle --brand --brand-hover --brand-soft --success --danger --warning --info` (+ `*-soft`), `--radius --radius-sm --shadow`, font sizes `--font-size-xs|sm|md|lg|xl|2xl`. No hard-coded colours or pixel font sizes; no `!important`; scope selectors under your own class.
 - Reuse core classes for consistency: `.card`, `.card-head`, `.card-body`, `.btn`, `.btn-primary`, `.btn-sm`, `.tag-badge`, `.flag`, `.muted`, `.form-row`, `.table-wrap table.admin`.
 - Static files (images) in `plugins/<id>/assets/` are served directly: `plugin_url($id, 'assets/logo.png')`.
+- Right-to-left languages: write direction-neutral CSS. Use `margin-inline-start`/`-end`, `padding-inline-*`, `border-inline-*`, `inset-inline-*` and `text-align: start` instead of left/right; the core switches `<html dir="rtl">` when the language pack says so, and `[dir="rtl"]` rules cover the rest. Give user text (`.post-content`, titles, textareas) `dir="auto"`.
 
 ## 10. Security
 
@@ -260,7 +261,7 @@ The composer is one component (`app/views/editor.php` + the editor block in `ass
 
 ## 14. Translations
 
-Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language.
+Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`.
 
 ## 15. Delivery checklist
 

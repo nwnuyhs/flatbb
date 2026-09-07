@@ -40,6 +40,10 @@ Defined in `:root` of `assets/app.css` (light) and overridden by `[data-theme="d
 
 Rules: never hard-code a colour or font size in plugin CSS; use the variables. Never use `!important`.
 
+## Right-to-left
+
+`<html dir="rtl">` is set when the active language pack declares `'__dir' => 'rtl'` (Persian, Arabic, Hebrew). `assets/app.css` uses logical properties (`margin-inline-start`, `inset-inline-end`, `text-align: start`…), so the whole layout mirrors by itself; a few `[dir="rtl"]` rules flip the phone drawer and directional icons. Theme plugins should follow the same rule and avoid physical `left`/`right` properties.
+
 ## Reusable classes
 
 `.card .card-head .card-body`, `.btn .btn-primary .btn-ghost .btn-danger .btn-sm .btn-lg .btn-block`, `.icon-btn`, `.tabs .tab`, `.flag .flag-danger .flag-success`, `.badge`, `.tag-badge`, `.cat-badge .cat-dot`, `.muted .small .mono .hidden`, `.form-row .form-grid .form-help .check`, `.flash .flash-error .flash-success`, `.empty`, `.table-wrap table.admin`, `.post-content` (markdown typography), `.topic-rows .topic-row`, `.pagination`, `.dropdown .dropdown-menu`.

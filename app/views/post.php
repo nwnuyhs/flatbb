@@ -47,9 +47,9 @@ $actions = region_list('post.actions', $actions, $ctx);
     <?php endif; ?>
     <?php if ($deleted): ?>
       <div class="post-content muted"><em><?= t('This reply was deleted.') ?></em></div>
-      <?php if (is_mod()): ?><div class="post-content"><?= raw($post['body_html']) ?></div><?php endif; ?>
+      <?php if (is_mod()): ?><div class="post-content" dir="auto"><?= raw($post['body_html']) ?></div><?php endif; ?>
     <?php else: ?>
-      <div class="post-content"><?= raw($post['body_html']) ?></div>
+      <div class="post-content" dir="auto"><?= raw($post['body_html']) ?></div>
     <?php endif; ?>
     <?php if ((int)$post['floor'] === 0 && !empty($topic['tags'])): ?><div class="post-tags"><?php foreach ($topic['tags'] as $tg): ?><?= tag_badge($tg) ?><?php endforeach; ?></div><?php endif; ?>
     <?= slot('post.content_after', $ctx) ?>

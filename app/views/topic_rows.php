@@ -13,7 +13,7 @@
   <article class="topic-row<?= uid() > 0 ? ($t['unread'] ? ' unread' : ' read') : '' ?><?= (int)$t['is_pinned'] ? ' pinned' : '' ?>" data-topic-id="<?= (int)$t['id'] ?>" data-slot="topic_list.item">
     <div class="row-avatar"><?= avatar($t['user'], 40) ?></div>
     <div class="row-main">
-      <h3 class="row-title">
+      <h3 class="row-title" dir="auto">
         <?php if ((int)$t['is_pinned']): ?><span class="row-icon" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
         <?php if ((int)$t['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
         <a href="<?= h(topic_url($t)) ?>"><?= raw(hook('topic.title', h($t['title']), ['topic' => $t, 'where' => 'list'])) ?></a>

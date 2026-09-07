@@ -3,7 +3,7 @@
   <h1><?= $topic ? t('Edit Topic') : t('New Topic') ?></h1>
   <form method="post" action="<?= h($action) ?>" data-ajax="1" data-composer>
     <?= csrf_field() ?>
-    <div class="form-row"><input type="text" name="title" class="input-lg" placeholder="<?= t('Title') ?>" value="<?= h($topic['title'] ?? $title ?? '') ?>" maxlength="200" required autofocus></div>
+    <div class="form-row"><input type="text" name="title" class="input-lg" dir="auto" placeholder="<?= t('Title') ?>" value="<?= h($topic['title'] ?? $title ?? '') ?>" maxlength="200" required autofocus></div>
     <div class="form-grid">
       <div class="form-row"><label><?= t('Category') ?></label>
         <select name="category_id" required>

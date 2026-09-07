@@ -5,7 +5,7 @@
  * Keys are the English source strings; sprintf placeholders are supported: t('%d replies', $n).
  * The active language is the admin setting site_lang (Settings → General), falling back to
  * 'lang' in data/config.php. An empty translation means "not translated yet": English is shown.
- * Language files may carry a '__name' key with the language's native name.
+ * Language files may carry a '__name' key with the language's native name and '__dir' => 'rtl' for right-to-left scripts.
  */
 
 function lang_code(): string
@@ -25,6 +25,12 @@ function lang_available(): array
         $list[$code] = (string)($table['__name'] ?? $code);
     }
     return $list;
+}
+
+/** 'rtl' when the active pack declares '__dir' => 'rtl' (Persian, Arabic, Hebrew…), else 'ltr'. */
+function lang_direction(): string
+{
+    return (string)(lang_table()['__dir'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr';
 }
 
 function lang_table(): array
