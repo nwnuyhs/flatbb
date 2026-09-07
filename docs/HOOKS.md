@@ -101,7 +101,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.user.profile.meta` | inline region (loop, no DB) | Profile meta line, after Joined / Seen: level, title, badges (ctx: user, self) | `app/views/profile.php` |
 | `region.user.profile.stats` | list region | Profile header statistics (list of label/value/url) | `app/user.php` |
 | `region.user.profile.tabs` | list region | Profile page tabs (list) | `app/user.php` |
-| `region.user.settings.tabs` | list region | Settings page menu (list): id => [label, group account|preferences|security|community|developer|more, weight] | `app/user.php` |
+| `region.user.settings.tabs` | list region | Settings page menu, a section list on phones (list): id => [label, group account|preferences|security|community|developer|more, weight] | `app/user.php` |
 | `regions.known` | filter | Register extra regions for Admin → Layout. | `core/hook.php` |
 | `schema.install` | event | After core tables are created/upgraded. | `core/schema.php` |
 | `security.csp` | filter | Content Security Policy directives (name => list of sources): add the CDNs your plugin loads scripts, styles or fonts from. | `core/security.php` |

@@ -1,22 +1,21 @@
-<?php /** Account settings. Variables: user, tab, tabs (id => label, group, weight), prefs, extra */
+<?php /** Account settings. Variables: user, tab, tabs (id => label, group, weight), prefs, extra, index (true on /settings: phones show the list, wide screens the first form) */
 $groups = ['account' => t('Account'), 'preferences' => t('Preferences'), 'security' => t('Security'), 'community' => t('Community'), 'developer' => t('Developer'), 'more' => t('More')];
 $by = [];
 foreach ($tabs as $k => $item) $by[(string)($item['group'] ?? 'more')][$k] = $item;
 foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($g); // a group only plugins know
 ?>
-<div class="settings">
+<div class="settings<?= !empty($index) ? ' settings-index' : '' ?>">
   <h1><?= t('Settings') ?></h1>
   <div class="settings-grid">
   <nav class="settings-menu" data-slot="user.settings.tabs">
     <?php foreach ($groups as $g => $label): if (empty($by[$g])) continue; ?>
     <h4><?= h($label) ?></h4>
-    <?php foreach ($by[$g] as $k => $item): ?><a class="side-link<?= $k === $tab ? ' active' : '' ?>" href="<?= h(url('/settings/' . $k)) ?>"><span><?= h((string)$item['label']) ?></span></a><?php endforeach; ?>
+    <?php foreach ($by[$g] as $k => $item): ?><a class="side-link<?= $k === $tab ? ' active' : '' ?>" href="<?= h(url('/settings/' . $k)) ?>"><span><?= h((string)$item['label']) ?></span><?= icon('chevron-right', 'settings-chev') ?></a><?php endforeach; ?>
     <?php endforeach; ?>
   </nav>
   <div class="settings-body">
-  <select class="settings-select" data-jump aria-label="<?= t('Settings') ?>">
-    <?php foreach ($groups as $g => $label): if (empty($by[$g])) continue; ?><optgroup label="<?= h($label) ?>"><?php foreach ($by[$g] as $k => $item): ?><option value="<?= h(url('/settings/' . $k)) ?>"<?= $k === $tab ? ' selected' : '' ?>><?= h((string)$item['label']) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?>
-  </select>
+  <a class="settings-back" href="<?= h(url('/settings')) ?>"><?= icon('chevron-left') ?><span><?= t('Settings') ?></span></a>
+  <h2 class="settings-current"><?= h((string)($tabs[$tab]['label'] ?? '')) ?></h2>
   <?php if ($tab === 'points'): ?>
   <div class="settings-form settings-points"><?= raw($extra) ?></div>
   <?php else: ?>
