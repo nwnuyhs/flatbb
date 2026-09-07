@@ -157,7 +157,7 @@ function user_settings(string $tab = 'profile'): never
         $extra = '<p class="points-balance"><b>' . human_number((int)$me['points']) . '</b> ' . t('points') . ' <span class="muted small">' . t('Only you and the staff can see this history.') . '</span></p>'
             . points_log_html($log['rows']) . pagination($log['pagination'], static fn(int $n): string => url('/settings/points', $n > 1 ? ['page' => $n] : []));
     }
-    page(t('Settings'), view('settings', ['user' => $me, 'tab' => $tab, 'tabs' => $tabs, 'prefs' => json_decode_array((string)$me['prefs']), 'extra' => $extra]), ['class' => 'page-settings', 'right' => false]);
+    page(t('Settings'), view('settings', ['user' => $me, 'tab' => $tab, 'tabs' => $tabs, 'prefs' => json_decode_array((string)$me['prefs']), 'extra' => $extra]), ['class' => 'page-settings', 'left' => false, 'right' => false]);
 }
 
 function user_pref(string $key, mixed $default = null): mixed
