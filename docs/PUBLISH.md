@@ -26,17 +26,17 @@ php flatbb plugin:check <id>
 
 ## 3. Publish
 
-From the browser: zip the plugin folder and upload it at https://www.flatbb.com/market/publish (signed in). The manifest is read from plugin.php, README.md becomes the plugin page.
+From the browser: zip the plugin folder and upload it at https://www.flatbb.com/market/publish (signed in). The manifest is read from plugin.php, README.md becomes the plugin page. The form also takes a changelog (several lines) and up to five screenshots (jpg, png, gif or webp, 2 MB each); the first screenshot is the cover in the plugin list. Every plugin on the marketplace is free.
 
 From the command line:
 
 ```bash
-php flatbb plugin:publish <id> --changelog="What changed in this version"
+php flatbb plugin:publish <id> --changelog="What changed in this version" --images=shot1.png,shot2.png
 ```
 
 The command packages `plugins/<id>/` into `dist/<id>-<version>.zip`, re-runs the checks and uploads it. On success it prints the marketplace URL. A new plugin is listed right away as **Community** (it passed the automatic checks: syntax, prefixes, no executables, matching manifest) and becomes **Certified** once a marketplace reviewer has looked at it; forum admins see the badge in the marketplace and are asked to confirm before installing a community plugin. Updates to a listed plugin go live immediately unless the automated checks flag something.
 
-Options: `--token=…` overrides the environment; `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows). `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows: better set `curl.cainfo` in php.ini).
+Options: `--images=a.png,b.png` uploads screenshots (up to five; they replace the ones already on the plugin page, leave the flag out to keep them); `--token=…` overrides the environment; `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows). `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows: better set `curl.cainfo` in php.ini).
 
 ## 4. Let an AI do it
 
@@ -50,7 +50,9 @@ or simply: "Bump the version of the hello plugin, run the checks and publish it 
 
 ## 5. From the admin panel
 
-Admin → Plugins → **Publish** on a plugin row does the same thing from the browser (the token is stored in site settings, admin-only).
+Admin → Plugins → **Publish** on a plugin row opens the same form in the admin panel: changelog, screenshots, and the developer token the first time (it is then stored in the plugin settings, admin-only).
+
+Screenshots and the changelog of the latest version can be changed later without publishing a new version: on www.flatbb.com go to Settings → Developer → **My plugins** → Manage.
 
 ## API (for other tools)
 
@@ -61,6 +63,7 @@ Admin → Plugins → **Publish** on a plugin row does the same thing from the b
 | `id`, `version` | from the manifest |
 | `manifest` | JSON of the public manifest keys |
 | `changelog`, `readme` | markdown text |
+| `images[0]`…`images[4]` | optional screenshots (jpg/png/gif/webp, 2 MB each); when present they replace the plugin's set |
 | `flatbb_version` | version of the publishing site |
 | `file` | the zip (`<id>/plugin.php` at its root) |
 

@@ -20,6 +20,20 @@ function upload_mime(string $file): string
     return is_array($info) ? (string)($info['mime'] ?? '') : '';
 }
 
+/** $_FILES[<key>] as a list of single-file arrays (a multi-file field is nested by property); files with upload errors are skipped. */
+function upload_files_list(string $key): array
+{
+    $f = $_FILES[$key] ?? null;
+    if (!is_array($f)) return [];
+    if (!is_array($f['name'] ?? null)) return ($f['error'] ?? 1) === UPLOAD_ERR_OK ? [$f] : [];
+    $out = [];
+    foreach ($f['name'] as $i => $name) {
+        if (($f['error'][$i] ?? 1) !== UPLOAD_ERR_OK) continue;
+        $out[] = ['name' => (string)$name, 'tmp_name' => (string)$f['tmp_name'][$i], 'size' => (int)$f['size'][$i], 'error' => 0];
+    }
+    return $out;
+}
+
 function upload_allowed_types(): array
 {
     return array_values(array_filter(array_map('trim', explode(',', strtolower(setting('upload_types', 'jpg,jpeg,png,gif,webp'))))));

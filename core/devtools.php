@@ -98,7 +98,8 @@ function plugin_package(string $id): string
  * Publish a plugin to the marketplace. POST multipart: token, id, version, changelog, manifest (json), file (zip).
  * Returns ['ok' => bool, 'message' => string, 'url' => string].
  */
-function plugin_publish(string $id, string $token, string $changelog = '', string $endpoint = '', bool $insecure = false): array
+/** $images: screenshots to publish with the version, each ['path' => local file, 'name' => file name] (up to 5; they replace the plugin's set on the marketplace). */
+function plugin_publish(string $id, string $token, string $changelog = '', string $endpoint = '', bool $insecure = false, array $images = []): array
 {
     if ($token === '') return ['ok' => false, 'message' => 'Missing token. Create one at https://www.flatbb.com/settings/developer (shown once), then paste it under Admin → Plugins → Plugin Market → Settings, or pass --token=... / set FLATBB_TOKEN on the command line.'];
     try {
@@ -112,16 +113,21 @@ function plugin_publish(string $id, string $token, string $changelog = '', strin
     $token = trim($token);
     if (!function_exists('curl_init')) return ['ok' => false, 'message' => 'The curl PHP extension is required to publish'];
     $ch = curl_init($endpoint);
+    $fields = [
+        'id' => $id, 'version' => (string)$m['version'], 'changelog' => $changelog, 'readme' => $readme,
+        'manifest' => json_encode_value(array_intersect_key($m, array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires']))),
+        'flatbb_version' => FLATBB_VERSION,
+        'file' => new CURLFile($zip, 'application/zip', basename($zip)),
+    ];
+    foreach (array_slice(array_values($images), 0, 5) as $i => $img) {
+        if (!is_file((string)($img['path'] ?? ''))) return ['ok' => false, 'message' => 'Screenshot not found: ' . (string)($img['path'] ?? '')];
+        $fields['images[' . $i . ']'] = new CURLFile((string)$img['path'], (string)(upload_mime((string)$img['path']) ?: 'application/octet-stream'), (string)($img['name'] ?? basename((string)$img['path'])));
+    }
     curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60, CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 120, CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Accept: application/json', 'Expect:', 'User-Agent: flatbb/' . FLATBB_VERSION, 'X-Flatbb-Site: ' . base_url(), 'X-Flatbb-Version: ' . FLATBB_VERSION],
         CURLOPT_SSL_VERIFYPEER => !$insecure, CURLOPT_SSL_VERIFYHOST => $insecure ? 0 : 2,
-        CURLOPT_POSTFIELDS => [
-            'id' => $id, 'version' => (string)$m['version'], 'changelog' => $changelog, 'readme' => $readme,
-            'manifest' => json_encode_value(array_intersect_key($m, array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires', 'price']))),
-            'flatbb_version' => FLATBB_VERSION,
-            'file' => new CURLFile($zip, 'application/zip', basename($zip)),
-        ],
+        CURLOPT_POSTFIELDS => $fields,
     ]);
     $body = curl_exec($ch);
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);

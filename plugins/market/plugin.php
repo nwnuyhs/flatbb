@@ -137,34 +137,37 @@ function market_plugin_ops(string $ops, array $ctx): string
 {
     $id = (string)($ctx['plugin']['id'] ?? '');
     if ($id === '' || $id === 'market' || $id === 'market_server') return $ops;
-    $has_token = (string)plugin_setting('market', 'token', '') !== '' || (string)(getenv('FLATBB_TOKEN') ?: '') !== '';
-    return $ops . action_form(url('/admin/ext/market/publish'), '<button class="btn btn-sm">' . icon('upload') . t('Publish') . '</button>', ['id' => $id], '', $has_token ? t('Package and publish %s to the marketplace?', $id) : t('Package %s for the marketplace? You will be asked for your developer token next.', $id));
+    return $ops . '<a class="btn btn-sm" href="' . h(url('/admin/ext/market/publish', ['id' => $id])) . '">' . icon('upload') . t('Publish') . '</a>';
 }
 
+/** GET: the publish form (changelog, screenshots, the token the first time). POST: package and upload. */
 function market_admin_publish(string $page): never
 {
     need_admin();
-    require_post();
-    $id = post_str('id', 40);
+    $id = is_post() ? post_str('id', 40) : get_str('id', 40);
     if (!isset(plugins()[$id])) fail(t('Plugin not found.'), url('/admin/plugins'));
-    $pasted = trim(post_str('token', 120));
-    if ($pasted !== '') {
-        // first publish from this admin: the developer token is pasted once and kept in the plugin settings
-        plugin_save_settings('market', ['token' => $pasted] + plugin_settings('market'));
+    $saved = (string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: '');
+    if (is_post()) {
+        $pasted = trim(post_str('token', 120));
+        if ($pasted !== '') plugin_save_settings('market', ['token' => $pasted] + plugin_settings('market')); // pasted once, kept in the plugin settings
+        $token = $pasted !== '' ? $pasted : $saved;
+        if ($token === '') fail(t('Publishing to the marketplace needs a developer token.'), url('/admin/ext/market/publish', ['id' => $id]));
+        $shots = array_map(static fn(array $f): array => ['path' => $f['tmp_name'], 'name' => $f['name']], upload_files_list('images'));
+        $r = plugin_publish($id, $token, post_str('changelog', 2000), '', false, $shots);
+        flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
+        redirect(url('/admin/plugins'));
     }
-    $token = $pasted !== '' ? $pasted : ((string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: ''));
-    if ($token === '') {
-        // no token yet: ask for it here instead of failing, then publish in the same step
-        $body = '<form method="post" action="' . h(url('/admin/ext/market/publish')) . '" class="admin-form">' . csrf_field() . '<input type="hidden" name="id" value="' . h($id) . '">'
-            . '<p class="muted">' . t('Publishing to the marketplace needs a developer token. Create one at %s (Settings → Developer, it is shown once), paste it here and it is kept for the next time under Admin → Plugins → Plugin Market → Settings.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
-            . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']))
-            . form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 3, 'maxlength' => 500]))
-            . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Save token and publish %s', $id) . '</button> <a class="btn" href="' . h(url('/admin/plugins')) . '">' . t('Cancel') . '</a></div></form>';
-        admin_page(t('Publish %s', $id), $body, 'ext.market.market');
+    $m = plugins()[$id];
+    $body = '<form method="post" action="' . h(url('/admin/ext/market/publish')) . '" enctype="multipart/form-data" class="admin-form">' . csrf_field() . '<input type="hidden" name="id" value="' . h($id) . '">'
+        . '<p class="muted">' . t('%s %s is packaged from plugins/%s and uploaded to the marketplace. Publishing may take a minute: the marketplace checks the package before it answers.', h((string)$m['name']), h((string)$m['version']), h($id)) . '</p>';
+    if ($saved === '') {
+        $body .= '<p class="muted">' . t('Publishing to the marketplace needs a developer token. Create one at %s (Settings → Developer, it is shown once), paste it here and it is kept for the next time under Admin → Plugins → Plugin Market → Settings.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
+            . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']));
     }
-    $r = plugin_publish($id, $token, post_str('changelog', 500));
-    flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
-    redirect(url('/admin/plugins'));
+    $body .= form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 6, 'maxlength' => 2000]), t('Shown in the version history on the plugin page.'))
+        . form_row(t('Screenshots'), input('images[]', '', ['type' => 'file', 'accept' => 'image/*', 'multiple' => true]), t('Optional, up to 5 (jpg / png / gif / webp, 2 MB each). The first one is the cover in the plugin list; new screenshots replace the old set. Leave empty to keep the current ones.'))
+        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Publish %s', $id) . '</button> <a class="btn" href="' . h(url('/admin/plugins')) . '">' . t('Cancel') . '</a></div></form>';
+    admin_page(t('Publish %s', $id), $body, 'ext.market.market');
 }
 
 function market_dashboard_cards(array $cards, array $ctx): array
@@ -183,11 +186,11 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.0.4',
-    'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins.',
+    'version' => '1.0.5',
+    'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
-    'requires' => ['flatbb' => '0.1.0'],
+    'requires' => ['flatbb' => '0.1.49'],
     'settings' => [
         'token' => ['type' => 'text', 'label' => 'Developer token (for publishing)', 'default' => '', 'max' => 120, 'help' => 'Create one at www.flatbb.com → Settings → Developer (it is shown once) and paste it here; the Publish button asks for it the first time. Leave empty to use the FLATBB_TOKEN environment variable.'],
     ],
