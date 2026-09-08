@@ -206,7 +206,7 @@
         case 'em': case 'i': inner = kids(n, ctx).trim(); return inner ? '*' + inner + '*' : '';
         case 'del': case 's': case 'strike': inner = kids(n, ctx).trim(); return inner ? '~~' + inner + '~~' : '';
         case 'code': return ctx.pre ? kids(n, ctx) : '`' + kids(n, ctx) + '`';
-        case 'pre': return '\n\n```\n' + kids(n, { pre: true }).replace(/\n$/, '') + '\n```\n\n';
+        case 'pre': inner = preText(n).replace(/^\n+/, '').replace(/\s+$/, ''); return inner ? '\n\n```\n' + inner + '\n```\n\n' : '';
         case 'a': inner = kids(n, ctx).trim(); var href = n.getAttribute('href') || ''; return href && inner ? '[' + inner + '](' + href + ')' : inner;
         case 'img': return '![' + (n.getAttribute('alt') || '') + '](' + (n.getAttribute('src') || '') + ')';
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6': return '\n\n' + '#'.repeat(Math.max(1, +t[1] - 1)) + ' ' + kids(n, ctx).trim() + '\n\n';
@@ -219,6 +219,25 @@
         default: return kids(n, ctx);
       }
     }
+    /**
+     * The text of a code block, exactly as it stands. Nothing inside a <pre> becomes markdown: sites wrap each line in
+     * an <li> or a <div> to number them, and treating those as a list turned the whole block into one long line.
+     */
+    function preText(n) {
+      if (n.nodeType === 3) return n.nodeValue;
+      if (n.nodeType !== 1) return '';
+      var t = n.tagName.toLowerCase();
+      if (t === 'br') return '\n';
+      if (t === 'script' || t === 'style' || t === 'button') return '';
+      // a gutter cell holding only the line number is part of the decoration, not of the code
+      if ((t === 'td' || t === 'th') && /^\s*\d+\s*$/.test(n.textContent || '') && n.parentElement && n.parentElement.children.length > 1) return '';
+      var out = '';
+      n.childNodes.forEach(function (c) { out += preText(c); });
+      // a line of its own: the line-number lists and the row-per-line tables that highlighters produce
+      if (t === 'li' || t === 'div' || t === 'p' || t === 'tr') out = '\n' + out.replace(/^\n+/, '');
+      return out;
+    }
+
     function list(el, ordered, ctx, indent) {
       var lines = [], i = 0;
       el.childNodes.forEach(function (li) {
