@@ -275,6 +275,7 @@ return [
     'Moderator' => 'ناظر',
     'Moderator (manage topics and posts)' => 'ناظر (مدیریت موضوع‌ها و نوشته‌ها)',
     'More' => 'بیشتر',
+    'More options' => 'گزینه‌های بیشتر',
     'Move down' => 'انتقال به پایین',
     'Move its %d topics to' => 'انتقال %d موضوع آن به',
     'Move its members to another group first.' => 'ابتدا اعضای آن را به گروه دیگری منتقل کنید.',

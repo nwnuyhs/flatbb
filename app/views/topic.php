@@ -54,7 +54,10 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
   </div>
   <?= raw($pagination) ?>
   <?= region('topic.replies_after', ['topic' => $topic]) ?>
-  <?php if ($can_reply): ?>
+  <?php if (!$can_reply && ($reply_denied ?? '') !== ''): ?>
+  <div class="empty reply-denied"><?= icon('lock') ?><p><?= h((string)$reply_denied) ?></p></div>
+<?php endif; ?>
+<?php if ($can_reply): ?>
   <section class="composer" id="reply" data-slot="composer">
     <h2><?= t('Reply') ?></h2>
     <form method="post" action="<?= h(url('/t/' . $topic['id'] . '/reply')) ?>" data-ajax="1" data-composer>

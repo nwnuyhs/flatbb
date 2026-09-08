@@ -80,6 +80,7 @@ function regions_known(): array
         'sidebar.right.cards' => 'Right column card stack (list)',
         'sidebar.right.bottom' => 'Right column, bottom',
         'topic.header' => 'Topic page, below the title block',
+        'topic.no_access' => 'Topic page when a plugin refused the visitor, under the reason',
         'topic.actions' => 'Topic page action buttons (list)',
         'post.before' => 'Before each post (loop, no DB)',
         'post.content_after' => 'After each post body (loop, no DB)',

@@ -274,6 +274,7 @@ return [
     'Moderator' => 'Moderador',
     'Moderator (manage topics and posts)' => 'Moderador (gerencia tópicos e postagens)',
     'More' => 'Mais',
+    'More options' => 'Mais opções',
     'Move down' => 'Mover para baixo',
     'Move its %d topics to' => 'Mover seus %d tópicos para',
     'Move its members to another group first.' => 'Mova seus membros para outro grupo primeiro.',

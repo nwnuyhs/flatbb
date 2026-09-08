@@ -13,7 +13,7 @@ function search_page(): never
         $pg = paginate_calc($r['total'], $page, 20);
         $post_ids = array_map('intval', array_column($r['rows'], 'post_id'));
         $posts = rows_by_ids('fb_posts', $post_ids, 'id,topic_id,user_id,floor,body,created_at,is_deleted');
-        $topics = rows_by_ids('fb_topics', array_column($posts, 'topic_id'), 'id,title,slug,category_id,reply_count,is_deleted');
+        $topics = rows_by_ids('fb_topics', array_column($posts, 'topic_id'), 'id,user_id,title,slug,category_id,reply_count,is_deleted,meta'); // meta and user_id: plugins filtering the results need the topic's own rules
         $users = users_by_ids(array_column($posts, 'user_id'));
         $visible = category_visible_ids();
         foreach ($post_ids as $pid) {
@@ -24,6 +24,7 @@ function search_page(): never
             $results[] = ['post' => $p, 'topic' => $t, 'user' => $users[(int)$p['user_id']] ?? null, 'category' => category_by_id((int)$t['category_id']), 'snippet' => search_snippet((string)$p['body'], $q)];
         }
     }
+    $results = array_values((array)hook('search.results', $results, ['q' => $q])); // plugins drop what this visitor may not read
     $main = view('search', ['q' => $q, 'results' => $results, 'total' => $pg['total'], 'pagination' => pagination($pg, static fn(int $n): string => url('/search', ['q' => $q, 'page' => $n]))]);
     page($q !== '' ? t('Search: %s', $q) : t('Search'), $main, ['class' => 'page-search', 'robots' => 'noindex']);
 }

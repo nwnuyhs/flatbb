@@ -129,6 +129,7 @@ function topic_view(string $id): never
     if ($topic === null || ((int)$topic['is_deleted'] === 1 && !is_mod())) not_found();
     $cat = category_by_id((int)$topic['category_id']);
     if ($cat !== null && !category_can_view($cat)) not_found();
+    if (($why = topic_access_denied($topic)) !== '') topic_no_access($topic, $cat, $why);
     $per = max(5, min(100, (int)setting('posts_per_page', '20')));
     $show_deleted = is_mod() ? '' : ' AND is_deleted=0';
     $total = (int)val("SELECT COUNT(*) FROM fb_posts WHERE topic_id=?{$show_deleted}", [(int)$topic['id']]);
@@ -145,10 +146,38 @@ function topic_view(string $id): never
     $main = view('topic', [
         'topic' => $topic, 'posts' => $posts, 'page' => $pg,
         'pagination' => pagination($pg, static fn(int $n): string => topic_url($topic, $n)),
-        'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()),
+        'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '',
+        'reply_denied' => uid() > 0 ? topic_reply_denied($topic) : '',
     ]);
     $right = view('sidebar_topic', ['topic' => $topic, 'cards' => region_list('topic.sidebar.cards', ['author' => view('card_author', ['user' => $topic['user']]), 'related' => view('card_related', ['topics' => topic_related($topic)])], ['topic' => $topic])]);
     page($topic['title'], $main, ['class' => 'page-topic', 'right' => $right, 'description' => md_excerpt((string)($posts[0]['body'] ?? '')), 'canonical' => absolute_url('/t/' . $topic['slug'] . '-' . $topic['id'], $pg['page'] > 1 ? ['page' => $pg['page']] : []), 'breadcrumbs' => $cat ? [[$cat['name'], category_url($cat)]] : []]);
+}
+
+/** Why the visitor may not reply to this topic, '' when they may (hook topic.can_reply); moderators and the author always pass. */
+function topic_reply_denied(array $topic): string
+{
+    if (is_mod() || (int)$topic['user_id'] === uid()) return '';
+    return (string)hook('topic.can_reply', '', ['topic' => $topic]);
+}
+
+/**
+ * Why the visitor may not read this topic, '' when they may. Plugins answer with the reason to show
+ * (hook topic.access); moderators and the author always pass. The same reason keeps a topic out of search and the feeds.
+ */
+function topic_access_denied(array $topic): string
+{
+    if (is_mod() || (int)$topic['user_id'] === uid()) return '';
+    return (string)hook('topic.access', '', ['topic' => $topic]);
+}
+
+/** The page a refused visitor gets: the title stays readable, the body is the reason. */
+function topic_no_access(array $topic, ?array $cat, string $why): never
+{
+    $body = '<article class="topic-page"><header class="topic-head"><h1 class="topic-title" dir="auto">' . h((string)$topic['title']) . '</h1></header>'
+        . '<div class="empty">' . icon('lock') . '<p>' . h($why) . '</p>'
+        . (uid() <= 0 ? '<p><a class="btn btn-primary" href="' . h(url('/login', ['back' => current_path()])) . '">' . t('Sign in') . '</a></p>' : '')
+        . region('topic.no_access', ['topic' => $topic, 'reason' => $why]) . '</div></article>';
+    page((string)$topic['title'], $body, ['class' => 'page-topic', 'right' => false, 'robots' => 'noindex', 'breadcrumbs' => $cat ? [[$cat['name'], category_url($cat)]] : []]);
 }
 
 /** Attach user rows, liked flag and reply-to previews to posts (batched). */
@@ -218,6 +247,8 @@ function topic_reply(string $id): never
     if ($cat !== null && !category_can_view($cat)) not_found();
     if (!can('reply')) fail(t('Your group cannot reply.'));
     if ((int)$topic['is_locked'] === 1 && !is_mod()) fail(t('This topic is locked.'));
+    if (($why = topic_access_denied($topic)) !== '') fail($why);
+    if (($why = topic_reply_denied($topic)) !== '') fail($why);
     $body = post_str('body');
     if (!post_body_valid($body)) fail(t('Reply is too short.'));
     if (($wait = post_wait_seconds($me)) > 0) fail(t('Please wait %d seconds before posting again.', $wait));

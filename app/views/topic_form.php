@@ -13,7 +13,9 @@
       <div class="form-row"><label><?= t('Tags') ?></label><input type="text" name="tags" value="<?= h($tags) ?>" placeholder="<?= t('comma, separated, up to 5') ?>"></div>
     </div>
     <?= editor('body', (string)($post['body'] ?? $body ?? ''), t('Write your post…'), ['scope' => $topic ? 'topic-' . (int)$topic['id'] : 'topic-new', 'ctx' => ['topic' => $topic]]) ?>
-    <?= region('composer.extra', ['topic' => $topic]) ?>
+    <?php if (($extra = region('composer.extra', ['topic' => $topic])) !== ''): ?>
+    <details class="composer-extra"<?= str_contains($extra, 'checked') || str_contains($extra, 'selected') ? ' open' : '' ?>><summary><?= icon('settings') ?><?= t('More options') ?></summary><?= raw($extra) ?></details>
+    <?php endif; ?>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary"><?= $topic ? t('Save changes') : t('Create Topic') ?></button>
       <a class="btn btn-ghost" href="<?= h($topic ? topic_url($topic) : url('/')) ?>"><?= t('Cancel') ?></a>

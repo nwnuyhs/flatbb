@@ -38,12 +38,18 @@ function api_dispatch(string $action): never
     json_error('unknown action', 404);
 }
 
+/** Topics that may appear in a public feed: plugins drop what a visitor without an account may not read (hook feed.topics). */
+function feed_topics(array $rows): array
+{
+    return array_values((array)hook('feed.topics', $rows, []));
+}
+
 function seo_sitemap(): never
 {
     header('Content-Type: application/xml; charset=utf-8');
     $visible = category_visible_ids();
     $where = 'is_deleted=0' . ($visible !== null ? ($visible === [] ? ' AND 0' : ' AND category_id IN (' . implode(',', $visible) . ')') : '');
-    $rows = all("SELECT id,slug,updated_at FROM fb_topics WHERE {$where} ORDER BY id DESC LIMIT 5000");
+    $rows = feed_topics(all("SELECT id,slug,updated_at,meta FROM fb_topics WHERE {$where} ORDER BY id DESC LIMIT 5000"));
     echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
     echo '<url><loc>' . h(absolute_url('/')) . '</loc></url>';
     foreach (categories() as $c) if (category_can_view($c)) echo '<url><loc>' . h(absolute_url('/c/' . $c['slug'])) . '</loc></url>';
@@ -76,7 +82,7 @@ function seo_rss(): never
     header('Content-Type: application/rss+xml; charset=utf-8');
     $visible = category_visible_ids();
     $where = 'is_deleted=0' . ($visible !== null ? ($visible === [] ? ' AND 0' : ' AND category_id IN (' . implode(',', $visible) . ')') : '');
-    $rows = all("SELECT id,title,slug,first_post_id,user_id,created_at FROM fb_topics WHERE {$where} ORDER BY id DESC LIMIT 30");
+    $rows = feed_topics(all("SELECT id,title,slug,first_post_id,user_id,created_at,meta FROM fb_topics WHERE {$where} ORDER BY id DESC LIMIT 30"));
     $posts = rows_by_ids('fb_posts', array_column($rows, 'first_post_id'), 'id,body_html');
     $users = users_by_ids(array_column($rows, 'user_id'));
     echo '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>' . h(setting('site_name')) . '</title><link>' . h(absolute_url('/')) . '</link><description>' . h(setting('site_tagline')) . '</description>';
