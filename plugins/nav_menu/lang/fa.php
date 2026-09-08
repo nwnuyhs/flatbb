@@ -1,0 +1,27 @@
+<?php
+/** Persian strings of the nav_menu plugin, reviewed by Pourdaryaei. */
+return [
+    '__name' => 'فارسی',
+    '__dir' => 'rtl',
+    'A path like /categories, or a full https:// address.' => 'مسیری مثل /categories یا یک آدرس کامل https://.',
+    'Add link' => 'افزودن لینک',
+    'Admins' => 'مدیران',
+    'Delete the link "%s"?' => 'حذف لینک «%s»؟',
+    'Icon (mobile drawer)' => 'آیکون (منوی موبایل)',
+    'Item not found.' => 'مورد یافت نشد.',
+    'Label' => 'برچسب',
+    'Link deleted.' => 'لینک حذف شد.',
+    'Link saved.' => 'لینک ذخیره شد.',
+    'Links shown in the header and in the mobile drawer. Links added by plugins (for example the marketplace) keep their own place; hide any single item under Layout.' => 'لینک‌هایی که در هدر و منوی موبایل نمایش داده می‌شوند. لینک‌هایی که پلاگین‌ها اضافه می‌کنند (مثلاً مارکت‌پلیس) جای خود را دارند؛ هر کدام را می‌توانید زیر «چیدمان» پنهان کنید.',
+    'Lower comes first. Marketplace links use 50 and 60.' => 'کمتر اول می‌آید. لینک‌های مارکت‌پلیس از ۵۰ و ۶۰ استفاده می‌کنند.',
+    'Navigation' => 'ناوبری',
+    'New link' => 'لینک جدید',
+    'No links yet.' => 'هنوز لینکی وجود ندارد.',
+    'Open in a new tab' => 'باز کردن در تب جدید',
+    'Signed-in members' => 'اعضای واردشده',
+    'The URL must start with / or http(s)://' => 'URL باید با / یا http(s):// شروع شود',
+    'The label is empty.' => 'برچسب خالی است.',
+    'URL' => 'URL',
+    'Visible to' => 'نمایش برای',
+    'Weight' => 'وزن',
+];

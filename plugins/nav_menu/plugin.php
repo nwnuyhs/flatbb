@@ -144,7 +144,7 @@ function nav_menu_admin(string $page): never
 return [
     'id' => 'nav_menu',
     'name' => 'Navigation Menu',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'Header navigation links you manage in the admin panel: label, URL, icon, new tab, visibility and order. Also fills the mobile drawer.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

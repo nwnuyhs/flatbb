@@ -55,8 +55,11 @@ function top_order(): string
 /** Period tabs under Top; $base is '/top' or '/c/<slug>/top'. */
 function top_sub_tabs(string $period, string $base): string
 {
-    $keys = array_keys(top_periods());
-    return tabs(array_map(static fn(string $k): array => ['label' => t(ucfirst($k)), 'url' => url($base . '/' . $k), 'active' => $k === $period], array_combine($keys, $keys)), 'tabs tabs-sub');
+    // spelled out so that lang:sync finds them: a label built with ucfirst() never reaches a language pack
+    $labels = ['day' => t('Day'), 'week' => t('Week'), 'month' => t('Month'), 'year' => t('Year'), 'all' => t('All')];
+    $items = [];
+    foreach (array_keys(top_periods()) as $k) $items[$k] = ['label' => $labels[$k] ?? ucfirst($k), 'url' => url($base . '/' . $k), 'active' => $k === $period];
+    return tabs($items, 'tabs tabs-sub');
 }
 
 /** Unread for a member: [join, where, params] — topics with posts they have not seen, last 30 days. */

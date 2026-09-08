@@ -193,7 +193,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.0.6',
+    'version' => '1.0.7',
     'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
