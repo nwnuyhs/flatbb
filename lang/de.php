@@ -105,8 +105,6 @@ return [
     'Confirm your password' => 'Passwort bestätigen',
     'Content' => 'Inhalt',
     'Content Security Policy' => 'Content Security Policy',
-    'Copied' => 'Kopiert',
-    'Copy' => 'Kopieren',
     'Copy link to this post' => 'Link zu diesem Beitrag kopieren',
     'Could not save the file.' => 'Die Datei konnte nicht gespeichert werden.',
     'Could not write to plugins/.' => 'In plugins/ konnte nicht geschrieben werden.',

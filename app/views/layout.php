@@ -121,7 +121,7 @@ $unread = notifications_unread();
   </div>
 </footer>
 <div class="drawer-backdrop" data-toggle="drawer"></div>
-<script nonce="<?= h(csp_nonce()) ?>">window.FB=<?= json_encode_value(['base' => base_path(), 'csrf' => csrf_token(), 'uid' => uid(), 'rewrite' => rewrite_enabled(), 'api' => url('/api/preview'), 'upload' => url('/upload'), 'users' => url('/api/users'), 'i18n' => ['confirm' => t('Are you sure?'), 'uploading' => t('Uploading…'), 'failed' => t('Request failed.'), 'copied' => t('Link copied'), 'nothing' => t('Nothing to preview.'), 'copy' => t('Copy'), 'copiedCode' => t('Copied')]]) ?></script>
+<script nonce="<?= h(csp_nonce()) ?>">window.FB=<?= json_encode_value(['base' => base_path(), 'csrf' => csrf_token(), 'uid' => uid(), 'rewrite' => rewrite_enabled(), 'api' => url('/api/preview'), 'upload' => url('/upload'), 'users' => url('/api/users'), 'i18n' => ['confirm' => t('Are you sure?'), 'uploading' => t('Uploading…'), 'failed' => t('Request failed.'), 'copied' => t('Link copied'), 'nothing' => t('Nothing to preview.')]]) ?></script>
 <script src="<?= h(base_path()) ?>/assets/app.js?v=<?= FLATBB_VERSION ?>.<?= (int)@filemtime(ROOT . "/assets/app.js") ?>" defer></script>
 <?= plugin_assets_tag('js') ?>
 <?= region('body.end', [], '', false) ?>
