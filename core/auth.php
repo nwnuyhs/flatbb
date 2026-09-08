@@ -344,6 +344,33 @@ function post_wait_seconds(array $user): int
     return max(0, $wait);
 }
 
+/**
+ * When this member may post again: ['until' => unix seconds, 'seconds' => how many are left, 'reason' => 'interval'|'new_user', 'message' => what to tell them].
+ * An empty array means right now. Moderators are never held back.
+ */
+function post_hold(array $user): array
+{
+    if (is_mod()) return [];
+    if (($wait = post_wait_seconds($user)) > 0) {
+        return ['until' => now() + $wait, 'seconds' => $wait, 'reason' => 'interval', 'message' => t('You post quickly! You can post again in %s.', human_wait($wait))];
+    }
+    if (!new_user_limited($user)) return [];
+    $until = (int)$user['created_at'] + max(0, (int)setting('new_user_limit_hours', '24')) * 3600;
+    $left = max(0, $until - now());
+    return ['until' => $until, 'seconds' => $left, 'reason' => 'new_user',
+        'message' => t('New accounts may post %d times on the first day. You can post again in %s.', max(0, (int)setting('new_user_max_posts', '5')), human_wait($left))];
+}
+
+/** A waiting time in words: "12 seconds", "3 minutes", "2 hours 5 minutes". */
+function human_wait(int $seconds): string
+{
+    if ($seconds < 60) return t('%d seconds', max(1, $seconds));
+    if ($seconds < 3600) return t('%d minutes', (int)ceil($seconds / 60));
+    $h = intdiv($seconds, 3600);
+    $m = intdiv($seconds % 3600, 60);
+    return $m > 0 ? t('%d hours %d minutes', $h, $m) : t('%d hours', $h);
+}
+
 function new_user_limited(array $user): bool
 {
     if (is_mod()) return false;

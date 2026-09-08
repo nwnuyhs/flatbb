@@ -56,6 +56,8 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
   <?= region('topic.replies_after', ['topic' => $topic]) ?>
   <?php if (!$can_reply && ($reply_denied ?? '') !== ''): ?>
   <div class="empty reply-denied"><?= icon('lock') ?><p><?= h((string)$reply_denied) ?></p></div>
+<?php elseif (!$can_reply && ($hold ?? []) !== []): ?>
+  <?= raw(post_hold_notice($hold)) ?>
 <?php endif; ?>
 <?php if ($can_reply): ?>
   <section class="composer" id="reply" data-slot="composer">

@@ -146,8 +146,9 @@ function topic_view(string $id): never
     $main = view('topic', [
         'topic' => $topic, 'posts' => $posts, 'page' => $pg,
         'pagination' => pagination($pg, static fn(int $n): string => topic_url($topic, $n)),
-        'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '',
+        'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '' && ($hold = post_hold(me() ?? [])) === [],
         'reply_denied' => uid() > 0 ? topic_reply_denied($topic) : '',
+        'hold' => uid() > 0 ? ($hold ?? post_hold(me() ?? [])) : [],
     ]);
     $right = view('sidebar_topic', ['topic' => $topic, 'cards' => region_list('topic.sidebar.cards', ['author' => view('card_author', ['user' => $topic['user']]), 'related' => view('card_related', ['topics' => topic_related($topic)])], ['topic' => $topic])]);
     page($topic['title'], $main, ['class' => 'page-topic', 'right' => $right, 'description' => md_excerpt((string)($posts[0]['body'] ?? '')), 'canonical' => absolute_url('/t/' . $topic['slug'] . '-' . $topic['id'], $pg['page'] > 1 ? ['page' => $pg['page']] : []), 'breadcrumbs' => $cat ? [[$cat['name'], category_url($cat)]] : []]);
@@ -226,10 +227,12 @@ function topic_new(): never
         if (!topic_title_valid($title)) fail(t('Title must be between 3 and 200 characters.'));
         if (!post_body_valid($body)) fail(t('Post body is too short.'));
         if ($cat === null || !category_can_post($cat)) fail(t('Please choose a category.'));
-        if (($wait = post_wait_seconds($me)) > 0) fail(t('Please wait %d seconds before posting again.', $wait));
-        if (new_user_limited($me)) fail(t('New accounts can only post a few times on the first day. Please try again later.'));
+        if (($hold = post_hold($me)) !== []) fail((string)$hold['message']);
         $tid = topic_create((int)$cat['id'], (int)$me['id'], $title, $body, $tags);
         redirect(topic_url(topic_by_id($tid)));
+    }
+    if (($hold = post_hold($me)) !== []) { // do not let them write a whole topic and lose it to a limit
+        page(t('New Topic'), '<div class="list-head"><h1 style="margin:0">' . t('New Topic') . '</h1></div>' . post_hold_notice($hold), ['class' => 'page-compose', 'right' => false]);
     }
     $pre = category_by_id(get_int('category', 0));
     $vals = (array)hook('composer.values', ['title' => '', 'body' => '', 'category_id' => (int)($pre['id'] ?? 0), 'tags' => ''], ['mode' => 'new']); // a drafts plugin fills these
@@ -251,8 +254,7 @@ function topic_reply(string $id): never
     if (($why = topic_reply_denied($topic)) !== '') fail($why);
     $body = post_str('body');
     if (!post_body_valid($body)) fail(t('Reply is too short.'));
-    if (($wait = post_wait_seconds($me)) > 0) fail(t('Please wait %d seconds before posting again.', $wait));
-    if (new_user_limited($me)) fail(t('New accounts can only post a few times on the first day. Please try again later.'));
+    if (($hold = post_hold($me)) !== []) fail((string)$hold['message']);
     $reply_to = post_int('reply_to');
     if ($reply_to > 0 && (int)(val('SELECT topic_id FROM fb_posts WHERE id=?', [$reply_to]) ?? 0) !== (int)$topic['id']) $reply_to = 0;
     $pid = post_create($topic, (int)$me['id'], $body, $reply_to);

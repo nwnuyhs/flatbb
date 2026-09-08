@@ -195,6 +195,18 @@ function time_tag(int $ts, string $fmt = 'rel', string $class = ''): string
     return '<time datetime="' . date('c', $ts) . '" data-fmt="' . h($fmt) . '" title="' . date('Y-m-d H:i', $ts) . '"' . ($class !== '' ? ' class="' . h($class) . '"' : '') . '>' . h($text) . '</time>';
 }
 
+/**
+ * "You can post again in 3 minutes" with a clock that runs down and puts the form back when it reaches zero.
+ * Under ten minutes it ticks by the second; a longer wait shows the words and the local time it ends (app.js does both).
+ */
+function post_hold_notice(array $hold): string
+{
+    if ($hold === []) return '';
+    return '<div class="post-hold" data-hold-until="' . (int)$hold['until'] . '">' . icon('clock')
+        . '<div><b data-hold-text>' . h((string)$hold['message']) . '</b>'
+        . '<div class="muted small">' . t('You can post again at %s.', time_tag((int)$hold['until'], 'full')) . '</div></div></div>';
+}
+
 function user_link(?array $user, string $class = 'user-link'): string
 {
     if ($user === null) return '<span class="' . h($class) . ' user-deleted">' . t('deleted') . '</span>';

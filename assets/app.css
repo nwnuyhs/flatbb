@@ -368,6 +368,9 @@ a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
 .post-row { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
 .post-row:last-child { border: 0; }
 .post-excerpt { color: var(--text-muted); font-size: var(--font-size-sm); margin: 4px 0 6px; }
+.post-hold { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; padding: 14px 16px; border: 1px solid var(--warning); border-radius: var(--radius); background: var(--warning-soft); }
+.post-hold > .icon { width: 20px; height: 20px; flex: none; color: var(--warning); margin-top: 1px; }
+.post-hold b { display: block; font-weight: 600; }
 .composer-extra { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); }
 .composer-extra > summary { display: flex; align-items: center; gap: 6px; padding: 9px 12px; cursor: pointer; color: var(--text-muted); font-size: var(--font-size-sm); }
 .composer-extra > summary .icon { width: 16px; height: 16px; }

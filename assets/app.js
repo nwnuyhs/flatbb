@@ -408,6 +408,27 @@
     });
   })();
 
+  /* ---------- posting limits: the notice counts down and brings the form back by itself ---------- */
+  (function () {
+    var box = $('[data-hold-until]');
+    if (!box) return;
+    var until = parseInt(box.getAttribute('data-hold-until'), 10) || 0;
+    var text = box.querySelector('[data-hold-text]');
+    var words = function (left) {
+      if (left < 60) return left + 's';
+      if (left < 3600) return Math.ceil(left / 60) + 'm';
+      return Math.floor(left / 3600) + 'h ' + Math.floor((left % 3600) / 60) + 'm';
+    };
+    var first = text ? text.textContent : '';
+    var tick = function () {
+      var left = until - Math.floor(Date.now() / 1000);
+      if (left <= 0) { window.location.reload(); return; }
+      if (left <= 600 && text) text.textContent = first.replace(/[\d]+\s*\S+(\s+[\d]+\s*\S+)?\.$/, words(left) + '.');
+      setTimeout(tick, left <= 600 ? 1000 : 30000);
+    };
+    setTimeout(tick, until - Math.floor(Date.now() / 1000) <= 600 ? 1000 : 30000);
+  })();
+
   /* ---------- misc ---------- */
   var flash = $('[data-flash]');
   if (flash) setTimeout(function () { flash.classList.add('fade'); }, 4000);
