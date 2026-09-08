@@ -106,6 +106,8 @@ return [
     'Confirm your password' => 'پسورد خود را تأیید کنید',
     'Content' => 'محتوا',
     'Content Security Policy' => 'سیاست امنیت محتوا (CSP)',
+    'Copied' => 'کپی شد',
+    'Copy' => 'کپی',
     'Copy link to this post' => 'کپی لینک این پست',
     'Could not save the file.' => 'ذخیره‌ی فایل ممکن نشد.',
     'Could not write to plugins/.' => 'نمی‌توان در plugins/ نوشت.',

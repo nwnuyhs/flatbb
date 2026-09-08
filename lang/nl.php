@@ -105,6 +105,8 @@ return [
     'Confirm your password' => 'Bevestig je wachtwoord',
     'Content' => 'Inhoud',
     'Content Security Policy' => 'Content Security Policy',
+    'Copied' => 'Gekopieerd',
+    'Copy' => 'Kopiëren',
     'Copy link to this post' => 'Link naar dit bericht kopiëren',
     'Could not save the file.' => 'Het bestand kon niet worden opgeslagen.',
     'Could not write to plugins/.' => 'Kan niet schrijven naar plugins/.',

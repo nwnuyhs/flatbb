@@ -33,6 +33,12 @@ img { max-width: 100%; height: auto; }
 code, pre { font-family: var(--mono); font-size: 13px; }
 code { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 4px; padding: .1em .35em; }
 pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; overflow: auto; }
+.post-content pre, .editor-preview pre { position: relative; }
+.code-copy { position: absolute; top: 6px; inset-inline-end: 6px; padding: 3px 9px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); color: var(--text-muted); font: inherit; font-size: var(--font-size-xs); cursor: pointer; opacity: 0; transition: opacity .15s, color .15s; }
+pre:hover .code-copy, .code-copy:focus-visible { opacity: 1; }
+.code-copy:hover { color: var(--text); }
+.code-copy.done { color: var(--success); border-color: var(--success); opacity: 1; }
+@media (hover: none) { .code-copy { opacity: .85; } }
 pre code { background: none; border: 0; padding: 0; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 small, .small { font-size: var(--font-size-sm); }

@@ -283,7 +283,10 @@
     }
     function renderPreview() {
       var fd = new FormData(); fd.append('body', ta.value); fd.append('_token', FB.csrf);
-      request(FB.api, { method: 'POST', body: fd }).then(function (r) { preview.innerHTML = r.ok ? (r.html || '<p class="muted">' + FB.i18n.nothing + '</p>') : '<p class="muted">' + (r.error || '') + '</p>'; });
+      request(FB.api, { method: 'POST', body: fd }).then(function (r) {
+        preview.innerHTML = r.ok ? (r.html || '<p class="muted">' + FB.i18n.nothing + '</p>') : '<p class="muted">' + (r.error || '') + '</p>';
+        preview.dispatchEvent(new CustomEvent('fb:preview', { bubbles: true }));
+      });
     }
     function uploadOne(file) {
       var fd = new FormData(); fd.append('file', file); fd.append('_token', FB.csrf);
@@ -469,6 +472,43 @@
     };
     setTimeout(tick, until - Math.floor(Date.now() / 1000) <= 600 ? 1000 : 30000);
   })();
+
+  /* ---------- code blocks get a copy button (posts, previews, anything rendered as markdown) ---------- */
+  function codeCopyButtons(root) {
+    $$('pre', root || document).forEach(function (pre) {
+      if (pre.querySelector('.code-copy') || !pre.closest('.post-content, .editor-preview')) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'code-copy';
+      b.textContent = (FB.i18n && FB.i18n.copy) || 'Copy';
+      pre.appendChild(b);
+    });
+  }
+  codeCopyButtons();
+  document.addEventListener('fb:ajax', function () { setTimeout(codeCopyButtons, 50); });
+  document.addEventListener('fb:preview', function (e) { codeCopyButtons(e.target); });
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.code-copy');
+    if (!b) return;
+    var code = b.parentElement.querySelector('code') || b.parentElement;
+    var text = (code.innerText || '').replace(/\s*$/, '');
+    var done = function () {
+      var was = b.textContent;
+      b.textContent = (FB.i18n && FB.i18n.copiedCode) || 'Copied';
+      b.classList.add('done');
+      setTimeout(function () { b.textContent = was; b.classList.remove('done'); }, 1500);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () { toast(FB.i18n.failed, 'error'); });
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (err) { toast(FB.i18n.failed, 'error'); }
+      ta.remove();
+    }
+  });
 
   /* ---------- misc ---------- */
   var flash = $('[data-flash]');
