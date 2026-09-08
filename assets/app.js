@@ -212,7 +212,11 @@
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6': return '\n\n' + '#'.repeat(Math.max(1, +t[1] - 1)) + ' ' + kids(n, ctx).trim() + '\n\n';
         case 'p': case 'div': case 'section': case 'article': return '\n\n' + kids(n, ctx).trim() + '\n\n';
         case 'blockquote': return '\n\n' + kids(n, ctx).trim().split('\n').map(function (l) { return '> ' + l; }).join('\n') + '\n\n';
-        case 'ul': case 'ol': return '\n\n' + list(n, t === 'ol', ctx, '') + '\n\n';
+        case 'ul': case 'ol':
+          // a highlighter numbering its lines with a list is code, not a list (the numbers are drawn by CSS, never text)
+          if (/linenum|line-number|code-lines|hljs-ln/i.test(n.className || '')) { inner = preText(n).replace(/^\n+/, '').replace(/\s+$/, ''); return inner ? '\n\n```\n' + inner + '\n```\n\n' : ''; }
+          return '\n\n' + list(n, t === 'ol', ctx, '') + '\n\n';
+        case 'li': return preText(n).replace(/\s+$/, ''); // an <li> on its own: half a list, dragged out of a numbered code block (preText already opens the line)
         case 'hr': return '\n\n---\n\n';
         case 'table': return '\n\n' + table(n, ctx) + '\n\n';
         case 'script': case 'style': case 'button': return '';
