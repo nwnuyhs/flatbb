@@ -40,6 +40,47 @@
   /* a select that navigates: <select data-jump><option value="/url"> (settings menu on phones) */
   document.addEventListener('change', function (e) { var s = e.target.closest('select[data-jump]'); if (s && s.value) window.location.href = s.value; });
 
+  /* ---------- dropdowns that must escape a scrolling box (the admin tables scroll sideways) ---------- */
+  function clippingParent(el) {
+    for (var p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      var o = getComputedStyle(p);
+      if (o.overflow !== 'visible' || o.overflowX !== 'visible' || o.overflowY !== 'visible') return p;
+    }
+    return null;
+  }
+
+  function closeDropdowns() {
+    $$('[data-dropdown].open').forEach(function (d) {
+      d.classList.remove('open');
+      var m = d.querySelector('.dropdown-menu') || d.__fbMenu;
+      if (m && m.parentElement === document.body) { d.appendChild(m); d.__fbMenu = null; } // back where the markup put it
+      if (m) { m.classList.remove('floating'); m.style.top = m.style.left = ''; }
+    });
+  }
+
+  /**
+   * A menu inside a box that scrolls (an admin table) would be cut off by it, so while it is open the menu hangs from
+   * the page itself, next to its button, and flips above when the bottom of the window is near. It scrolls with the page.
+   */
+  function placeDropdown(dd, toggle) {
+    var menu = dd.querySelector('.dropdown-menu');
+    if (!menu || !clippingParent(menu)) return;
+    menu.classList.add('floating');
+    document.body.appendChild(menu);
+    dd.__fbMenu = menu;
+    var t = toggle.getBoundingClientRect();
+    var w = menu.offsetWidth, h = menu.offsetHeight, pad = 8;
+    var rtl = document.documentElement.getAttribute('dir') === 'rtl';
+    var left = rtl ? t.left : t.right - w;
+    left = Math.max(pad, Math.min(left, window.innerWidth - w - pad));
+    var top = t.bottom + 6;
+    if (top + h > window.innerHeight - pad) top = Math.max(pad, t.top - h - 6);
+    menu.style.left = Math.round(left + window.scrollX) + 'px';
+    menu.style.top = Math.round(top + window.scrollY) + 'px';
+  }
+
+  window.addEventListener('resize', closeDropdowns);
+
   /* ---------- global click handling ---------- */
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-toggle]');
@@ -53,12 +94,12 @@
     if (dt) {
       var dd = dt.closest('[data-dropdown]');
       var open = dd.classList.contains('open');
-      $$('[data-dropdown].open').forEach(function (d) { d.classList.remove('open'); });
-      if (!open) dd.classList.add('open');
+      closeDropdowns();
+      if (!open) { dd.classList.add('open'); placeDropdown(dd, dt); }
       e.preventDefault();
       return;
     }
-    if (!e.target.closest('.dropdown-menu')) $$('[data-dropdown].open').forEach(function (d) { d.classList.remove('open'); });
+    if (!e.target.closest('.dropdown-menu')) closeDropdowns();
 
     var rp = e.target.closest('[data-reply-to-post]');
     if (rp) { setReplyTarget(rp.getAttribute('data-reply-to-post'), rp.getAttribute('data-username')); return; }

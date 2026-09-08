@@ -117,6 +117,7 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .dropdown-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px; cursor: pointer; font: inherit; color: inherit; border-radius: var(--radius-pill); }
 .dropdown-menu { display: none; position: absolute; inset-inline-end: 0; top: calc(100% + 6px); min-width: 180px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 6px; z-index: 60; }
 .dropdown.open .dropdown-menu { display: block; }
+.dropdown-menu.floating { display: block; position: absolute; top: 0; inset-inline: auto; margin: 0; }
 .dropdown-menu a, .dropdown-menu button, .dropdown-menu select { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--text); font: inherit; text-align: start; cursor: pointer; }
 .dropdown-menu a:hover, .dropdown-menu button:hover { background: var(--panel-2); }
 .dropdown-menu button.danger { color: var(--danger); }
