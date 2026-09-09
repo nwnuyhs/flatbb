@@ -72,7 +72,7 @@ docs/      documentation
 
 ## License
 
-MIT — see `LICENSE`.
+FlatBB is free software under the **GNU AGPL-3.0-or-later** (`LICENSE`). Use it, change it, run it for anyone: if you run a modified FlatBB as a service, the people using it must be able to get your changes under the same licence. Plugins and themes are not covered by that: they may use any licence (`LICENSING.md`). Companies that cannot accept the AGPL terms can obtain a commercial licence; contributions need the short CLA in `CONTRIBUTING.md`. Releases up to 0.1.68 were published under the MIT licence and stay MIT.
 
 ---
 

@@ -266,6 +266,8 @@ Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.
 
 ## 14b. Plugins that cost points
 
+Your plugin is your own work under any licence you like: FlatBB's AGPL does not extend to plugins and themes (an additional permission, see `LICENSING.md`).
+
 Every plugin is free unless its author sets a number of points on the marketplace (My plugins → Manage; the package and the manifest carry no price). A member pays those points once with their www.flatbb.com account, the author receives them, and the plugin is theirs for good: any forum where that account is connected (Admin → Plugins → Marketplace → Account) installs and updates it, or the zip is downloaded from the plugin page. There is nothing to check inside the plugin: no key, no licence, no expiry. Write it exactly like a free plugin.
 
 ## 15. Delivery checklist
