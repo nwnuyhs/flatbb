@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 8; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 9; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -249,6 +249,7 @@ function schema_indexes(): array
         ['fb_plugins', 'ux_plugins_id', ['id'], true],
         ['fb_cron', 'ux_cron_name', ['name'], true],
         ['fb_points_log', 'ix_points_log_user', ['user_id', 'id']],
+        ['fb_points_log', 'ix_points_log_rule', ['user_id', 'reason', 'created_at']], // daily caps and "once per object" in points_award()
         ['fb_search', 'ux_search_post', ['post_id'], true],
         ['fb_search', 'ix_search_topic', ['topic_id']],
     ];

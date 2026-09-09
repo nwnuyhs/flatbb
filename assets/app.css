@@ -440,6 +440,18 @@ a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
 /* ---------- points (core ledger UI) ---------- */
 .points-balance { margin: 0 0 12px; }
 .points-balance b { font-size: var(--font-size-2xl); color: var(--brand); margin-inline-end: 4px; }
+.points-summary { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+.points-big small, .points-month small { display: block; color: var(--text-muted); font-size: var(--font-size-sm); }
+.points-big b { font-size: 34px; line-height: 1.1; color: var(--brand); }
+.points-month { display: flex; gap: 20px; }
+.points-month b { font-size: var(--font-size-xl); }
+.points-actions { margin-top: 14px; }
+.points-head .card-body { padding: 18px 20px; }
+.page-points .card { margin-bottom: 14px; }
+.page-points .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.page-points .card-head .tabs { margin: 0; }
+.points-amount { width: 90px; }
+b.up { color: var(--success); } b.down { color: var(--danger); }
 .points-log { list-style: none; margin: 0; padding: 0; }
 .points-log li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: var(--font-size-sm); }
 .points-log li:last-child { border: 0; }

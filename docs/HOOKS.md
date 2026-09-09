@@ -48,6 +48,8 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `points.after_change` | event | After points were added or removed (ctx: user_id, delta, reason, ref_id, balance). | `core/points.php` |
 | `points.before_change` | filter | Filter or veto a points change (return false to block). | `core/points.php` |
 | `points.reasons` | filter | Register point reason codes: $value['checkin'] = 'Daily check-in'. Labels show in the private history. | `core/points.php` |
+| `points.ref_url` | filter |  | `core/points.php` |
+| `points.rules` | filter |  | `core/points.php` |
 | `post.after_delete` | event | After a reply was deleted or restored. | `app/topic.php` |
 | `post.after_like` | event | After a like toggle. | `app/topic.php` |
 | `post.after_save` | event | After a post was created or edited. | `app/topic.php` |
@@ -77,6 +79,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.main.categories` | list region | Category bar above the list tabs: All + top-level categories (list) | `app/home.php` |
 | `region.main.tabs` | list region | Tabs above topic lists (list) | `app/home.php` |
 | `region.main.toolbar` | html region | Right of the list tabs | `app/home.php` |
+| `region.points.actions` | list region | Buttons on the /points page of a member: check-in, tasks, leaderboard (list) | `app/points.php` |
 | `region.post.actions` | list region | Post action buttons (list, loop, no DB) | `app/views/post.php` |
 | `region.post.after` | inline region (loop, no DB) | After each post (loop, no DB) | `app/views/post.php` |
 | `region.post.before` | inline region (loop, no DB) | Before each post (loop, no DB) | `app/views/post.php` |

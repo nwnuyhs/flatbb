@@ -59,6 +59,7 @@ function routes_core(): array
         '/language' => 'account_lang',
         '/forgot' => 'account_forgot',
         '/reset/{token}' => 'account_reset',
+        '/points' => 'points_wallet',
         '/notifications' => 'notification_index',
         '/notifications/read' => 'notification_read',
         '/search' => 'search_page',

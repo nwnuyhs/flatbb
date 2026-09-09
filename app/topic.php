@@ -48,6 +48,7 @@ function topic_create(int $category_id, int $user_id, string $title, string $bod
         attachments_link_to_post($pid, $user_id, $data['body']);
         notify_mentions($tid, $pid, $data['body'], $user_id);
         fire('topic.after_save', ['topic_id' => $tid, 'post_id' => $pid, 'new' => true]);
+        points_award($user_id, 'topic', $tid);
         return $tid;
     });
 }
@@ -74,6 +75,7 @@ function post_create(array $topic, int $user_id, string $body, int $reply_to = 0
         notify_mentions((int)$topic['id'], $pid, $data['body'], $user_id);
         topic_mark_read((int)$topic['id'], $pid);
         fire('post.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => $pid, 'new' => true]);
+        points_award($user_id, 'reply', $pid);
         request_cache('categories', null, true);
         return $pid;
     });
@@ -415,6 +417,8 @@ function post_like(string $id): never
     });
     $count = (int)val('SELECT like_count FROM fb_posts WHERE id=?', [(int)$post['id']]);
     fire('post.after_like', ['post_id' => (int)$post['id'], 'liked' => !$liked]);
+    if (!$liked) { points_award((int)$post['user_id'], 'like', (int)$post['id']); points_award((int)$me['id'], 'liked', (int)$post['id']); }
+    else points_revoke((int)$post['user_id'], 'like', (int)$post['id'], 'unlike');
     if (is_ajax()) json_ok(['liked' => !$liked, 'count' => $count]);
     redirect(url('/post/' . $post['id']));
 }

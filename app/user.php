@@ -154,7 +154,7 @@ function user_settings(string $tab = 'profile'): never
     $extra = (string)hook('user.settings_tab', '', ['user' => $me, 'tab' => $tab]);
     if ($tab === 'points') {
         $log = points_log((int)$me['id'], get_int('page', 1, 1, 10000));
-        $extra = '<p class="points-balance"><b>' . human_number((int)$me['points']) . '</b> ' . t('points') . ' <span class="muted small">' . t('Only you and the staff can see this history.') . '</span></p>'
+        $extra = '<p class="points-balance"><b>' . human_number((int)$me['points']) . '</b> ' . t('points') . ' <a class="btn btn-sm" href="' . h(url('/points')) . '">' . icon('star') . t('My points page') . '</a> <span class="muted small">' . t('Only you and the staff can see this history.') . '</span></p>'
             . points_log_html($log['rows']) . pagination($log['pagination'], static fn(int $n): string => url('/settings/points', $n > 1 ? ['page' => $n] : []));
     }
     $index = current_path() === '/settings'; // phones show the grouped list here and the form one level down

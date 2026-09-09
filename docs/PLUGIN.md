@@ -264,6 +264,20 @@ The composer is one component (`app/views/editor.php` + the editor block in `ass
 
 Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`. The language is chosen per visitor (preference, cookie, then the site default), so never cache translated HTML across requests. Print timestamps with `time_tag($ts)`: the browser re-renders them in the visitor's own time zone.
 
+## 14a. Points: rules, awards and the ledger
+
+The core keeps the balance, the history and the **rule table** (Admin → Points: what each action pays, a daily cap per member, on/off). Plugins declare rules and pay through them, so the admin tunes every number in one place:
+
+```php
+'hooks' => ['points.rules' => 'myid_rules', 'region.points.actions' => 'myid_points_action'],
+function myid_rules(array $rules, array $ctx): array { $rules['myid_checkin'] = ['label' => t('Daily check-in'), 'amount' => 5, 'cap' => 1, 'once' => true, 'group' => t('Check-in')]; return $rules; }
+points_award($user_id, 'myid_checkin', $day_key);   // pays what the rule says; false when off, capped for today, or already paid for that ref
+points_add($user_id, -20, 'myid_shop', $item_id);   // a fixed amount, e.g. spending (negative delta)
+points_revoke($user_id, 'myid_checkin', $ref, 'myid_undo'); // takes back what a rule paid for that ref
+```
+
+`cap` is per member per day (0 = none); `once` refuses a second payment for the same `ref_id`. Ledger lines link to the post or topic behind them for the core reasons; answer `points.ref_url` (ctx reason, ref_id) for yours. Members see the rules that are on under "How to earn points" on `/points`, and the list region `points.actions` puts a button there (check-in, tasks, leaderboard).
+
 ## 14b. Plugins that cost points
 
 Your plugin is your own work under any licence you like: FlatBB's AGPL does not extend to plugins and themes (an additional permission, see `LICENSING.md`).
