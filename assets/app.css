@@ -442,8 +442,8 @@ a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
 .footer { border-top: 1px solid var(--line); background: var(--panel); margin-top: auto; }
 .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; padding-bottom: 16px; font-size: var(--font-size-sm); color: var(--text-muted); flex-wrap: wrap; }
 .footer-inner .region { display: flex; gap: 12px; }
-.footer-links { display: flex; gap: 14px; }
-.footer-links a { color: var(--text-muted); }
+.footer-links { display: flex; gap: 6px 14px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-muted); white-space: nowrap; }
 .footer-links a:hover { color: var(--brand); }
 
 /* ---------- setup ---------- */
@@ -597,7 +597,10 @@ body.adrawer-open { overflow: hidden; }
   .profile-side { grid-column: 1 / -1; flex-wrap: wrap; margin-top: 6px; }
   .profile-meta { gap: 6px 12px; }
   .profile-meta span { white-space: nowrap; }
-  .footer-inner { flex-direction: column; align-items: flex-start; }
+  /* phones: the links first as a centred wrapped row, the copyright and "powered by" as one centred line below */
+  .footer-inner { justify-content: center; text-align: center; gap: 8px 14px; padding-top: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .footer-links { order: -1; flex-basis: 100%; justify-content: center; gap: 6px 18px; margin-bottom: 4px; }
+  .footer-inner .region { justify-content: center; flex-wrap: wrap; gap: 4px 12px; }
   .me-stats span { font-size: 10px; }
 }
 
