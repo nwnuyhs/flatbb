@@ -529,5 +529,6 @@
       if ((document.documentElement.getAttribute('dir') === 'rtl' ? -dx : dx) < -60) document.body.classList.remove('drawer-open');
     });
   })();
-  document.dispatchEvent(new CustomEvent('fb:ready'));
+  // next tick: the plugin bundle is a deferred script after this one, so its listeners exist by then
+  setTimeout(function () { document.dispatchEvent(new CustomEvent('fb:ready')); }, 0);
 })();

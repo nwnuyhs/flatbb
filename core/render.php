@@ -75,6 +75,13 @@ function site_stats(): array
     }) ?? [];
 }
 
+/** A member's bio as HTML: escaped plain text (no markdown) with @mentions linked to the profiles. */
+function bio_html(string $bio): string
+{
+    $safe = h($bio);
+    return preg_replace_callback('/(?<![\w\/])@([A-Za-z0-9][A-Za-z0-9_.-]{1,29})\b/', static fn(array $m): string => '<a class="mention" href="' . h(user_url($m[1])) . '">@' . $m[1] . '</a>', $safe) ?? $safe;
+}
+
 function card(string $title, string $body, string $class = '', string $extra = ''): string
 {
     return '<section class="card ' . h($class) . '">' . ($title !== '' ? '<header class="card-head"><h3>' . h($title) . '</h3>' . $extra . '</header>' : '') . '<div class="card-body">' . $body . '</div></section>';
