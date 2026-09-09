@@ -570,6 +570,11 @@ body.adrawer-open { overflow: hidden; }
   .container { padding: 0 12px; }
   .search-form { display: none; }
   .search-toggle { display: inline-flex; }
+  .admin-toolbar .search-form { display: flex; width: 100%; flex: 1 1 100%; }
+  .admin-toolbar form { flex-wrap: wrap; }
+  table.admin th, table.admin td { padding: 8px 10px; }
+  table.admin .plugin-desc { display: none; }
+  table.admin td .row-actions { white-space: nowrap; }
   .logo-text { display: none; }
   .topbar-right .btn { padding: 6px 10px; }
   :root { --gap: 12px; }

@@ -93,7 +93,7 @@ return [
     'Choose a position.' => 'Escolha uma posição.',
     'Clean URLs' => 'URLs limpas',
     'Clean URLs (requires rewrite rules)' => 'URLs limpas (requer regras de rewrite)',
-    'Clean URLs are enabled in settings but /__rewrite_check does not answer; links may be broken.' => 'As URLs limpas estão ativadas nas configurações, mas /__rewrite_check não responde; os links podem estar quebrados.',
+    'Clean URLs are enabled in settings but /__rewrite_check does not answer (HTTP %s); links may be broken.' => 'URLs limpas estão ativadas nas definições, mas /__rewrite_check não responde (HTTP %s); as ligações podem estar quebradas.',
     'Clear cache' => 'Limpar cache',
     'Close' => 'Fechar',
     'Code block' => 'Bloco de código',

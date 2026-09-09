@@ -184,13 +184,13 @@ function market_admin_publish(string $page): never
         $shots = array_map(static fn(array $f): array => ['path' => $f['tmp_name'], 'name' => $f['name']], upload_files_list('images'));
         $r = plugin_publish($id, $token, post_str('changelog', 2000), '', false, $shots, $confirm);
         flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
-        redirect(market_admin_url('account'));
+        redirect(url('/admin/plugins'));
     }
     $m = plugins()[$id];
     $body = '<form method="post" action="' . h(url('/admin/ext/market/publish')) . '" enctype="multipart/form-data" class="admin-form">' . csrf_field() . '<input type="hidden" name="id" value="' . h($id) . '">'
         . '<p class="muted">' . t('%s %s is packaged from plugins/%s and uploaded to the marketplace. Publishing may take a minute: the marketplace checks the package before it answers.', h((string)$m['name']), h((string)$m['version']), h($id)) . '</p>';
     if ($saved === '') {
-        $body .= '<p class="muted">' . t('Publishing needs the token of your www.flatbb.com account. Create one at %s (Settings → Developer), paste it here once; it is kept under Marketplace → Account.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
+        $body .= '<p class="muted">' . t('Publishing needs the token of your www.flatbb.com account. Create one at %s (Settings → Developer), paste it here once; it is kept under Marketplace → Account (or click Connect there).', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
             . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']));
     }
     $other = $saved !== '' ? market_publish_other($id, $m, $saved) : null;
@@ -200,7 +200,7 @@ function market_admin_publish(string $page): never
     }
     $body .= form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 6, 'maxlength' => 2000]), t('Shown in the version history on the plugin page.'))
         . form_row(t('Screenshots'), input('images[]', '', ['type' => 'file', 'accept' => 'image/*', 'multiple' => true]), t('Optional, up to 5 (jpg / png / gif / webp, 2 MB each). The first one is the cover in the plugin list; new screenshots replace the old set. Leave empty to keep the current ones.'))
-        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Publish %s', $id) . '</button> <a class="btn" href="' . h(market_admin_url('account')) . '">' . t('Cancel') . '</a></div></form>';
+        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Publish %s', $id) . '</button> <a class="btn" href="' . h(url('/admin/plugins')) . '">' . t('Cancel') . '</a></div></form>';
     admin_page(t('Publish %s', $id), $body, 'ext.market.market');
 }
 
@@ -220,7 +220,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '2.0.0',
+    'version' => '2.1.0',
     'description' => 'Browse, install and update plugins from www.flatbb.com, get plugins that cost points with your account, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

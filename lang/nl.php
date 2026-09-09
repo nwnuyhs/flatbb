@@ -93,7 +93,7 @@ return [
     'Choose a position.' => 'Kies een positie.',
     'Clean URLs' => 'Nette URL\'s',
     'Clean URLs (requires rewrite rules)' => 'Nette URL\'s (vereist rewrite-regels)',
-    'Clean URLs are enabled in settings but /__rewrite_check does not answer; links may be broken.' => 'Nette URL\'s zijn ingeschakeld in de instellingen, maar /__rewrite_check antwoordt niet; links werken mogelijk niet.',
+    'Clean URLs are enabled in settings but /__rewrite_check does not answer (HTTP %s); links may be broken.' => 'Schone URL\'s staan aan in de instellingen, maar /__rewrite_check antwoordt niet (HTTP %s); links kunnen kapot zijn.',
     'Clear cache' => 'Cache legen',
     'Close' => 'Sluiten',
     'Code block' => 'Codeblok',

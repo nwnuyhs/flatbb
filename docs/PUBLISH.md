@@ -13,6 +13,8 @@ setx FLATBB_TOKEN fbk_xxxxxxxx          # Windows (new shells)
 
 or store it in `data/config.php` as `'market_token' => 'fbk_…'` (the file is never web-accessible).
 
+From a forum's admin panel none of this is needed: **Marketplace → Account → Connect** sends you to www.flatbb.com to approve, and the token is handed to the forum without copying anything.
+
 ## 2. Prepare the plugin
 
 - `plugins/<id>/plugin.php` with a complete manifest (`id`, `name`, `version`, `description`, `author`, `url`).

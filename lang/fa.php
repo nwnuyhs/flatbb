@@ -94,7 +94,7 @@ return [
     'Choose a position.' => 'یک موقعیت انتخاب کنید.',
     'Clean URLs' => 'URLهای تمیز',
     'Clean URLs (requires rewrite rules)' => 'URLهای تمیز (نیازمند قوانین rewrite)',
-    'Clean URLs are enabled in settings but /__rewrite_check does not answer; links may be broken.' => 'URLهای تمیز در تنظیمات فعال‌اند ولی /__rewrite_check پاسخ نمی‌دهد؛ ممکن است لینک‌ها خراب باشند.',
+    'Clean URLs are enabled in settings but /__rewrite_check does not answer (HTTP %s); links may be broken.' => 'آدرس‌های تمیز در تنظیمات فعال است اما /__rewrite_check پاسخ نمی‌دهد (HTTP %s)؛ ممکن است پیوندها خراب باشند.',
     'Clear cache' => 'پاک کردن کش',
     'Close' => 'بستن',
     'Code block' => 'بلوک کد',

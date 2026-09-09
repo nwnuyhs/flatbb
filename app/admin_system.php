@@ -54,7 +54,7 @@ function admin_page_plugins(): never
         if ((int)$p['installed'] === 1 && !$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('trash') . t('Uninstall (drop data)') . '</button>', ['action' => 'uninstall', 'id' => $id], '', t('Run the uninstall routine of %s? Its tables and data are removed.', $id));
         if (!$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('x') . t('Remove files') . '</button>', ['action' => 'delete', 'id' => $id], '', t('Delete plugins/%s from disk?', $id));
         $rows[] = [
-            '<b>' . h($p['name']) . '</b>' . $update . ($live === null ? ' <span class="flag flag-danger">' . t('file missing') . '</span>' : '') . '<br><small class="muted">' . h((string)($m['description'] ?? '')) . '</small>',
+            '<b>' . h($p['name']) . '</b>' . $update . ($live === null ? ' <span class="flag flag-danger">' . t('file missing') . '</span>' : '') . '<br><small class="muted plugin-desc">' . h((string)($m['description'] ?? '')) . '</small>',
             '<span class="mono small">' . h($id) . '</span><br><small class="muted">v' . h((string)$p['version']) . (!empty($m['author']) ? ' · ' . h((string)$m['author']) : '') . '</small>',
             $live === null ? '' : admin_switch($list_url, ['action' => $enabled ? 'disable' : 'enable', 'id' => $id], $enabled, $enabled ? t('Disable') : t('Enable')),
             '<div class="row-actions">' . ($has_settings && $enabled ? admin_drawer_link(admin_url('plugins', ['settings' => $id]), t('Settings')) : '') . admin_row_menu($menu) . '</div>',

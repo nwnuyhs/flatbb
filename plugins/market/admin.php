@@ -62,6 +62,7 @@ function market_admin_page(string $page): never
     if ($tab === 'publish' || $tab === 'licences') $tab = 'account'; // the old tabs
     if (!in_array($tab, ['browse', 'account'], true)) not_found();
     if (is_post()) market_admin_post($tab);
+    if ($tab === 'account' && get_str('connect', 10) !== '') market_connect_finish(); // back from the marketplace's approval page
     $account = market_account();
     // the same first row as Admin → Plugins (Installed | Marketplace), so the two pages switch back and forth
     $top = tabs([
@@ -99,6 +100,12 @@ function market_admin_post(string $tab): never
                 market_account(true);
                 flash(t('Marketplace list refreshed.'));
                 break;
+            case 'connect': // send the admin to the marketplace; it comes back with ?connect=done&req=…
+                $state = random_token(16);
+                plugin_save_settings('market', ['connect_state' => $state] + plugin_settings('market'));
+                $r = market_api_post('/connect/start', ['site' => base_url(), 'return' => absolute_url('/admin/ext/market/market', ['tab' => 'account']), 'state' => $state]);
+                if (empty($r['ok']) || empty($r['url'])) fail(t('The marketplace could not start the connection: %s', (string)($r['error'] ?? 'no answer')), $back);
+                redirect((string)$r['url']);
             case 'save_token':
                 $token = trim(post_str('token', 120));
                 plugin_save_settings('market', ['token' => $token, 'account' => ''] + plugin_settings('market'));
@@ -112,6 +119,22 @@ function market_admin_post(string $tab): never
     } catch (Throwable $e) {
         fail(t('Market error: %s', $e->getMessage()), $back);
     }
+    redirect($back);
+}
+
+/** ?connect=done&req=… (or ?connect=cancelled) on the Account tab: exchange the request for the token, once. */
+function market_connect_finish(): never
+{
+    $back = market_admin_url('account');
+    $state = (string)plugin_setting('market', 'connect_state', '');
+    plugin_save_settings('market', ['connect_state' => ''] + plugin_settings('market'));
+    if (get_str('connect', 10) !== 'done') { flash(t('Connection cancelled.'), 'info'); redirect($back); }
+    if ($state === '') fail(t('This connection was not started from here; click Connect again.'), $back);
+    $r = market_api_post('/connect/exchange', ['req' => get_str('req', 64), 'state' => $state]);
+    if (empty($r['ok']) || empty($r['token'])) fail(t('The marketplace did not hand over the token: %s', (string)($r['error'] ?? 'no answer')), $back);
+    plugin_save_settings('market', ['token' => (string)$r['token'], 'account' => ''] + plugin_settings('market'));
+    $a = market_account(true);
+    flash(t('Connected as %s.', (string)($a['username'] ?? $r['username'] ?? '')));
     redirect($back);
 }
 
@@ -210,24 +233,22 @@ function market_tab_account(array $account): string
             $html .= '<h3 style="margin:18px 0 8px">' . t('Bought with this account') . '</h3>' . admin_table([t('Plugin'), t('On this forum'), ''], $rows, '');
         }
     } else {
-        $html = '<p class="muted">' . t('Connect the www.flatbb.com account of this forum\'s admin: it pays for plugins that cost points and publishes this forum\'s plugins. Create a token under %s and paste it here.', $dev) . '</p>'
+        $html = '<div class="market-connect"><p>' . t('Connect the www.flatbb.com account of this forum\'s admin: the forum then gets plugins that cost points with the account\'s points and publishes this forum\'s plugins under it.') . '</p>'
+            . action_form($back, '<button type="submit" class="btn btn-primary btn-lg">' . icon('link') . t('Connect with %s', $host) . '</button>', ['action' => 'connect'])
+            . '<p class="muted small">' . t('You sign in on %s (if you are not already) and approve; nothing to copy.', h($host)) . '</p></div>'
+            . '<details class="market-token-fold"><summary class="muted small">' . t('Or paste a token') . '</summary>'
             . '<form method="post" action="' . h($back) . '" class="admin-form">' . csrf_field() . '<input type="hidden" name="action" value="save_token">'
-            . form_row(t('Token'), input('token', '', ['type' => 'password', 'placeholder' => 'fbk_…', 'maxlength' => 120, 'autocomplete' => 'off', 'required' => true]), market_token() !== '' ? t('A token is set but the marketplace did not accept it; paste a new one.') : '')
-            . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('link') . t('Connect') . '</button></div></form>';
+            . form_row(t('Token'), input('token', '', ['type' => 'password', 'placeholder' => 'fbk_…', 'maxlength' => 120, 'autocomplete' => 'off', 'required' => true]), t('From %s.', $dev) . (market_token() !== '' ? ' ' . t('A token is set but the marketplace did not accept it.') : ''))
+            . '<div class="form-actions"><button type="submit" class="btn">' . icon('check') . t('Save token') . '</button></div></form></details>';
     }
-    $rows = [];
-    foreach (plugins() as $id => $p) {
-        if (in_array($id, market_reserved_ids(), true)) continue;
-        $remote = market_cached_plugin($id);
-        $state = $remote === null ? '<span class="muted small">' . t('not on the marketplace') . '</span>' : '<span class="flag' . ((string)($remote['status'] ?? '') === 'certified' ? ' flag-success' : '') . '">' . h((string)($remote['status'] ?? '')) . '</span> <small class="muted">v' . h((string)($remote['version'] ?? '')) . ((int)($remote['points'] ?? 0) > 0 ? ' · ' . t('%d points', (int)$remote['points']) : '') . '</small>';
-        $rows[] = ['<b>' . h((string)$p['name']) . '</b> <small class="muted">' . h($id) . ' · v' . h((string)$p['version']) . '</small>', $state, '<a class="btn btn-sm' . ($remote === null || version_compare((string)$p['version'], (string)($remote['version'] ?? '0'), '>') ? ' btn-primary' : '') . '" href="' . h(url('/admin/ext/market/publish', ['id' => $id])) . '">' . icon('upload') . t('Publish') . '</a>'];
-    }
-    return $html . '<h3 style="margin:18px 0 8px">' . t('Plugins on this forum') . '</h3><p class="muted small">' . t('Publishing packages plugins/<id> and uploads it under the connected account. Points for a plugin are set on the marketplace (My plugins → Manage), not here.') . '</p>' . admin_table([t('Plugin'), t('On the marketplace'), ''], $rows, t('No plugins to publish.'));
+    return $html . '<p class="muted small market-foot">' . t('To publish a plugin of this forum, use Publish on its row under Installed.') . '</p>';
 }
 
 function market_css(): string
 {
-    return '.market-other{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0 0 14px;border-radius:var(--radius-sm);background:var(--warning-soft,var(--info-soft));color:var(--text)}.market-other svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--warning,var(--info))}.market-other p{margin:0 0 6px}.market-other-stop{background:var(--danger-soft)}.market-other-stop svg{color:var(--danger)}'
+    return '.market-connect{padding:18px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);text-align:center}.market-connect p:first-child{max-width:520px;margin:0 auto 12px}.market-connect .btn-lg{margin:4px 0 8px}.market-token-fold{margin-top:14px}.market-token-fold summary{cursor:pointer}.market-token-fold .admin-form{margin-top:10px}'
+        . '@media(max-width:640px){.plugin-item{flex-direction:column;gap:10px}.plugin-ops{justify-content:flex-start}.market-account{margin-inline-start:0;flex-basis:100%}.market-account-card .btn-row{margin-inline-start:0}.admin-toolbar form.inline{margin:0}}'
+        . '.market-other{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0 0 14px;border-radius:var(--radius-sm);background:var(--warning-soft,var(--info-soft));color:var(--text)}.market-other svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--warning,var(--info))}.market-other p{margin:0 0 6px}.market-other-stop{background:var(--danger-soft)}.market-other-stop svg{color:var(--danger)}'
         . '.market-tabs{margin-bottom:12px}.market-free{background:var(--success-soft,#dcfce7);color:var(--success,#15803d)}.market-paid{background:#fff1e6;color:#c2410c}[data-theme=dark] .market-paid{background:rgba(194,65,12,.25);color:#fdba74}'
         . '.market-account{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;color:var(--text-muted);font-size:var(--font-size-sm);white-space:nowrap}.market-account svg{width:16px;height:16px}.market-account b{color:var(--text)}'
         . '.market-account-card{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2)}.market-account-card>svg{width:28px;height:28px;color:var(--brand);flex:none}.market-account-card>div:first-of-type{flex:1;min-width:200px}.market-account-card .btn-row{margin-inline-start:auto}'
