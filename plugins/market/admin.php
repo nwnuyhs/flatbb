@@ -54,6 +54,16 @@ function market_site_url(string $path = ''): string
     return (string)parse_url(market_endpoint(), PHP_URL_SCHEME) . '://' . (string)parse_url(market_endpoint(), PHP_URL_HOST) . $path;
 }
 
+/** region.admin.plugins.tabs: Marketplace and Account next to Installed, on the Plugins page and on ours. */
+function market_plugins_tabs(array $tabs, array $ctx): array
+{
+    $active = (string)($ctx['active'] ?? '');
+    $account = market_account();
+    $tabs['market'] = ['label' => t('Marketplace'), 'url' => market_admin_url('browse'), 'active' => $active === 'market', 'weight' => 10];
+    $tabs['account'] = ['label' => t('Account'), 'url' => market_admin_url('account'), 'active' => $active === 'account', 'weight' => 20, 'badge' => $account !== [] ? (string)($account['username'] ?? '') . ' · ' . t('%d points', (int)($account['points'] ?? 0)) : ''];
+    return $tabs;
+}
+
 /** GET|POST /admin/ext/market/market[?tab=browse|account] */
 function market_admin_page(string $page): never
 {
@@ -64,13 +74,8 @@ function market_admin_page(string $page): never
     if (is_post()) market_admin_post($tab);
     if ($tab === 'account' && get_str('connect', 10) !== '') market_connect_finish(); // back from the marketplace's approval page
     $account = market_account();
-    // the same first row as Admin → Plugins (Installed | Marketplace), plus Account: the connected www.flatbb.com account
-    $badge = $account !== [] ? (string)($account['username'] ?? '') . ' · ' . t('%d points', (int)($account['points'] ?? 0)) : '';
-    $top = tabs([
-        'installed' => ['label' => t('Installed'), 'url' => admin_url('plugins'), 'badge' => count(plugins()) ?: ''],
-        'market' => ['label' => t('Marketplace'), 'url' => market_admin_url('browse'), 'active' => $tab === 'browse'],
-        'account' => ['label' => t('Account'), 'url' => market_admin_url('account'), 'active' => $tab === 'account', 'badge' => $badge],
-    ]);
+    // the same first row as Admin → Plugins (Installed plus what plugins add there: our Marketplace and Account)
+    $top = tabs(region_list('admin.plugins.tabs', ['installed' => ['label' => t('Installed'), 'url' => admin_url('plugins'), 'badge' => count(plugins()) ?: '', 'weight' => 0]], ['active' => $tab === 'account' ? 'account' : 'market']));
     admin_page(t('Plugins'), $top . '<div style="height:12px"></div>' . ($tab === 'account' ? market_tab_account($account) : market_tab_browse($account)), 'ext.market.market');
 }
 

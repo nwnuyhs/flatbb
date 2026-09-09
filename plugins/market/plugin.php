@@ -225,15 +225,13 @@ return [
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
     'requires' => ['flatbb' => '0.1.49'],
-    'settings' => [
-        'token' => ['type' => 'text', 'label' => 'Account token', 'default' => '', 'max' => 120, 'help' => 'The www.flatbb.com account this forum acts as (Marketplace → Account); empty means the FLATBB_TOKEN environment variable is used.'],
-    ],
     'admin_pages' => [
         'market' => ['label' => 'Marketplace', 'callback' => 'market_admin_page'],
         'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
     ],
     'hooks' => [
         'admin.plugin_ops' => 'market_plugin_ops',
+        'region.admin.plugins.tabs' => 'market_plugins_tabs',
         'region.admin.dashboard.cards' => 'market_dashboard_cards',
     ],
     'assets' => ['css' => ['market_css']],

@@ -60,8 +60,8 @@ function admin_page_plugins(): never
             '<div class="row-actions">' . ($has_settings && $enabled ? admin_drawer_link(admin_url('plugins', ['settings' => $id]), t('Settings')) : '') . admin_row_menu($menu) . '</div>',
         ];
     }
-    $tabs = ['installed' => ['label' => t('Installed'), 'url' => $list_url, 'active' => true, 'badge' => count($rows) ?: '']];
-    if (plugin_enabled('market')) $tabs['market'] = ['label' => t('Marketplace'), 'url' => url('/admin/ext/market/market')];
+    // plugins add their tabs here (the Plugin Market adds Marketplace and Account) and draw the same row on their own pages
+    $tabs = region_list('admin.plugins.tabs', ['installed' => ['label' => t('Installed'), 'url' => $list_url, 'active' => true, 'badge' => count($rows) ?: '', 'weight' => 0]], ['active' => 'installed']);
     $html = tabs($tabs) . '<div style="height:12px"></div>' . admin_table([t('Plugin'), t('ID / version'), t('Enabled'), ''], $rows, t('No plugins registered yet. Put a plugin in plugins/<id>/plugin.php and click "Scan plugins folder".'));
     $drawer = null;
     if (get_int('upload', 0) === 1) {

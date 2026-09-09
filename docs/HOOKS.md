@@ -56,6 +56,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.<action>` | filter |  | `core/hook.php`, `core/render.php`, `app/admin_system.php` |
 | `region.admin.dashboard.cards` | list region | Admin dashboard cards (list) | `app/admin.php` |
 | `region.admin.menu` | list region | Admin menu items (list) | `app/admin_ui.php` |
+| `region.admin.plugins.tabs` | list region | The tab row of Admin → Plugins: Installed plus what plugins add (list; ctx: active) | `app/admin_system.php` |
 | `region.auth.login.extra` | html region | Inside the sign-in form | `app/views/login.php` |
 | `region.auth.register.extra` | html region | Inside the registration form | `app/views/register.php` |
 | `region.body.end` | html region | Before </body> (scripts) | `app/views/layout.php` |
