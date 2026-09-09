@@ -87,7 +87,7 @@ function admin_page_plugins(): never
     }
     $action = admin_drawer_link(admin_url('plugins', ['upload' => 1]), t('Upload plugin'), 'btn btn-primary', 'upload')
         . action_form($list_url, '<button class="btn" type="submit">' . icon('refresh') . t('Scan plugins folder') . '</button>', ['action' => 'sync'], 'inline')
-        . (plugin_enabled('market') ? ' <a class="btn" href="' . h(url('/admin/ext/market/market')) . '">' . icon('puzzle') . t('Browse marketplace') . '</a>' : ' <a class="btn" href="https://www.flatbb.com/market" target="_blank" rel="noopener">' . icon('external') . t('Marketplace') . '</a>');
+        . (plugin_enabled('market') ? '' : ' <a class="btn" href="https://www.flatbb.com/market" target="_blank" rel="noopener">' . icon('external') . t('Marketplace') . '</a>'); // with the market plugin the Marketplace tab above is the way in
     admin_page(t('Plugins'), $html, 'plugins', ['action' => '<div class="btn-row">' . $action . '</div>', 'drawer' => $drawer]);
 }
 

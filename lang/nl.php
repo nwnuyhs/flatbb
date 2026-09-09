@@ -75,7 +75,6 @@ return [
     'Bookmarked' => 'Bladwijzer toegevoegd',
     'Bookmarks' => 'Bladwijzers',
     'Brand color' => 'Huisstijlkleur',
-    'Browse marketplace' => 'Marktplaats bekijken',
     'Bullet list' => 'Opsommingslijst',
     'Cache cleared.' => 'Cache geleegd.',
     'Call one of these every minute from your server or an external cron service:' => 'Roep een van deze elke minuut aan vanaf je server of een externe cron-dienst:',

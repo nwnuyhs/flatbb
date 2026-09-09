@@ -71,8 +71,9 @@ Response: `{"ok":true,"url":"https://www.flatbb.com/market/<id>"}` or `{"ok":fal
 
 Read endpoints used by the Market page: `GET /api/market/plugins?q=&page=`, `GET /api/market/plugins/<id>`, `GET /api/market/plugins/<id>/download?version=`, `GET /api/market/core/latest`.
 
-## Licences (paid plugins, commercial use, support)
+## Plugins that cost points
 
-A licence is a key `FB-XXXX-XXXX-XXXX-XXXX` issued by the marketplace for one product — a paid plugin id, `commercial` or `support` — with a number of seats (forums) and an optional expiry. The forum activates it under Admin → Plugins → Marketplace (when installing a paid plugin, or under Licences): the marketplace binds the forum to the key and returns a token signed with its RSA key, which the forum verifies with the public key it fetched once (`GET /api/market/license/pubkey`). A daily job refreshes the token; a revoked licence stops within a day, an unreachable marketplace is forgiven for 14 days. A paid plugin (listed with a price) is downloadable only by a forum holding a licence for it; free plugins never need one.
+Set a number of points on the plugin's Manage page (My plugins → Manage on www.flatbb.com); 0, the default, means free. A member gets the plugin once with the points of their account: they pay N, you receive N, the marketplace keeps nothing, and the plugin stays theirs through every later version. Their forum installs it with the account connected (Admin → Plugins → Marketplace → Account → token), or they download the zip from the plugin page after "Get for N points". Refunds are done by the marketplace staff (Market review → Purchases). Nothing changes in the package: a plugin that costs points is written like a free one.
 
-Client calls (form-encoded POST, with the `X-Flatbb-Site` header the market client always sends): `/api/market/license/activate`, `/check`, `/deactivate`, each with `key=`. Answers: `{"ok":true,"token":…,"product":…,"status":"active|expired|revoked",…}` or `{"ok":false,"error":…,"status":…}`. Buyers see their keys' seats under Settings → Developer → My licences and can free a seat there.
+API: `POST /api/market/buy` with `id=` and the account's Bearer token answers `{"ok":true,"message":…,"points":balance}` or `402` with the reason; `GET /api/market/whoami` returns `username`, `points` and `purchased` (plugin ids); a download of a plugin that costs points needs the Bearer token of an account that has it (else `402`).
+

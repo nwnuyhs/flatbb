@@ -264,16 +264,9 @@ The composer is one component (`app/views/editor.php` + the editor block in `ass
 
 Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`. The language is chosen per visitor (preference, cookie, then the site default), so never cache translated HTML across requests. Print timestamps with `time_tag($ts)`: the browser re-renders them in the visitor's own time zone.
 
-## 14b. Paid plugins and licences
+## 14b. Plugins that cost points
 
-Every plugin is free unless the marketplace lists it with a price. A paid plugin is downloaded only by a forum that activated a licence key for it (Admin → Plugins → Marketplace: the key is asked for when the plugin is installed, or under the Licences tab); the marketplace binds the forum to the key and signs a token the forum keeps. Inside your plugin you can ask:
-
-```php
-if (function_exists('market_entitled') && market_entitled('myid')) { /* the licensed features */ }
-market_license_info('myid'); // ['plan' => …, 'expires' => ts, 'status' => active|expired|revoked, …] or null
-```
-
-`market_entitled()` is true while the licence is active and stays true after it expires (features keep working; only updates stop). It turns false when the licence was revoked, freed, or the marketplace could not confirm it for 14 days. Without the Plugin Market plugin the function does not exist — decide in your plugin how it degrades. Products other than a plugin id are `'commercial'` and `'support'`.
+Every plugin is free unless its author sets a number of points on the marketplace (My plugins → Manage; the package and the manifest carry no price). A member pays those points once with their www.flatbb.com account, the author receives them, and the plugin is theirs for good: any forum where that account is connected (Admin → Plugins → Marketplace → Account) installs and updates it, or the zip is downloaded from the plugin page. There is nothing to check inside the plugin: no key, no licence, no expiry. Write it exactly like a free plugin.
 
 ## 15. Delivery checklist
 

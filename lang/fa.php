@@ -76,7 +76,6 @@ return [
     'Bookmarked' => 'بوکمارک شده',
     'Bookmarks' => 'بوکمارک',
     'Brand color' => 'رنگ برند',
-    'Browse marketplace' => 'مرور بازار',
     'Bullet list' => 'فهرست نقطه‌ای',
     'Cache cleared.' => 'کش پاک شد.',
     'Call one of these every minute from your server or an external cron service:' => 'هر یک دقیقه یکی از این‌ها را از سرور خودتان یا یک سرویس cron خارجی فراخوانی کنید:',

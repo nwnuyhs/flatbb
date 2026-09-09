@@ -7,7 +7,6 @@ if (!defined('FLATBB')) exit;
 
 const MARKET_CACHE_TTL = 900;
 
-require_once __DIR__ . '/license.php';
 require_once __DIR__ . '/admin.php';
 
 function market_endpoint(): string
@@ -15,19 +14,19 @@ function market_endpoint(): string
     return rtrim((string)config('market_endpoint', FLATBB_MARKET_ENDPOINT), '/');
 }
 
-/** Identifies this forum to the marketplace (install statistics and site licences). */
+/** Identifies this forum to the marketplace (install statistics). */
 function market_site_headers(): array
 {
     return ['X-Flatbb-Site: ' . base_url(), 'X-Flatbb-Version: ' . FLATBB_VERSION];
 }
 
 /** GET a URL with curl (timeouts, size cap). Returns body or null. */
-function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error = null): ?string
+function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error = null, array $headers = []): ?string
 {
     if (!function_exists('curl_init')) { $error = 'curl extension missing'; return null; }
     if (http_self_request_blocked($url)) { $error = 'self request skipped on the dev server'; return null; }
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 60, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json, application/zip'], market_site_headers())]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 60, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json, application/zip'], market_site_headers(), $headers)]);
     curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, static fn($r, $dl_total, $dl): int => $dl > $max_bytes ? 1 : 0);
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
     $body = curl_exec($ch);
@@ -35,7 +34,7 @@ function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error
     $err = curl_error($ch);
     curl_close($ch);
     if ($body === false || $status >= 400) {
-        // the marketplace explains a refusal in JSON (a paid plugin without a licence, a gated download): pass that on
+        // the marketplace explains a refusal in JSON (a plugin that costs points and is not yours, a gated download): pass that on
         $said = is_string($body) ? (string)(json_decode_array($body)['error'] ?? '') : '';
         $error = $said !== '' ? $said : ($err !== '' ? $err : 'HTTP ' . $status);
         return null;
@@ -59,12 +58,44 @@ function market_list(bool $refresh = false, string $q = ''): array
     return $d;
 }
 
+/** "Authorization: Bearer …" for the connected account, or [] when none is connected. */
+function market_auth_headers(): array
+{
+    $token = market_token();
+    return $token !== '' ? ['Authorization: Bearer ' . $token] : [];
+}
+
+/** POST form fields to a marketplace API path with the account token. The decoded JSON, or ['ok' => false, 'error' => …]. */
+function market_api_post(string $path, array $fields): array
+{
+    if (!function_exists('curl_init')) return ['ok' => false, 'error' => 'curl extension missing'];
+    $url = market_endpoint() . $path;
+    if (http_self_request_blocked($url)) return ['ok' => false, 'error' => 'self request skipped on the dev server'];
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($fields), CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 20, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json'], market_site_headers(), market_auth_headers())]);
+    $body = curl_exec($ch);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if (!is_string($body)) return ['ok' => false, 'error' => $err !== '' ? $err : 'unreachable'];
+    $d = json_decode_array($body);
+    return isset($d['ok']) ? $d : ['ok' => false, 'error' => 'bad response'];
+}
+
+/** Get a plugin for points with the connected account. ['ok' => bool, 'message' => …]; the account cache is refreshed. */
+function market_buy(string $id): array
+{
+    if (market_token() === '') return ['ok' => false, 'message' => t('Connect your www.flatbb.com account first (Marketplace → Account).')];
+    $r = market_api_post('/buy', ['id' => $id]);
+    if (!empty($r['ok'])) market_account(true);
+    return ['ok' => !empty($r['ok']), 'message' => (string)($r['message'] ?? $r['error'] ?? '')];
+}
+
 /** Download a plugin package from the marketplace and install it. Returns the installed version. */
 function market_install(string $id, string $version = ''): string
 {
     if (!plugin_id_valid($id)) throw new RuntimeException('Invalid plugin id');
     $url = market_endpoint() . '/plugins/' . $id . '/download' . ($version !== '' ? '?version=' . rawurlencode($version) : '');
-    $zip_body = market_http_get($url, 20971520, $error);
+    $zip_body = market_http_get($url, 20971520, $error, market_auth_headers()); // a plugin that costs points is released to the connected account
     if ($zip_body === null) throw new RuntimeException('Download failed: ' . $error);
     $tmp = CACHE_DIR . '/market_' . $id . '_' . random_token(4) . '.zip';
     file_put_contents($tmp, $zip_body, LOCK_EX);
@@ -94,7 +125,7 @@ function market_plugin_ops(string $ops, array $ctx): string
 }
 
 /** GET: the publish form (changelog, screenshots, the token the first time). POST: package and upload. */
-/** The marketplace account behind a developer token: ['username' => …, 'is_admin' => bool], or [] when it cannot be asked. */
+/** The marketplace account behind a token: username, is_admin, points, purchased (plugin ids); [] when it cannot be asked. */
 function market_whoami(string $token): array
 {
     $token = trim($token);
@@ -106,7 +137,7 @@ function market_whoami(string $token): array
     $body = curl_exec($ch);
     curl_close($ch);
     $d = is_string($body) ? json_decode_array($body) : [];
-    return !empty($d['ok']) && isset($d['username']) ? ['username' => (string)$d['username'], 'is_admin' => !empty($d['is_admin'])] : [];
+    return !empty($d['ok']) && isset($d['username']) ? ['username' => (string)$d['username'], 'is_admin' => !empty($d['is_admin']), 'points' => (int)($d['points'] ?? 0), 'purchased' => array_values(array_map('strval', (array)($d['purchased'] ?? [])))] : [];
 }
 
 /**
@@ -141,7 +172,7 @@ function market_admin_publish(string $page): never
     $id = is_post() ? post_str('id', 40) : get_str('id', 40);
     if (!isset(plugins()[$id])) fail(t('Plugin not found.'), url('/admin/plugins'));
     if (in_array($id, market_reserved_ids(), true)) fail(t('%s is part of the marketplace itself and cannot be published.', $id), url('/admin/plugins'));
-    $saved = (string)plugin_setting('market', 'token', '') ?: (string)(getenv('FLATBB_TOKEN') ?: '');
+    $saved = market_token();
     if (is_post()) {
         $pasted = trim(post_str('token', 120));
         if ($pasted !== '') plugin_save_settings('market', ['token' => $pasted] + plugin_settings('market')); // pasted once, kept in the plugin settings
@@ -153,13 +184,13 @@ function market_admin_publish(string $page): never
         $shots = array_map(static fn(array $f): array => ['path' => $f['tmp_name'], 'name' => $f['name']], upload_files_list('images'));
         $r = plugin_publish($id, $token, post_str('changelog', 2000), '', false, $shots, $confirm);
         flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
-        redirect(market_admin_url('publish'));
+        redirect(market_admin_url('account'));
     }
     $m = plugins()[$id];
     $body = '<form method="post" action="' . h(url('/admin/ext/market/publish')) . '" enctype="multipart/form-data" class="admin-form">' . csrf_field() . '<input type="hidden" name="id" value="' . h($id) . '">'
         . '<p class="muted">' . t('%s %s is packaged from plugins/%s and uploaded to the marketplace. Publishing may take a minute: the marketplace checks the package before it answers.', h((string)$m['name']), h((string)$m['version']), h($id)) . '</p>';
     if ($saved === '') {
-        $body .= '<p class="muted">' . t('Publishing needs a developer token. Create one at %s (Settings → Developer), paste it here once; it is kept under Marketplace → Publish.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
+        $body .= '<p class="muted">' . t('Publishing needs the token of your www.flatbb.com account. Create one at %s (Settings → Developer), paste it here once; it is kept under Marketplace → Account.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
             . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']));
     }
     $other = $saved !== '' ? market_publish_other($id, $m, $saved) : null;
@@ -169,7 +200,7 @@ function market_admin_publish(string $page): never
     }
     $body .= form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 6, 'maxlength' => 2000]), t('Shown in the version history on the plugin page.'))
         . form_row(t('Screenshots'), input('images[]', '', ['type' => 'file', 'accept' => 'image/*', 'multiple' => true]), t('Optional, up to 5 (jpg / png / gif / webp, 2 MB each). The first one is the cover in the plugin list; new screenshots replace the old set. Leave empty to keep the current ones.'))
-        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Publish %s', $id) . '</button> <a class="btn" href="' . h(url('/admin/plugins')) . '">' . t('Cancel') . '</a></div></form>';
+        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('upload') . t('Publish %s', $id) . '</button> <a class="btn" href="' . h(market_admin_url('account')) . '">' . t('Cancel') . '</a></div></form>';
     admin_page(t('Publish %s', $id), $body, 'ext.market.market');
 }
 
@@ -189,24 +220,21 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.3.0',
-    'description' => 'Browse, install and update plugins from www.flatbb.com, publish your own plugins with a changelog and screenshots, and activate a licence key for paid plugins or commercial use.',
+    'version' => '2.0.0',
+    'description' => 'Browse, install and update plugins from www.flatbb.com, get plugins that cost points with your account, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
     'requires' => ['flatbb' => '0.1.49'],
     'settings' => [
-        'token' => ['type' => 'text', 'label' => 'Developer token (for publishing)', 'default' => '', 'max' => 120, 'help' => 'Kept by the Publish tab of the Marketplace page; empty means the FLATBB_TOKEN environment variable is used.'],
+        'token' => ['type' => 'text', 'label' => 'Account token', 'default' => '', 'max' => 120, 'help' => 'The www.flatbb.com account this forum acts as (Marketplace → Account); empty means the FLATBB_TOKEN environment variable is used.'],
     ],
     'admin_pages' => [
         'market' => ['label' => 'Marketplace', 'callback' => 'market_admin_page'],
         'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
-        'licence' => ['label' => '', 'callback' => 'market_admin_licence_redirect'], // the old address; a tab now
     ],
-    'cron' => ['license' => ['callback' => 'market_license_cron', 'interval' => 86400]],
     'hooks' => [
         'admin.plugin_ops' => 'market_plugin_ops',
         'region.admin.dashboard.cards' => 'market_dashboard_cards',
-        'admin.plugin_settings.before' => 'market_settings_licence',
     ],
     'assets' => ['css' => ['market_css']],
 ];

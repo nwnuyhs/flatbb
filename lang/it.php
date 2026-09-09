@@ -75,7 +75,6 @@ return [
     'Bookmarked' => 'Salvato nei segnalibri',
     'Bookmarks' => 'Segnalibri',
     'Brand color' => 'Colore del brand',
-    'Browse marketplace' => 'Sfoglia il marketplace',
     'Bullet list' => 'Elenco puntato',
     'Cache cleared.' => 'Cache svuotata.',
     'Call one of these every minute from your server or an external cron service:' => 'Chiama uno di questi ogni minuto dal tuo server o da un servizio cron esterno:',
