@@ -117,7 +117,7 @@ $unread = notifications_unread();
   <div class="container footer-inner">
     <?= region('footer.left', [], '<span>&copy; ' . date('Y') . ' ' . h($site) . '</span>' . (setting('footer_text') !== '' ? '<span>' . h(setting('footer_text')) . '</span>' : '')) ?>
     <nav class="footer-links" data-slot="footer.links"><?php foreach ($footer_links as $l): ?><a href="<?= h((string)$l['url']) ?>"><?= h((string)$l['label']) ?></a><?php endforeach; ?></nav>
-    <?= region('footer.right', [], '<span class="powered">Powered by <a href="https://www.flatbb.com" rel="noopener">flatbb</a></span>') ?>
+    <?= region('footer.right', [], '<span class="powered">Powered by <a href="https://www.flatbb.com" rel="noopener">FlatBB</a></span>') ?>
   </div>
 </footer>
 <div class="drawer-backdrop" data-toggle="drawer"></div>

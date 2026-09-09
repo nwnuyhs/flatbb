@@ -1,6 +1,6 @@
-# flatbb plugin development guide (for humans and AI assistants)
+# FlatBB plugin development guide (for humans and AI assistants)
 
-This is the complete specification for creating, changing and reviewing flatbb plugins.
+This is the complete specification for creating, changing and reviewing FlatBB plugins.
 Read it fully before writing code, then look at `plugins/hello/plugin.php` and the plugin closest to what you need.
 Implement against the real functions in `core/` (see `docs/API.md`); do not invent APIs.
 
@@ -286,7 +286,7 @@ Follow every rule in the document. Give me the finished folder as a zip I can up
 
 Two bundled plugins are meant to be copied: `plugins/hello` (footer badge and a page, the minimum) and `plugins/nav_menu` (a table, an admin page with a drawer form and a list-region hook, the typical shape of a real plugin).
 
-Inside a checkout of flatbb the local files work the same way:
+Inside a checkout of FlatBB the local files work the same way:
 
 ```
 Read CLAUDE.md, docs/PLUGIN.md and docs/HOOKS.md in this repository, then look at plugins/hello/plugin.php.

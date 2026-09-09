@@ -90,7 +90,7 @@ function admin_page_dashboard(): never
     foreach ($cards as $c) $html .= $c['html'] ?? '';
     $html .= '</div>';
     $info = [
-        [t('flatbb version'), FLATBB_VERSION],
+        [t('FlatBB version'), FLATBB_VERSION],
         [t('PHP'), PHP_VERSION],
         [t('Database'), db_is_mysql() ? 'MySQL ' . (string)val('SELECT VERSION()') : 'SQLite ' . (string)val('SELECT sqlite_version()')],
         [t('Search backend'), search_backend()],

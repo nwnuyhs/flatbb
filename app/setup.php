@@ -47,7 +47,7 @@ function setup_index(): never
                 @file_put_contents(DATA_DIR . '/index.html', '');
                 $admin = user_by_name($values['admin_name']);
                 if ($admin !== null) login_user($admin);
-                flash(t('flatbb is installed. Welcome!'));
+                flash(t('FlatBB is installed. Welcome!'));
                 redirect(url('/'));
             } catch (Throwable $e) {
                 $errors[] = t('Installation failed: %s', $e->getMessage());

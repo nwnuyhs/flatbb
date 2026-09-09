@@ -64,7 +64,7 @@ Plugins: change `install` (it runs again when the manifest version changes) and 
 
 ## Moving from SQLite to MySQL
 
-1. Install a fresh flatbb of the same version on MySQL. Copy `plugins/` and `uploads/` from the old site and enable the same plugins (so their tables exist).
+1. Install a fresh FlatBB of the same version on MySQL. Copy `plugins/` and `uploads/` from the old site and enable the same plugins (so their tables exist).
 2. Copy the old `data/flatbb.sqlite` somewhere the new server can read, then either run
 
    ```bash

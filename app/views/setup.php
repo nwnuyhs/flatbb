@@ -3,12 +3,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Install flatbb</title>
+<title>Install FlatBB</title>
 <link rel="stylesheet" href="<?= h(base_path()) ?>/assets/app.css?v=<?= FLATBB_VERSION ?>.<?= (int)@filemtime(ROOT . "/assets/app.css") ?>">
 </head>
 <body class="page-setup">
 <div class="setup">
-  <div class="setup-head"><?= logo_mark() ?><h1>Install flatbb <small>v<?= FLATBB_VERSION ?></small></h1></div>
+  <div class="setup-head"><?= logo_mark() ?><h1>Install FlatBB <small>v<?= FLATBB_VERSION ?></small></h1></div>
   <section class="card"><header class="card-head"><h3>Environment</h3></header><div class="card-body">
     <ul class="check-list">
     <?php foreach ($checks as $c): ?><li class="<?= $c['ok'] ? 'ok' : ($c['fatal'] ? 'bad' : 'warn') ?>"><span><?= h($c['label']) ?></span><small><?= h($c['detail']) ?></small></li><?php endforeach; ?>

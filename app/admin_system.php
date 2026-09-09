@@ -357,7 +357,7 @@ function admin_page_updates(): never
                 try {
                     $v = upgrade_apply(null);
                     admin_log('tools.upgrade', $v);
-                    flash(t('Upgraded to flatbb %s. A backup of the previous files is in data/.', $v));
+                    flash(t('Upgraded to FlatBB %s. A backup of the previous files is in data/.', $v));
                 } catch (Throwable $e) {
                     fail(t('Upgrade failed: %s', $e->getMessage()), admin_url('updates'));
                 }
@@ -368,7 +368,7 @@ function admin_page_updates(): never
     }
     $latest = json_decode_array(setting('core_update_cache', ''));
     $newer = upgrade_available();
-    $html = '<div class="admin-form"><h3>' . ($newer ? t('flatbb %s is available', (string)$latest['version']) : t('flatbb is up to date')) . '</h3>'
+    $html = '<div class="admin-form"><h3>' . ($newer ? t('FlatBB %s is available', (string)$latest['version']) : t('FlatBB is up to date')) . '</h3>'
         . '<p>' . t('Installed: flatbb %s.', FLATBB_VERSION) . ' ' . (!empty($latest['version']) ? t('Latest: %s (checked %s).', (string)$latest['version'], human_time((int)($latest['checked_at'] ?? 0))) : t('Not checked yet.')) . '</p>'
         . '<p class="muted small">' . t('The marketplace is asked once a day by the scheduled jobs; a "new" mark appears in the menu when a newer release exists. Upgrading replaces the core files and keeps your data, uploads, settings and plugins; a backup of the previous files is written to data/.') . '</p><div class="btn-row">'
         . ($newer ? action_form(admin_url('updates'), '<button class="btn btn-primary">' . icon('download') . t('Upgrade to %s', (string)$latest['version']) . '</button>', ['action' => 'upgrade'], '', t('Upgrade now? Back up your database first. Core files are replaced; data, uploads and your plugins are kept.')) : '')

@@ -1,4 +1,4 @@
-# flatbb
+# FlatBB
 
 Website: https://www.flatbb.com · Download: https://www.flatbb.com/download · Plugins: https://www.flatbb.com/market
 

@@ -1,6 +1,6 @@
 # Architecture
 
-flatbb is deliberately small: plain PHP functions, one directory of kernel files, one directory of request handlers, PHP templates, one CSS file and one JS file. There is no autoloader, container, ORM or template engine.
+FlatBB is deliberately small: plain PHP functions, one directory of kernel files, one directory of request handlers, PHP templates, one CSS file and one JS file. There is no autoloader, container, ORM or template engine.
 
 ## Request lifecycle
 

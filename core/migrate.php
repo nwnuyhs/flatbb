@@ -7,7 +7,7 @@
  *   Admin → Tools → Import from SQLite
  *
  * Steps for moving a site from SQLite to MySQL:
- *   1. Install a fresh flatbb on MySQL (same version), copy plugins/ and uploads/ over.
+ *   1. Install a fresh FlatBB on MySQL (same version), copy plugins/ and uploads/ over.
  *   2. Enable the same plugins (so their tables exist), then run the import.
  *   3. The tool rebuilds the search index and counters when it finishes.
  */

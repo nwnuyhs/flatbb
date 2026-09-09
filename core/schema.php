@@ -289,8 +289,8 @@ function schema_seed(string $admin_name, string $admin_email, string $admin_pass
     }
     $uid = user_create($admin_name, $admin_email, $admin_password, $admin_group);
     $cat = (int)val("SELECT id FROM fb_categories WHERE slug='general'");
-    $body = "Welcome to your new **flatbb** forum!\n\nThis is your first topic. A few things you can do next:\n\n- Sign in with the administrator account you just created\n- Open **Admin** from the user menu to configure the site, categories and plugins\n- Read `CLAUDE.md` and `docs/PLUGIN.md` if you want to build plugins with an AI assistant\n\nHappy posting!";
-    topic_create($cat, $uid, 'Welcome to flatbb', $body, ['welcome'], true);
+    $body = "Welcome to your new **FlatBB** forum!\n\nThis is your first topic. A few things you can do next:\n\n- Sign in with the administrator account you just created\n- Open **Admin** from the user menu to configure the site, categories and plugins\n- Read `CLAUDE.md` and `docs/PLUGIN.md` if you want to build plugins with an AI assistant\n\nHappy posting!";
+    topic_create($cat, $uid, 'Welcome to FlatBB', $body, ['welcome'], true);
     save_settings(['cron_key' => random_token(12), 'installed_at' => (string)now()]);
     return $uid;
 }
