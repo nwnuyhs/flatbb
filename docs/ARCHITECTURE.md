@@ -24,7 +24,8 @@ Files only call functions from files loaded earlier or at request time (all func
 
 ## Configuration and state
 
-- `data/config.php` returns `['db' => [...], 'secret' => ..., 'debug' => bool, 'lang' => 'en', 'base_url' => optional, 'base_path' => optional]`. `config('key')` reads it. The interface language is the `site_lang` setting (Admin → Settings → General); `lang` in config.php is only the fallback. Packs are `lang/<code>.php` (`php flatbb lang:sync <code>` creates or refreshes one with every `t()` string; empty values fall back to English).
+- `data/config.php` returns `['db' => [...], 'secret' => ..., 'debug' => bool, 'lang' => 'en', 'base_url' => optional, 'base_path' => optional, 'phone_home' => optional]`. `config('key')` reads it. The interface language is the `site_lang` setting (Admin → Settings → General); `lang` in config.php is only the fallback. Packs are `lang/<code>.php` (`php flatbb lang:sync <code>` creates or refreshes one with every `t()` string; empty values fall back to English).
+- **Update check / install statistics**: once a day the forum asks the marketplace whether a newer core exists, and that request carries the site URL and the flatbb version so the project can count how many sites run it — the same phone-home WordPress does for its update check. Set `'phone_home' => false` in `data/config.php` to opt out; the check still runs but sends only a generic user agent. The marketplace client (`plugins/market`) sends the same header when a forum browses or installs plugins.
 - Site settings live in `fb_settings` (`setting('key')`, `save_settings([...])`), defaults in `setting_defaults()`. They are loaded once per request.
 - Per-request memoisation: `request_cache('key', fn() => …)`. Categories, groups, settings, the current user and loaded plugins all use it.
 - No PHP sessions. Login is a signed cookie (`fb_auth`), CSRF is an HMAC of a visitor cookie (`fb_vt`), flash messages are a short-lived cookie (`fb_flash`).

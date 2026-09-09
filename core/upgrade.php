@@ -41,7 +41,10 @@ function upgrade_http_get(string $url, int $max_bytes, ?string &$error = null): 
     if (!function_exists('curl_init')) { $error = 'curl extension missing'; return null; }
     if (http_self_request_blocked($url)) { $error = 'self request skipped on the dev server'; return null; }
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 120, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' upgrade', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_NOPROGRESS => false, CURLOPT_PROGRESSFUNCTION => static fn($r, $t, $dl): int => $dl > $max_bytes ? 1 : 0]);
+    // The update check reports the site URL and version so the project can count installs (like WordPress does).
+    // Opt out with 'phone_home' => false in data/config.php; then only the generic user agent is sent.
+    $headers = config('phone_home', true) ? ['X-Flatbb-Site: ' . base_url(), 'X-Flatbb-Version: ' . FLATBB_VERSION] : [];
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 120, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' upgrade', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => $headers, CURLOPT_NOPROGRESS => false, CURLOPT_PROGRESSFUNCTION => static fn($r, $t, $dl): int => $dl > $max_bytes ? 1 : 0]);
     $body = curl_exec($ch);
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $err = curl_error($ch);
