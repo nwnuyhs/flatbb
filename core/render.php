@@ -329,3 +329,42 @@ function editor(string $name, string $value = '', string $placeholder = '', arra
 {
     return view('editor', ['name' => $name, 'value' => $value, 'placeholder' => $placeholder, 'scope' => (string)($opts['scope'] ?? ''), 'ctx' => (array)($opts['ctx'] ?? [])]);
 }
+
+/**
+ * The right side of the header as the list region header.right: search, new topic, language, theme, notifications and
+ * the account menu (sign in / sign up for guests). Plugins add items (['html' => …, 'label' => …, 'weight' => …]) and
+ * Admin → Layout hides or reorders everything. Weights: search -20, new topic -10, plugin items 0 unless they say
+ * otherwise (so a new icon lands right after the new-topic button), language 10, theme 20, notifications 30, account 40.
+ * The two older HTML regions header.right.before_search / after_search still work and sit around the search box.
+ */
+function header_right_items(?array $me, int $unread, array $user_menu): array
+{
+    $items = [];
+    $before = region('header.right.before_search', [], '', false);
+    if (trim($before) !== '') $items['before_search'] = ['html' => '<div class="region region-header-right-before_search">' . $before . '</div>', 'label' => t('Plugins (left of search)'), 'weight' => -15];
+    $items['search'] = ['label' => t('Search'), 'weight' => -20, 'html' => '<form class="search-form" action="' . h(url('/search')) . '" method="get" role="search">' . icon('search') . '<input type="search" name="q" placeholder="' . t('Search') . '" value="' . h(get_str('q', 200)) . '" aria-label="' . t('Search') . '"></form>'
+        . '<a class="icon-btn search-toggle" href="' . h(url('/search')) . '" aria-label="' . t('Search') . '">' . icon('search') . '</a>'];
+    $after = region('header.right.after_search', [], '', false);
+    if (trim($after) !== '') $items['after_search'] = ['html' => '<div class="region region-header-right-after_search">' . $after . '</div>', 'label' => t('Plugins (right of search)'), 'weight' => -5];
+    if ($me !== null && can('post')) $items['new'] = ['label' => t('New Topic'), 'weight' => -10, 'html' => '<a class="icon-btn" href="' . h(url('/new-topic')) . '" aria-label="' . t('New Topic') . '" title="' . t('New Topic') . '">' . icon('plus') . '</a>'];
+    $langs = lang_available();
+    if (count($langs) > 1) {
+        $menu = '';
+        foreach ($langs as $code => $name) $menu .= '<button type="submit" name="code" value="' . h((string)$code) . '"' . ($code === lang_code() ? ' class="active"' : '') . '>' . h((string)$name) . '</button>';
+        $items['lang'] = ['label' => t('Language'), 'weight' => 10, 'html' => '<div class="dropdown lang-menu" data-dropdown><button class="icon-btn dropdown-toggle" type="button" aria-label="' . t('Language') . '" title="' . t('Language') . '" aria-haspopup="true">' . icon('globe') . '</button>'
+            . '<div class="dropdown-menu"><form method="post" action="' . h(url('/language')) . '">' . csrf_field() . '<input type="hidden" name="back" value="' . h(current_path()) . '">' . $menu . '</form></div></div>'];
+    }
+    $items['theme'] = ['label' => t('Toggle theme'), 'weight' => 20, 'html' => '<button class="icon-btn theme-toggle" type="button" aria-label="' . t('Toggle theme') . '" data-toggle="theme">' . icon('sun', 'theme-sun') . icon('moon', 'theme-moon') . '</button>'];
+    if ($me !== null) {
+        $items['notifications'] = ['label' => t('Notifications'), 'weight' => 30, 'html' => '<a class="icon-btn notif-btn" href="' . h(url('/notifications')) . '" aria-label="' . t('Notifications') . '">' . icon('bell') . '<b class="badge' . ($unread > 0 ? '' : ' hidden') . '" data-unread>' . $unread . '</b></a>'];
+        $links = '';
+        foreach ($user_menu as $item) $links .= '<a href="' . h((string)$item['url']) . '">' . (!empty($item['icon']) ? icon((string)$item['icon']) : '') . h((string)$item['label']) . '</a>';
+        $items['user'] = ['label' => t('Account menu'), 'weight' => 40, 'html' => '<div class="dropdown user-menu" data-dropdown><button class="dropdown-toggle" type="button" aria-haspopup="true">' . avatar($me, 32, false) . '</button>'
+            . '<div class="dropdown-menu" data-slot="header.user_menu"><div class="dropdown-head">' . h((string)$me['username']) . '</div>' . $links
+            . '<form method="post" action="' . h(url('/logout')) . '">' . csrf_field() . '<button type="submit">' . icon('logout') . t('Sign out') . '</button></form></div></div>'];
+    } else {
+        $items['user'] = ['label' => t('Sign in / Sign up'), 'weight' => 40, 'html' => '<a class="btn btn-ghost" href="' . h(url('/login', current_path() !== '/' && !str_starts_with(current_path(), '/login') ? ['back' => current_path()] : [])) . '">' . t('Sign in') . '</a>'
+            . (setting('allow_register', '1') === '1' ? '<a class="btn btn-primary" href="' . h(url('/register')) . '">' . t('Sign up') . '</a>' : '')];
+    }
+    return region_list('header.right', $items, ['user' => $me]);
+}

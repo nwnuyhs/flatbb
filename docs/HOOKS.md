@@ -68,8 +68,9 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.head` | html region | Inside <head> (meta tags, analytics) | `app/views/layout.php` |
 | `region.header.left` | html region | Header, right of the logo | `app/views/layout.php` |
 | `region.header.nav` | list region | Header navigation links (list) | `app/views/layout.php` |
-| `region.header.right.after_search` | html region | Header, right of the search box | `app/views/layout.php` |
-| `region.header.right.before_search` | html region | Header, left of the search box | `app/views/layout.php` |
+| `region.header.right` | list region | Header, right side: search, new topic, language, theme, notifications, account menu (list) | `core/render.php` |
+| `region.header.right.after_search` | html region | Header, right of the search box | `core/render.php` |
+| `region.header.right.before_search` | html region | Header, left of the search box | `core/render.php` |
 | `region.header.user_menu` | list region | User dropdown menu items (list) | `app/views/layout.php` |
 | `region.main.after` | html region | Below the main content on every page | `app/views/layout.php` |
 | `region.main.before` | html region | Above the main content on every page | `app/views/layout.php` |

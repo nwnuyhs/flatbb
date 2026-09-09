@@ -1,8 +1,8 @@
 <?php
 /**
  * Page shell. Variables: title, main, left, right, class, description, canonical, robots, breadcrumbs, head.
- * Regions here: head, header.left, header.nav, header.right.before_search, header.right.after_search,
- * header.user_menu, main.before, main.after, footer.left, footer.links, footer.right, body.end
+ * Regions here: head, header.left, header.nav, header.right (list: search, new topic, language, theme, notifications, account;
+ * the older header.right.before_search / after_search sit inside it), header.user_menu, main.before, main.after, footer.left, footer.links, footer.right, body.end
  */
 $me = me();
 $site = setting('site_name');
@@ -62,39 +62,8 @@ $unread = notifications_unread();
     <nav class="topnav" data-slot="header.nav">
       <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($item['icon']) ? icon((string)$item['icon']) : '' ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?>
     </nav>
-    <div class="topbar-right">
-      <?= region('header.right.before_search') ?>
-      <form class="search-form" action="<?= h(url('/search')) ?>" method="get" role="search">
-        <?= icon('search') ?><input type="search" name="q" placeholder="<?= t('Search') ?>" value="<?= h(get_str('q', 200)) ?>" aria-label="<?= t('Search') ?>">
-      </form>
-      <a class="icon-btn search-toggle" href="<?= h(url('/search')) ?>" aria-label="<?= t('Search') ?>"><?= icon('search') ?></a>
-      <?= region('header.right.after_search') ?>
-      <?php $langs = lang_available(); if (count($langs) > 1): ?>
-      <div class="dropdown lang-menu" data-dropdown>
-        <button class="icon-btn dropdown-toggle" type="button" aria-label="<?= t('Language') ?>" title="<?= t('Language') ?>" aria-haspopup="true"><?= icon('globe') ?></button>
-        <div class="dropdown-menu">
-          <form method="post" action="<?= h(url('/language')) ?>"><?= csrf_field() ?><input type="hidden" name="back" value="<?= h(current_path()) ?>">
-          <?php foreach ($langs as $code => $name): ?><button type="submit" name="code" value="<?= h($code) ?>"<?= $code === lang_code() ? ' class="active"' : '' ?>><?= h($name) ?></button><?php endforeach; ?>
-          </form>
-        </div>
-      </div>
-      <?php endif; ?>
-      <button class="icon-btn theme-toggle" type="button" aria-label="<?= t('Toggle theme') ?>" data-toggle="theme"><?= icon('sun', 'theme-sun') ?><?= icon('moon', 'theme-moon') ?></button>
-      <?php if ($me): ?>
-        <?php if (can('post')): ?><a class="icon-btn" href="<?= h(url('/new-topic')) ?>" aria-label="<?= t('New Topic') ?>" title="<?= t('New Topic') ?>"><?= icon('plus') ?></a><?php endif; ?>
-        <a class="icon-btn notif-btn" href="<?= h(url('/notifications')) ?>" aria-label="<?= t('Notifications') ?>"><?= icon('bell') ?><b class="badge<?= $unread > 0 ? '' : ' hidden' ?>" data-unread><?= (int)$unread ?></b></a>
-        <div class="dropdown user-menu" data-dropdown>
-          <button class="dropdown-toggle" type="button" aria-haspopup="true"><?= avatar($me, 32, false) ?></button>
-          <div class="dropdown-menu" data-slot="header.user_menu">
-            <div class="dropdown-head"><?= h($me['username']) ?></div>
-            <?php foreach ($user_menu as $item): ?><a href="<?= h((string)$item['url']) ?>"><?= !empty($item['icon']) ? icon((string)$item['icon']) : '' ?><?= h((string)$item['label']) ?></a><?php endforeach; ?>
-            <form method="post" action="<?= h(url('/logout')) ?>"><?= csrf_field() ?><button type="submit"><?= icon('logout') ?><?= t('Sign out') ?></button></form>
-          </div>
-        </div>
-      <?php else: ?>
-        <a class="btn btn-ghost" href="<?= h(url('/login', current_path() !== '/' && !str_starts_with(current_path(), '/login') ? ['back' => current_path()] : [])) ?>"><?= t('Sign in') ?></a>
-        <?php if (setting('allow_register', '1') === '1'): ?><a class="btn btn-primary" href="<?= h(url('/register')) ?>"><?= t('Sign up') ?></a><?php endif; ?>
-      <?php endif; ?>
+    <div class="topbar-right" data-slot="header.right">
+      <?php foreach (header_right_items($me, (int)$unread, $user_menu) as $item): ?><?= raw(is_array($item) ? (string)($item['html'] ?? '') : (string)$item) ?><?php endforeach; ?>
     </div>
   </div>
 </header>

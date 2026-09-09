@@ -132,6 +132,15 @@ function admin_page_layout(): never
             save_settings(['layout_item_order' => json_encode_value($map)]);
             json_ok();
         }
+        if ($action === 'item_order') { // the chips were dragged into a new order
+            $region = post_str('region', 60);
+            if (!isset(regions_known()[$region])) fail(t('Choose a position.'), $list_url);
+            $ids = array_values(array_filter(array_map('trim', explode(',', post_str('ids', 4000))), static fn(string $v): bool => $v !== ''));
+            $map = json_decode_array(setting('layout_item_order', '{}'));
+            $map[$region] = $ids;
+            save_settings(['layout_item_order' => json_encode_value($map)]);
+            json_ok();
+        }
         if ($action === 'plugin_on' || $action === 'plugin_off') {
             $map = json_decode_array(setting('layout_regions', '{}'));
             $hook = 'region.' . post_str('region', 60);
@@ -207,18 +216,18 @@ function admin_page_layout(): never
                     . ($k > 0 ? action_form($list_url, '<button type="submit" title="' . t('Move up') . '">' . icon('chevron-up') . '</button>', ['action' => 'item_up', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
                     . ($k < $n - 1 ? action_form($list_url, '<button type="submit" title="' . t('Move down') . '">' . icon('chevron-down') . '</button>', ['action' => 'item_down', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
                     . '</span>';
-                $chips .= '<span class="chip chip-item">' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . $arrows . '</span>';
+                $chips .= '<span class="chip chip-item" draggable="true" data-item="' . h((string)$iid) . '" title="' . h(t('Drag to reorder')) . '"><span class="grip" aria-hidden="true">⋮⋮</span>' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . $arrows . '</span>';
                 $k++;
             }
         }
         $rows[] = [
             '<code>' . h($name) . '</code><br><small class="muted">' . h($desc) . '</small>',
-            $chips !== '' ? '<div class="chips">' . $chips . '</div>' : '<span class="muted small">—</span>',
+            $chips !== '' ? '<div class="chips"' . (str_contains($desc, '(list)') ? ' data-sort-region="' . h($name) . '" data-sort-url="' . h($list_url) . '"' : '') . '>' . $chips . '</div>' : '<span class="muted small">—</span>',
             isset($count[$name]) ? (int)$count[$name] : '<span class="muted small">0</span>',
             '<div class="row-actions">' . admin_drawer_link(admin_url('layout', ['block' => 'new', 'region' => $name]), t('Add block'), 'btn btn-sm', 'plus') . '</div>',
         ];
     }
-    $html .= '<h3 class="admin-sub">' . t('Positions') . '</h3><p class="muted small">' . t('Every position a plugin or an HTML block can occupy. Switch a plugin off to hide it in that position only.') . '</p>'
+    $html .= '<h3 class="admin-sub">' . t('Positions') . '</h3><p class="muted small">' . t('Every position a plugin or an HTML block can occupy. Switch a plugin off to hide it in that position only. In a list position, drag the items into the order you want, or use the arrows.') . '</p>'
         . admin_table([t('Position'), t('Plugins'), t('Blocks'), ''], $rows);
     /* drawers */
     $drawer = null;

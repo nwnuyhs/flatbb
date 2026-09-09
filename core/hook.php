@@ -60,6 +60,7 @@ function regions_known(): array
         'head' => 'Inside <head> (meta tags, analytics)',
         'header.left' => 'Header, right of the logo',
         'header.nav' => 'Header navigation links (list)',
+        'header.right' => 'Header, right side: search, new topic, language, theme, notifications, account menu (list)',
         'header.right.before_search' => 'Header, left of the search box',
         'header.right.after_search' => 'Header, right of the search box',
         'header.user_menu' => 'User dropdown menu items (list)',
@@ -188,6 +189,7 @@ function layout_item_order(string $region): array
 function layout_core_items(string $region): array
 {
     return match ($region) {
+        'header.right' => ['search' => ['label' => t('Search'), 'weight' => -20], 'new' => ['label' => t('New Topic'), 'weight' => -10], 'lang' => ['label' => t('Language'), 'weight' => 10], 'theme' => ['label' => t('Toggle theme'), 'weight' => 20], 'notifications' => ['label' => t('Notifications'), 'weight' => 30], 'user' => ['label' => t('Account menu'), 'weight' => 40]],
         'header.user_menu' => ['profile' => ['label' => t('Profile')], 'bookmarks' => ['label' => t('Bookmarks')], 'settings' => ['label' => t('Settings')], 'admin' => ['label' => t('Admin')]],
         'footer.links' => ['categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')], 'rss' => ['label' => 'RSS']],
         default => [],

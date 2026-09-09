@@ -96,6 +96,37 @@
     } catch (e) {}
   }
 
+  /* ---------- Admin → Layout: drag the items of a list position into a new order ---------- */
+  var dragChip = null;
+  document.addEventListener('dragstart', function (e) {
+    var c = e.target.closest && e.target.closest('.chip-item[draggable]');
+    if (!c) return;
+    dragChip = c;
+    c.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', c.getAttribute('data-item')); } catch (x) {}
+  });
+  document.addEventListener('dragover', function (e) {
+    if (!dragChip) return;
+    var c = e.target.closest && e.target.closest('.chip-item[draggable]');
+    if (!c || c === dragChip || c.parentElement !== dragChip.parentElement) return;
+    e.preventDefault();
+    var r = c.getBoundingClientRect();
+    c.parentElement.insertBefore(dragChip, e.clientX < r.left + r.width / 2 ? c : c.nextSibling);
+  });
+  document.addEventListener('drop', function (e) { if (dragChip) e.preventDefault(); });
+  document.addEventListener('dragend', function () {
+    if (!dragChip) return;
+    var box = dragChip.parentElement, region = box.getAttribute('data-sort-region');
+    dragChip.classList.remove('dragging');
+    dragChip = null;
+    if (!region) return;
+    var ids = $$('.chip-item[data-item]', box).map(function (c) { return c.getAttribute('data-item'); });
+    var fd = new FormData();
+    fd.append('action', 'item_order'); fd.append('region', region); fd.append('ids', ids.join(',')); fd.append('_token', FB.csrf);
+    request(box.getAttribute('data-sort-url'), { method: 'POST', body: fd }).then(function (r) { if (!r.ok) toast(r.error || FB.i18n.failed, 'error'); });
+  });
+
   /* ---------- icon picker: a tile sets the hidden input (Admin → Categories) ---------- */
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-icon-pick]');

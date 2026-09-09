@@ -202,6 +202,9 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .icon-pick.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
 .icon-pick .icon, .icon-pick img { width: 16px; height: 16px; }
 .icon-pick-none { width: auto; padding: 0 8px; font-size: var(--font-size-xs); }
+.chip-item[draggable] { cursor: grab; }
+.chip-item.dragging { opacity: .4; }
+.chip-item .grip { color: var(--text-subtle); letter-spacing: -3px; margin-inline-end: 2px; user-select: none; }
 .cat-item:hover { color: var(--text); }
 .cat-item.active { color: var(--brand); border-bottom-color: var(--brand); }
 .cat-item.active .icon { opacity: 1; }
