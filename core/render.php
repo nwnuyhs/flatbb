@@ -223,11 +223,18 @@ function user_link(?array $user, string $class = 'user-link'): string
     return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . '>' . h($user['username']) . '</a>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]);
 }
 
-/** The category's icon when the admin picked one in Admin → Categories, else ''. */
+/** A built-in icon by name, or an uploaded image (a path under uploads/, e.g. site/cat_3.png) as an icon-sized <img>; '' when neither. */
+function icon_any(string $name): string
+{
+    if ($name === '') return '';
+    if (str_contains($name, '/')) return '<img class="icon icon-img" src="' . h(upload_url($name)) . '" alt="" loading="lazy">';
+    return isset(icon_paths()[$name]) ? icon($name) : '';
+}
+
+/** The category's icon when the admin picked one or uploaded an image in Admin → Categories, else ''. */
 function category_icon(array $cat): string
 {
-    $name = (string)($cat['icon'] ?? '');
-    return $name !== '' && isset(icon_paths()[$name]) ? icon($name) : '';
+    return icon_any((string)($cat['icon'] ?? ''));
 }
 
 function category_badge(?array $cat, bool $link = true): string

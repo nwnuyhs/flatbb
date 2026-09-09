@@ -36,7 +36,7 @@ php flatbb plugin:publish <id> --changelog="What changed in this version" --imag
 
 The command packages `plugins/<id>/` into `dist/<id>-<version>.zip`, re-runs the checks and uploads it. On success it prints the marketplace URL. A new plugin is listed right away as **Community** (it passed the automatic checks: syntax, prefixes, no executables, matching manifest) and becomes **Certified** once a marketplace reviewer has looked at it; forum admins see the badge in the marketplace and are asked to confirm before installing a community plugin. Updates to a listed plugin go live immediately unless the automated checks flag something.
 
-Options: `--images=a.png,b.png` uploads screenshots (up to five; they replace the ones already on the plugin page, leave the flag out to keep them); `--token=…` overrides the environment; `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows). `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows: better set `curl.cainfo` in php.ini).
+Options: `--images=a.png,b.png` uploads screenshots (up to five; they replace the ones already on the plugin page, leave the flag out to keep them); `--token=…` overrides the environment; `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows). `--insecure` skips TLS verification when your PHP has no CA bundle (typical on Windows: better set `curl.cainfo` in php.ini). `--confirm-other=1` is needed when a marketplace administrator republishes a plugin id that belongs to another developer (the answer names the owner otherwise).
 
 ## 4. Let an AI do it
 
@@ -50,7 +50,7 @@ or simply: "Bump the version of the hello plugin, run the checks and publish it 
 
 ## 5. From the admin panel
 
-Admin → Plugins → **Publish** on a plugin row opens the same form in the admin panel: changelog, screenshots, and the developer token the first time (it is then stored in the plugin settings, admin-only).
+Admin → Plugins → **Publish** on a plugin row opens the same form in the admin panel: changelog, screenshots, and the developer token the first time (it is then stored in the plugin settings, admin-only). When the plugin is not yours (the marketplace lists it under another developer, or the manifest names another author), the form says so and asks for a confirmation tick before it publishes; the marketplace itself refuses another developer's id unless your account is one of its administrators, and even then only with that confirmation.
 
 Screenshots and the changelog of the latest version can be changed later without publishing a new version: on www.flatbb.com go to Settings → Developer → **My plugins** → Manage.
 

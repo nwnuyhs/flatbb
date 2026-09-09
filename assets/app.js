@@ -81,6 +81,15 @@
 
   window.addEventListener('resize', closeDropdowns);
 
+  /* ---------- icon picker: a tile sets the hidden input (Admin → Categories) ---------- */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-icon-pick]');
+    if (!b) return;
+    var p = b.closest('[data-icon-picker]');
+    p.querySelector('input[name=icon]').value = b.getAttribute('data-icon-pick');
+    Array.prototype.forEach.call(p.querySelectorAll('.icon-pick'), function (x) { x.classList.toggle('active', x === b); });
+  });
+
   /* ---------- global click handling ---------- */
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-toggle]');

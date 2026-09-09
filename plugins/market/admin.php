@@ -243,7 +243,8 @@ function market_admin_licence_redirect(string $page): never
 
 function market_css(): string
 {
-    return '.market-tabs{margin-bottom:12px}.market-free{background:var(--success-soft,#dcfce7);color:var(--success,#15803d)}.market-paid{background:#fff1e6;color:#c2410c}[data-theme=dark] .market-paid{background:rgba(194,65,12,.25);color:#fdba74}'
+    return '.market-other{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0 0 14px;border-radius:var(--radius-sm);background:var(--warning-soft,var(--info-soft));color:var(--text)}.market-other svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--warning,var(--info))}.market-other p{margin:0 0 6px}.market-other-stop{background:var(--danger-soft)}.market-other-stop svg{color:var(--danger)}'
+        . '.market-tabs{margin-bottom:12px}.market-free{background:var(--success-soft,#dcfce7);color:var(--success,#15803d)}.market-paid{background:#fff1e6;color:#c2410c}[data-theme=dark] .market-paid{background:rgba(194,65,12,.25);color:#fdba74}'
         . '.market-key-form{display:flex;gap:6px;align-items:center;margin:0}.market-key-form input[type=text]{width:220px;max-width:100%;font-family:ui-monospace,monospace;font-size:var(--font-size-sm)}.plugin-ops .market-key-form{flex-wrap:wrap;justify-content:flex-end}.plugin-ops small{display:block;text-align:right;margin-top:4px}'
         . '.market-licence-block{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin-bottom:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2)}.market-licence-block svg{width:16px;height:16px;color:var(--brand);vertical-align:-3px;margin-inline-end:4px}.market-licence-ok{border-color:var(--success,#15803d)}.market-licence-block>div{flex-basis:100%}.market-licence-block .action-form{display:inline}';
 }

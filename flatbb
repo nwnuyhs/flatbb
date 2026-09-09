@@ -11,7 +11,7 @@
  *   php flatbb plugin:disable <id>
  *   php flatbb plugin:check <id>       lint + naming rules (what the marketplace checks)
  *   php flatbb plugin:package <id>     build dist/<id>-<version>.zip
- *   php flatbb plugin:publish <id>     package and upload to www.flatbb.com (needs FLATBB_TOKEN; --changelog=, --images=a.png,b.png, --insecure)
+ *   php flatbb plugin:publish <id>     package and upload to www.flatbb.com (needs FLATBB_TOKEN; --changelog=, --images=a.png,b.png, --insecure, --confirm-other=1 when an administrator republishes someone else's plugin)
  *   php flatbb hooks:list              print every hook/region found in core (used for docs/HOOKS.md)
  *   php flatbb api:list                print core function signatures (used for docs/API.md)
  *   php flatbb lang:sync <code>        create/update lang/<code>.php with every t() string (empty = untranslated)
@@ -76,7 +76,7 @@ switch ($cmd) {
         break;
     case 'plugin:publish':
         $shots = array_map(static fn(string $p): array => ['path' => trim($p), 'name' => basename(trim($p))], array_filter(explode(',', (string)($flag('images') ?? ''))));
-        $r = plugin_publish((string)($args[0] ?? ''), (string)($flag('token') ?? getenv('FLATBB_TOKEN') ?: ''), (string)($flag('changelog') ?? ''), (string)($flag('endpoint') ?? ''), $flag('insecure') === '1', $shots);
+        $r = plugin_publish((string)($args[0] ?? ''), (string)($flag('token') ?? getenv('FLATBB_TOKEN') ?: ''), (string)($flag('changelog') ?? ''), (string)($flag('endpoint') ?? ''), $flag('insecure') === '1', $shots, $flag('confirm-other') === '1');
         $out($r['message']);
         if (!empty($r['url'])) $out($r['url']);
         exit($r['ok'] ? 0 : 1);

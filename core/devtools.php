@@ -99,7 +99,7 @@ function plugin_package(string $id): string
  * Returns ['ok' => bool, 'message' => string, 'url' => string].
  */
 /** $images: screenshots to publish with the version, each ['path' => local file, 'name' => file name] (up to 5; they replace the plugin's set on the marketplace). */
-function plugin_publish(string $id, string $token, string $changelog = '', string $endpoint = '', bool $insecure = false, array $images = []): array
+function plugin_publish(string $id, string $token, string $changelog = '', string $endpoint = '', bool $insecure = false, array $images = [], bool $confirm_other = false): array
 {
     if ($token === '') return ['ok' => false, 'message' => 'Missing token. Create one at https://www.flatbb.com/settings/developer (shown once), then paste it under Admin → Plugins → Plugin Market → Settings, or pass --token=... / set FLATBB_TOKEN on the command line.'];
     try {
@@ -117,6 +117,7 @@ function plugin_publish(string $id, string $token, string $changelog = '', strin
         'id' => $id, 'version' => (string)$m['version'], 'changelog' => $changelog, 'readme' => $readme,
         'manifest' => json_encode_value(array_intersect_key($m, array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires']))),
         'flatbb_version' => FLATBB_VERSION,
+        'confirm_other' => $confirm_other ? '1' : '0', // a marketplace administrator publishing another developer's id must say so
         'file' => new CURLFile($zip, 'application/zip', basename($zip)),
     ];
     foreach (array_slice(array_values($images), 0, 5) as $i => $img) {

@@ -94,6 +94,47 @@ function market_plugin_ops(string $ops, array $ctx): string
 }
 
 /** GET: the publish form (changelog, screenshots, the token the first time). POST: package and upload. */
+/** The marketplace account behind a developer token: ['username' => …, 'is_admin' => bool], or [] when it cannot be asked. */
+function market_whoami(string $token): array
+{
+    $token = trim($token);
+    if ($token === '' || !function_exists('curl_init')) return [];
+    $url = market_endpoint() . '/whoami';
+    if (http_self_request_blocked($url)) return [];
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 8, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_HTTPHEADER => array_merge(['Authorization: Bearer ' . $token, 'Accept: application/json'], market_site_headers())]);
+    $body = curl_exec($ch);
+    curl_close($ch);
+    $d = is_string($body) ? json_decode_array($body) : [];
+    return !empty($d['ok']) && isset($d['username']) ? ['username' => (string)$d['username'], 'is_admin' => !empty($d['is_admin'])] : [];
+}
+
+/**
+ * Whether publishing $id from this forum means publishing someone else's plugin: ['confirm' => bool, 'text' => …] or null when it is
+ * plainly the admin's own. Compares the marketplace account behind the token with the id's publisher (or, for a new id, the manifest author).
+ */
+function market_publish_other(string $id, array $m, string $token): ?array
+{
+    $listed = market_cached_plugin($id);
+    $me = market_whoami($token);
+    $mine = (string)($me['username'] ?? '');
+    $author = trim((string)(plugin_read_manifest($id)['author'] ?? $m['author'] ?? '')); // the registry row has no author; the manifest file does
+    if ($listed !== null) {
+        $publisher = (string)($listed['publisher'] ?? '');
+        if ($mine !== '' && $publisher !== '' && strcasecmp($publisher, $mine) === 0) return null;
+        if ($mine !== '' && $publisher !== '') return ['confirm' => true, 'text' => t('On the marketplace, %1$s is published by %2$s, not by your account (%3$s).', $id, $publisher, $mine) . ' '
+            . (!empty($me['is_admin']) ? t('Your account is a marketplace administrator, so this would go through and replace their published version.') : t('The marketplace refuses this unless you are one of its administrators.'))];
+        $shown = $publisher !== '' ? $publisher : (string)($listed['author'] ?? '');
+        return $shown !== '' && ($mine === '' || strcasecmp($shown, $mine) !== 0)
+            ? ['confirm' => true, 'text' => t('%1$s is already on the marketplace, listed under %2$s. Publishing a version of a plugin that is not yours replaces theirs.', $id, $shown)]
+            : null;
+    }
+    if ($author === '' || ($mine !== '' && strcasecmp($author, $mine) === 0)) return null;
+    return $mine !== ''
+        ? ['confirm' => true, 'text' => t('The manifest names %1$s as the author, and your marketplace account is %2$s. Publish only plugins you wrote or were given permission to publish.', $author, $mine)]
+        : ['confirm' => false, 'text' => t('The manifest names %s as the author. The marketplace could not be asked whose account your token is, so make sure this plugin is yours to publish.', $author)];
+}
+
 function market_admin_publish(string $page): never
 {
     need_admin();
@@ -106,8 +147,11 @@ function market_admin_publish(string $page): never
         if ($pasted !== '') plugin_save_settings('market', ['token' => $pasted] + plugin_settings('market')); // pasted once, kept in the plugin settings
         $token = $pasted !== '' ? $pasted : $saved;
         if ($token === '') fail(t('Publishing to the marketplace needs a developer token.'), url('/admin/ext/market/publish', ['id' => $id]));
+        $confirm = post_str('confirm_other', 2) === '1';
+        $other = market_publish_other($id, plugins()[$id], $token);
+        if ($other !== null && $other['confirm'] && !$confirm) fail(t('Tick the confirmation first: you are about to publish someone else\'s plugin.'), url('/admin/ext/market/publish', ['id' => $id]));
         $shots = array_map(static fn(array $f): array => ['path' => $f['tmp_name'], 'name' => $f['name']], upload_files_list('images'));
-        $r = plugin_publish($id, $token, post_str('changelog', 2000), '', false, $shots);
+        $r = plugin_publish($id, $token, post_str('changelog', 2000), '', false, $shots, $confirm);
         flash($r['message'] . (!empty($r['url']) ? ' ' . $r['url'] : ''), $r['ok'] ? 'success' : 'error');
         redirect(market_admin_url('publish'));
     }
@@ -117,6 +161,11 @@ function market_admin_publish(string $page): never
     if ($saved === '') {
         $body .= '<p class="muted">' . t('Publishing needs a developer token. Create one at %s (Settings → Developer), paste it here once; it is kept under Marketplace → Publish.', '<a href="https://www.flatbb.com/settings/developer" target="_blank" rel="noopener">www.flatbb.com</a>') . '</p>'
             . form_row(t('Developer token'), input('token', '', ['required' => true, 'maxlength' => 120, 'autofocus' => true, 'autocomplete' => 'off', 'placeholder' => 'fbk_…']));
+    }
+    $other = $saved !== '' ? market_publish_other($id, $m, $saved) : null;
+    if ($other !== null) {
+        $body .= '<div class="market-other' . ($other['confirm'] ? ' market-other-stop' : '') . '">' . icon('alert') . '<div><p>' . h($other['text']) . '</p>'
+            . ($other['confirm'] ? checkbox('confirm_other', false, t('Yes, publish %s although it is someone else\'s plugin', $id)) : '') . '</div></div>';
     }
     $body .= form_row(t('Changelog for this version'), textarea('changelog', '', ['rows' => 6, 'maxlength' => 2000]), t('Shown in the version history on the plugin page.'))
         . form_row(t('Screenshots'), input('images[]', '', ['type' => 'file', 'accept' => 'image/*', 'multiple' => true]), t('Optional, up to 5 (jpg / png / gif / webp, 2 MB each). The first one is the cover in the plugin list; new screenshots replace the old set. Leave empty to keep the current ones.'))
@@ -140,7 +189,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.2.1',
+    'version' => '1.3.0',
     'description' => 'Browse, install and update plugins from www.flatbb.com, publish your own plugins with a changelog and screenshots, and activate a licence key for paid plugins or commercial use.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

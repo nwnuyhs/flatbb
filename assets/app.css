@@ -194,6 +194,13 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .cat-item { display: inline-flex; align-items: center; gap: 5px; padding: 8px 10px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: var(--font-size-sm); font-weight: 550; white-space: nowrap; flex: none; }
 .cat-item .icon { width: 15px; height: 15px; opacity: .75; }
 .cat-badge .icon, .cat-link .icon { width: 14px; height: 14px; }
+.icon-img { object-fit: contain; border-radius: 3px; vertical-align: -2px; }
+.icon-picker { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.icon-pick { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); color: var(--text-muted); cursor: pointer; }
+.icon-pick:hover { color: var(--text); border-color: var(--text-muted); }
+.icon-pick.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
+.icon-pick .icon, .icon-pick img { width: 16px; height: 16px; }
+.icon-pick-none { width: auto; padding: 0 8px; font-size: var(--font-size-xs); }
 .cat-item:hover { color: var(--text); }
 .cat-item.active { color: var(--brand); border-bottom-color: var(--brand); }
 .cat-item.active .icon { opacity: 1; }

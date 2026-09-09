@@ -149,7 +149,7 @@ function category_bar(string $active): string
     $items = region_list('main.categories', $items, ['active' => $active, 'category' => $here]);
     if (count($items) < 2) return '';
     $html = '';
-    foreach ($items as $it) $html .= '<a class="cat-item' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . (!empty($it['icon']) && isset(icon_paths()[(string)$it['icon']]) ? icon((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span></a>';
+    foreach ($items as $it) $html .= '<a class="cat-item' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '">' . icon_any((string)($it['icon'] ?? '')) . '<span>' . h((string)$it['label']) . '</span></a>';
     return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
 }
 
