@@ -140,7 +140,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.2.0',
+    'version' => '1.2.1',
     'description' => 'Browse, install and update plugins from www.flatbb.com, publish your own plugins with a changelog and screenshots, and activate a licence key for paid plugins or commercial use.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
@@ -156,7 +156,7 @@ return [
     'cron' => ['license' => ['callback' => 'market_license_cron', 'interval' => 86400]],
     'hooks' => [
         'admin.plugin_ops' => 'market_plugin_ops',
-        'admin.dashboard.cards' => 'market_dashboard_cards',
+        'region.admin.dashboard.cards' => 'market_dashboard_cards',
         'admin.plugin_settings.before' => 'market_settings_licence',
     ],
     'assets' => ['css' => ['market_css']],
