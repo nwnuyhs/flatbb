@@ -2,7 +2,7 @@
 /**
  * Market — licences on this forum. Loaded by plugin.php.
  *
- * A licence key from the marketplace is activated here (Admin → Plugins → Plugin Market → Licence): the marketplace
+ * A licence key from the marketplace is activated on this forum (Marketplace → Browse when a paid plugin is installed, or Marketplace → Licences): the marketplace
  * binds this site to it and returns a signed token, which is verified offline with the marketplace's public key
  * (fetched once and pinned). A daily job refreshes the token; when the marketplace cannot be reached the last token
  * keeps counting for 14 days. Plugins ask market_entitled('product') — a paid plugin id, 'commercial' or 'support'.
@@ -88,7 +88,7 @@ function market_license_activate(string $key): array
     $list = market_licenses();
     $list[(string)$claims['product']] = ['key' => $key, 'token' => (string)$r['token'], 'claims' => $claims, 'checked_at' => now(), 'error' => ''];
     market_licenses_save($list);
-    return ['ok' => true, 'message' => t('Licence for %s activated on this site.', (string)$claims['product'])];
+    return ['ok' => true, 'product' => (string)$claims['product'], 'message' => t('Licence for %s activated on this site.', (string)$claims['product'])];
 }
 
 /** Refresh one licence from the marketplace; the entry is updated in place. Returns true when the marketplace answered. */
@@ -149,55 +149,4 @@ function market_license_info(string $product): ?array
 {
     $l = market_licenses()[$product] ?? null;
     return $l !== null ? (array)$l['claims'] + ['checked_at' => (int)$l['checked_at'], 'error' => (string)$l['error']] : null;
-}
-
-/* ---------------------------------------------------------------- Admin → Plugins → Plugin Market → Licence */
-
-function market_license_admin(string $page): never
-{
-    need_admin();
-    $back = url('/admin/ext/market/licence');
-    if (is_post()) {
-        require_post();
-        switch (post_str('action', 20)) {
-            case 'activate':
-                $r = market_license_activate(post_str('key', 40));
-                flash($r['message'], $r['ok'] ? 'success' : 'error');
-                redirect($back);
-            case 'refresh':
-                flash(market_license_refresh(post_str('product', 40)) ? t('Licence checked.') : t('The marketplace could not be reached; the licence keeps counting for now.'), 'info');
-                redirect($back);
-            case 'deactivate':
-                market_license_deactivate(post_str('product', 40));
-                flash(t('Licence removed from this site; its seat is free again.'));
-                redirect($back);
-            default:
-                fail(t('Unknown action.'), $back);
-        }
-    }
-    $list = market_licenses();
-    $shop = (string)parse_url(market_endpoint(), PHP_URL_SCHEME) . '://' . (string)parse_url(market_endpoint(), PHP_URL_HOST) . ((int)parse_url(market_endpoint(), PHP_URL_PORT) > 0 ? ':' . (int)parse_url(market_endpoint(), PHP_URL_PORT) : '');
-    $html = '<p class="muted">' . t('Free plugins never need a licence. A key comes with a paid plugin, a commercial licence or a support plan bought at %s; activate it here and this forum is bound to it.', '<a href="' . h($shop . '/market') . '" target="_blank" rel="noopener">' . h((string)parse_url(market_endpoint(), PHP_URL_HOST)) . '</a>') . '</p>';
-    if ($list !== []) {
-        $rows = [];
-        foreach ($list as $product => $l) {
-            $c = (array)$l['claims'];
-            $status = (string)($c['status'] ?? '');
-            $entitled = market_entitled((string)$product);
-            $when = (int)$l['checked_at'] > 0 ? human_time((int)$l['checked_at']) : '—';
-            $rows[] = [
-                '<b>' . h((string)$product) . '</b><br><small class="muted">' . h((string)($c['plan'] ?? '')) . ' · ····' . h((string)($c['hint'] ?? '')) . '</small>',
-                '<span class="flag' . ($entitled ? ' flag-success' : ' flag-danger') . '">' . h($status !== '' ? $status : t('unknown')) . '</span>' . ((string)$l['error'] !== '' ? '<br><small class="muted">' . h((string)$l['error']) . '</small>' : ''),
-                (int)($c['expires'] ?? 0) > 0 ? date('Y-m-d', (int)$c['expires']) : t('never'),
-                '<small class="muted">' . h($when) . '</small>',
-                action_form($back, '<button class="btn btn-sm">' . icon('refresh') . t('Check now') . '</button>', ['action' => 'refresh', 'product' => (string)$product], 'inline')
-                . action_form($back, '<button class="btn btn-sm btn-danger">' . icon('x') . t('Remove') . '</button>', ['action' => 'deactivate', 'product' => (string)$product], 'inline', t('Remove this licence from the forum? Its seat is freed for another site.')),
-            ];
-        }
-        $html .= admin_table([t('Product'), t('Status'), t('Expires'), t('Last check'), ''], $rows, '');
-    }
-    $html .= '<form method="post" action="' . h($back) . '" class="admin-form" style="margin-top:16px">' . csrf_field() . '<input type="hidden" name="action" value="activate">'
-        . form_row(t('Licence key'), input('key', '', ['placeholder' => 'FB-XXXX-XXXX-XXXX-XXXX', 'maxlength' => 40, 'required' => true, 'autocomplete' => 'off', 'spellcheck' => 'false']), t('The key you received with your purchase. A key can be active on as many forums as it has seats; free a seat under My licences on the marketplace.'))
-        . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('shield') . t('Activate') . '</button></div></form>';
-    admin_page(t('Licence'), $html, 'ext.market.licence');
 }

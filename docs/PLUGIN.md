@@ -266,7 +266,7 @@ Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.
 
 ## 14b. Paid plugins and licences
 
-Every plugin is free unless the marketplace lists it with a price. A paid plugin is downloaded only by a forum that activated a licence key for it (Admin → Plugins → Plugin Market → Licence); the marketplace binds the forum to the key and signs a token the forum keeps. Inside your plugin you can ask:
+Every plugin is free unless the marketplace lists it with a price. A paid plugin is downloaded only by a forum that activated a licence key for it (Admin → Plugins → Marketplace: the key is asked for when the plugin is installed, or under the Licences tab); the marketplace binds the forum to the key and signs a token the forum keeps. Inside your plugin you can ask:
 
 ```php
 if (function_exists('market_entitled') && market_entitled('myid')) { /* the licensed features */ }

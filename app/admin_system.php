@@ -61,7 +61,7 @@ function admin_page_plugins(): never
         ];
     }
     $tabs = ['installed' => ['label' => t('Installed'), 'url' => $list_url, 'active' => true, 'badge' => count($rows) ?: '']];
-    if (plugin_enabled('market')) $tabs['market'] = ['label' => t('Market'), 'url' => url('/admin/ext/market/market')];
+    if (plugin_enabled('market')) $tabs['market'] = ['label' => t('Marketplace'), 'url' => url('/admin/ext/market/market')];
     $html = tabs($tabs) . '<div style="height:12px"></div>' . admin_table([t('Plugin'), t('ID / version'), t('Enabled'), ''], $rows, t('No plugins registered yet. Put a plugin in plugins/<id>/plugin.php and click "Scan plugins folder".'));
     $drawer = null;
     if (get_int('upload', 0) === 1) {
@@ -79,14 +79,15 @@ function admin_page_plugins(): never
             $label = is_array($def) ? (string)($def['label'] ?? $key) : (string)$key;
             if ($label !== '') $links[$label] = url('/admin/ext/' . $sid . '/' . $key);
         }
+        $before = (string)hook('admin.plugin_settings.before', '', ['id' => $sid, 'manifest' => $m]); // e.g. the marketplace's licence block for a paid plugin
         $body = $form !== ''
             ? '<form method="post" action="' . h($list_url) . '">' . csrf_field() . '<input type="hidden" name="action" value="settings"><input type="hidden" name="id" value="' . h($sid) . '">' . $form . admin_form_actions(t('Save'), $list_url) . '</form>'
             : '<p class="muted">' . t('This plugin has no settings.') . ($links !== [] ? ' ' . t('Use the pages above.') : '') . '</p>';
-        $drawer = ['title' => (string)$m['name'], 'sub' => 'v' . $m['version'] . (!empty($m['author']) ? ' · ' . $m['author'] : ''), 'body' => $body, 'back' => $list_url, 'links' => $links];
+        $drawer = ['title' => (string)$m['name'], 'sub' => 'v' . $m['version'] . (!empty($m['author']) ? ' · ' . $m['author'] : ''), 'body' => $before . $body, 'back' => $list_url, 'links' => $links];
     }
     $action = admin_drawer_link(admin_url('plugins', ['upload' => 1]), t('Upload plugin'), 'btn btn-primary', 'upload')
         . action_form($list_url, '<button class="btn" type="submit">' . icon('refresh') . t('Scan plugins folder') . '</button>', ['action' => 'sync'], 'inline')
-        . ' <a class="btn" href="https://www.flatbb.com/market" target="_blank" rel="noopener">' . icon('external') . t('Marketplace') . '</a>';
+        . (plugin_enabled('market') ? ' <a class="btn" href="' . h(url('/admin/ext/market/market')) . '">' . icon('puzzle') . t('Browse marketplace') . '</a>' : ' <a class="btn" href="https://www.flatbb.com/market" target="_blank" rel="noopener">' . icon('external') . t('Marketplace') . '</a>');
     admin_page(t('Plugins'), $html, 'plugins', ['action' => '<div class="btn-row">' . $action . '</div>', 'drawer' => $drawer]);
 }
 

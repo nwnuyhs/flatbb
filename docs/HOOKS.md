@@ -15,6 +15,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `admin.action` | event | After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here. | `core/security.php` |
 | `admin.category_save` | filter | Filter category data before saving. | `app/admin_content.php` |
 | `admin.plugin_ops` | filter | Extra buttons on a plugin row. | `app/admin_system.php` |
+| `admin.plugin_settings.before` | filter | HTML at the top of a plugin settings drawer (ctx: id, manifest). | `app/admin_system.php` |
 | `admin.settings_fields` | filter | Add a settings section: $value['myid'] = ['Label', ['key' => [type, label, help, options, min, max]]]. Each section is a tab in Admin → Settings. | `app/admin.php` |
 | `admin.settings_save` | filter | Filter settings before they are saved. | `app/admin.php` |
 | `admin.tool` | event | Handle a custom tool action. | `app/admin_system.php` |
