@@ -133,6 +133,7 @@ body.no-left .page-grid { grid-template-columns: minmax(0, 1fr) var(--right-w); 
 body.no-right .page-grid { grid-template-columns: var(--left-w) minmax(0, 1fr); }
 body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
 .col-left { position: sticky; top: calc(var(--topbar-h) + 20px); }
+@media (min-width: 993px) { .page-admin .col-left { max-height: calc(100vh - var(--topbar-h) - 20px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 20px; } } /* a long admin menu scrolls on its own; app.js keeps its position between pages */
 .col-main { min-width: 0; }
 .region:empty { display: none; }
 .side-nav, .side-section { margin-bottom: 18px; }

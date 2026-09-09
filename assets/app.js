@@ -81,6 +81,21 @@
 
   window.addEventListener('resize', closeDropdowns);
 
+  /* ---------- admin menu: remembers its scroll position between pages and keeps the active item in view ---------- */
+  var adminNav = $('body.page-admin .col-left');
+  if (adminNav) {
+    try {
+      var savedTop = sessionStorage.getItem('fb_admin_menu_scroll');
+      if (savedTop !== null) adminNav.scrollTop = parseInt(savedTop, 10) || 0;
+      var activeLink = $('.side-link.active', adminNav);
+      if (activeLink) {
+        var lr = activeLink.getBoundingClientRect(), nr = adminNav.getBoundingClientRect();
+        if (lr.top < nr.top || lr.bottom > nr.bottom) activeLink.scrollIntoView({ block: 'nearest' });
+      }
+      adminNav.addEventListener('scroll', function () { sessionStorage.setItem('fb_admin_menu_scroll', String(adminNav.scrollTop)); }, { passive: true });
+    } catch (e) {}
+  }
+
   /* ---------- icon picker: a tile sets the hidden input (Admin → Categories) ---------- */
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-icon-pick]');
