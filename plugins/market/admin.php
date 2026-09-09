@@ -64,16 +64,14 @@ function market_admin_page(string $page): never
     if (is_post()) market_admin_post($tab);
     if ($tab === 'account' && get_str('connect', 10) !== '') market_connect_finish(); // back from the marketplace's approval page
     $account = market_account();
-    // the same first row as Admin → Plugins (Installed | Marketplace), so the two pages switch back and forth
+    // the same first row as Admin → Plugins (Installed | Marketplace), plus Account: the connected www.flatbb.com account
+    $badge = $account !== [] ? (string)($account['username'] ?? '') . ' · ' . t('%d points', (int)($account['points'] ?? 0)) : '';
     $top = tabs([
         'installed' => ['label' => t('Installed'), 'url' => admin_url('plugins'), 'badge' => count(plugins()) ?: ''],
-        'market' => ['label' => t('Marketplace'), 'url' => market_admin_url('browse'), 'active' => true],
+        'market' => ['label' => t('Marketplace'), 'url' => market_admin_url('browse'), 'active' => $tab === 'browse'],
+        'account' => ['label' => t('Account'), 'url' => market_admin_url('account'), 'active' => $tab === 'account', 'badge' => $badge],
     ]);
-    $nav = tabs([
-        'browse' => ['label' => t('Browse'), 'icon' => 'puzzle', 'url' => market_admin_url('browse'), 'active' => $tab === 'browse'],
-        'account' => ['label' => t('Account'), 'icon' => 'user', 'url' => market_admin_url('account'), 'active' => $tab === 'account', 'badge' => $account !== [] ? (string)($account['username'] ?? '') : ''],
-    ], 'tabs tabs-sub market-tabs');
-    admin_page(t('Plugins'), $top . $nav . ($tab === 'account' ? market_tab_account($account) : market_tab_browse($account)), 'ext.market.market');
+    admin_page(t('Plugins'), $top . '<div style="height:12px"></div>' . ($tab === 'account' ? market_tab_account($account) : market_tab_browse($account)), 'ext.market.market');
 }
 
 /** Every POST of the page. */
@@ -149,16 +147,13 @@ function market_tab_browse(array $account): string
     $local = plugins();
     $owned = (array)($account['purchased'] ?? []);
     $link = static fn(string $k): string => market_admin_url('browse', array_filter(['q' => $q, 'kind' => $k]));
-    $who = $account !== []
-        ? '<a class="market-account" href="' . h(market_admin_url('account')) . '" title="' . h(t('Account')) . '">' . icon('user') . '<b>' . h((string)$account['username']) . '</b> · ' . h(t('%d points', (int)($account['points'] ?? 0))) . '</a>'
-        : '<a class="market-account" href="' . h(market_admin_url('account')) . '">' . icon('user') . t('Connect account') . '</a>';
-    $html = '<div class="admin-toolbar"><form method="get" action="' . h(url('/admin/ext/market/market')) . '" class="search-form">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . ($kind !== '' ? '<input type="hidden" name="kind" value="' . h($kind) . '">' : '') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . h(t('Search plugins')) . '"><button class="btn" type="submit">' . icon('search') . t('Search') . '</button></form>'
-        . action_form(market_admin_url('browse'), '<button class="btn" type="submit" title="' . h(t('Fetch the list again')) . '">' . icon('refresh') . '</button>', ['action' => 'refresh'], 'inline') . $who . '</div>';
-    $html .= tabs([
+    $html = '<div class="market-filter-row">' . tabs([
         'all' => ['label' => t('All'), 'url' => $link(''), 'active' => $kind === ''],
         'installed' => ['label' => t('Installed'), 'url' => $link('installed'), 'active' => $kind === 'installed'],
         'updates' => ['label' => t('Updates'), 'url' => $link('updates'), 'active' => $kind === 'updates'],
-    ], 'tabs tabs-sub');
+    ], 'tabs tabs-sub')
+        . '<form method="get" action="' . h(url('/admin/ext/market/market')) . '" class="search-form market-search">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . ($kind !== '' ? '<input type="hidden" name="kind" value="' . h($kind) . '">' : '') . icon('search') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . h(t('Search')) . '"></form>'
+        . action_form(market_admin_url('browse'), '<button class="icon-btn" type="submit" title="' . h(t('Fetch the list again')) . '">' . icon('refresh') . '</button>', ['action' => 'refresh'], 'inline') . '</div>';
     if (!empty($data['error'])) $html .= '<div class="flash flash-error">' . t('Could not reach the marketplace: %s', (string)$data['error']) . '</div>';
     if (!empty($data['core']['version']) && version_compare((string)$data['core']['version'], FLATBB_VERSION, '>')) {
         $html .= '<div class="flash flash-info">' . t('FlatBB %s is available (you run %s).', (string)$data['core']['version'], FLATBB_VERSION) . ' <a href="' . h(admin_url('updates')) . '">' . t('Updates') . '</a></div>';
@@ -246,8 +241,10 @@ function market_tab_account(array $account): string
 
 function market_css(): string
 {
-    return '.market-connect{padding:18px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);text-align:center}.market-connect p:first-child{max-width:520px;margin:0 auto 12px}.market-connect .btn-lg{margin:4px 0 8px}.market-token-fold{margin-top:14px}.market-token-fold summary{cursor:pointer}.market-token-fold .admin-form{margin-top:10px}'
-        . '@media(max-width:640px){.plugin-item{flex-direction:column;gap:10px}.plugin-ops{justify-content:flex-start}.market-account{margin-inline-start:0;flex-basis:100%}.market-account-card .btn-row{margin-inline-start:0}.admin-toolbar form.inline{margin:0}}'
+    return '.market-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}.market-filter-row .tabs{margin:0}.market-search{margin-inline-start:auto;width:200px;height:32px;padding:0 10px}.market-search input{font-size:var(--font-size-sm)}.market-filter-row .icon-btn{width:32px;height:32px}'
+        . '@media(max-width:640px){.market-search{width:100%;margin-inline-start:0;order:2}.market-filter-row .icon-btn{order:3}}'
+        . '.market-connect{padding:18px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);text-align:center}.market-connect p:first-child{max-width:520px;margin:0 auto 12px}.market-connect .btn-lg{margin:4px 0 8px}.market-token-fold{margin-top:14px}.market-token-fold summary{cursor:pointer}.market-token-fold .admin-form{margin-top:10px}'
+        . '@media(max-width:640px){.plugin-item{flex-direction:column;gap:10px}.plugin-ops{justify-content:flex-start}.market-account-card .btn-row{margin-inline-start:0}.admin-toolbar form.inline{margin:0}}'
         . '.market-other{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0 0 14px;border-radius:var(--radius-sm);background:var(--warning-soft,var(--info-soft));color:var(--text)}.market-other svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--warning,var(--info))}.market-other p{margin:0 0 6px}.market-other-stop{background:var(--danger-soft)}.market-other-stop svg{color:var(--danger)}'
         . '.market-tabs{margin-bottom:12px}.market-free{background:var(--success-soft,#dcfce7);color:var(--success,#15803d)}.market-paid{background:#fff1e6;color:#c2410c}[data-theme=dark] .market-paid{background:rgba(194,65,12,.25);color:#fdba74}'
         . '.market-account{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;color:var(--text-muted);font-size:var(--font-size-sm);white-space:nowrap}.market-account svg{width:16px;height:16px}.market-account b{color:var(--text)}'
