@@ -264,6 +264,17 @@ The composer is one component (`app/views/editor.php` + the editor block in `ass
 
 Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`. The language is chosen per visitor (preference, cookie, then the site default), so never cache translated HTML across requests. Print timestamps with `time_tag($ts)`: the browser re-renders them in the visitor's own time zone.
 
+## 14b. Paid plugins and licences
+
+Every plugin is free unless the marketplace lists it with a price. A paid plugin is downloaded only by a forum that activated a licence key for it (Admin → Plugins → Plugin Market → Licence); the marketplace binds the forum to the key and signs a token the forum keeps. Inside your plugin you can ask:
+
+```php
+if (function_exists('market_entitled') && market_entitled('myid')) { /* the licensed features */ }
+market_license_info('myid'); // ['plan' => …, 'expires' => ts, 'status' => active|expired|revoked, …] or null
+```
+
+`market_entitled()` is true while the licence is active and stays true after it expires (features keep working; only updates stop). It turns false when the licence was revoked, freed, or the marketplace could not confirm it for 14 days. Without the Plugin Market plugin the function does not exist — decide in your plugin how it degrades. Products other than a plugin id are `'commercial'` and `'support'`.
+
 ## 15. Delivery checklist
 
 - [ ] `php -l` and `php flatbb plugin:check <id>` pass.

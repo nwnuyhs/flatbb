@@ -7,12 +7,14 @@ if (!defined('FLATBB')) exit;
 
 const MARKET_CACHE_TTL = 900;
 
+require_once __DIR__ . '/license.php';
+
 function market_endpoint(): string
 {
     return rtrim((string)config('market_endpoint', FLATBB_MARKET_ENDPOINT), '/');
 }
 
-/** Identifies this forum to the marketplace (install statistics; later: site licences). */
+/** Identifies this forum to the marketplace (install statistics and site licences). */
 function market_site_headers(): array
 {
     return ['X-Flatbb-Site: ' . base_url(), 'X-Flatbb-Version: ' . FLATBB_VERSION];
@@ -31,7 +33,12 @@ function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $err = curl_error($ch);
     curl_close($ch);
-    if ($body === false || $status >= 400) { $error = $err !== '' ? $err : 'HTTP ' . $status; return null; }
+    if ($body === false || $status >= 400) {
+        // the marketplace explains a refusal in JSON (a paid plugin without a licence, a gated download): pass that on
+        $said = is_string($body) ? (string)(json_decode_array($body)['error'] ?? '') : '';
+        $error = $said !== '' ? $said : ($err !== '' ? $err : 'HTTP ' . $status);
+        return null;
+    }
     return (string)$body;
 }
 
@@ -125,6 +132,7 @@ function market_admin_page(string $page): never
             $ops = '<span class="flag flag-success">' . t('installed') . '</span>';
         }
         $badge = $status === 'certified' ? '<span class="flag flag-success" title="' . h(t('Reviewed by the marketplace')) . '">' . t('Certified') . '</span>' : ($status === 'community' ? '<span class="flag" title="' . h(t('Passed the automatic checks; not reviewed by a person yet')) . '">' . t('Community') . '</span>' : '<span class="flag flag-danger">' . h($status) . '</span>');
+        if ((int)($p['price'] ?? 0) > 0) $badge .= ' <span class="flag" title="' . h(t('Needs a licence key, activated under Plugin Market → Licence')) . '">' . (function_exists('market_entitled') && market_entitled($id) ? t('Licensed') : t('Paid · licence')) . '</span>';
         $html .= '<div class="plugin-item"><div class="plugin-main"><h3>' . h((string)($p['name'] ?? $id)) . ' ' . $badge . '</h3>'
             . '<div class="plugin-meta"><span>ID ' . h($id) . '</span><span>v' . h($remote_v) . '</span>' . (!empty($p['author']) ? '<span>' . t('by') . ' ' . h((string)$p['author']) . '</span>' : '') . (isset($p['downloads']) ? '<span>' . (int)$p['downloads'] . ' ' . t('installs') . '</span>' : '') . (!empty($p['url']) ? '<a href="' . h((string)$p['url']) . '" target="_blank" rel="noopener">' . t('details') . '</a>' : '') . '</div>'
             . '<p class="muted">' . h((string)($p['description'] ?? '')) . '</p></div><div class="plugin-ops">' . $ops . '</div></div>';
@@ -193,8 +201,8 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.0.7',
-    'description' => 'Browse, install and update plugins from www.flatbb.com, and publish your own plugins with a changelog and screenshots.',
+    'version' => '1.1.0',
+    'description' => 'Browse, install and update plugins from www.flatbb.com, publish your own plugins with a changelog and screenshots, and activate a licence key for paid plugins or commercial use.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
     'requires' => ['flatbb' => '0.1.49'],
@@ -204,7 +212,9 @@ return [
     'admin_pages' => [
         'market' => ['label' => 'Market', 'callback' => 'market_admin_page'],
         'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
+        'license' => ['label' => 'Licence', 'callback' => 'market_license_admin'],
     ],
+    'cron' => ['license' => ['callback' => 'market_license_cron', 'interval' => 86400]],
     'hooks' => [
         'admin.plugin_ops' => 'market_plugin_ops',
         'admin.dashboard.cards' => 'market_dashboard_cards',
