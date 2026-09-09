@@ -63,11 +63,16 @@ function market_admin_page(string $page): never
     if (!in_array($tab, ['browse', 'account'], true)) not_found();
     if (is_post()) market_admin_post($tab);
     $account = market_account();
+    // the same first row as Admin → Plugins (Installed | Marketplace), so the two pages switch back and forth
+    $top = tabs([
+        'installed' => ['label' => t('Installed'), 'url' => admin_url('plugins'), 'badge' => count(plugins()) ?: ''],
+        'market' => ['label' => t('Marketplace'), 'url' => market_admin_url('browse'), 'active' => true],
+    ]);
     $nav = tabs([
         'browse' => ['label' => t('Browse'), 'icon' => 'puzzle', 'url' => market_admin_url('browse'), 'active' => $tab === 'browse'],
         'account' => ['label' => t('Account'), 'icon' => 'user', 'url' => market_admin_url('account'), 'active' => $tab === 'account', 'badge' => $account !== [] ? (string)($account['username'] ?? '') : ''],
-    ], 'tabs market-tabs');
-    admin_page(t('Marketplace'), $nav . ($tab === 'account' ? market_tab_account($account) : market_tab_browse($account)), 'ext.market.market');
+    ], 'tabs tabs-sub market-tabs');
+    admin_page(t('Plugins'), $top . $nav . ($tab === 'account' ? market_tab_account($account) : market_tab_browse($account)), 'ext.market.market');
 }
 
 /** Every POST of the page. */
