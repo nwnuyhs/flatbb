@@ -346,6 +346,24 @@ function mail_send(string $to, string $subject, string $text): bool
  * True when $url points back at this very site while running under PHP's single-threaded dev server
  * (php -S): such a request would wait for itself and freeze the server. Callers should skip the call.
  */
+/**
+ * A request from this site to its own host (www.flatbb.com asking its own marketplace, the deployment self-check) goes to
+ * the web server on this machine directly: the host name is resolved to 127.0.0.1, so a CDN or proxy in front (Cloudflare
+ * challenges a server talking to itself) is not in the way. When nothing answers on the loopback, the normal route is used.
+ * $ch is configured and ready; returns what curl_exec() returns.
+ */
+function http_exec_prefer_local(CurlHandle $ch, string $url): string|false
+{
+    $host = strtolower((string)parse_url($url, PHP_URL_HOST));
+    if ($host === '' || $host !== strtolower((string)parse_url(base_url(), PHP_URL_HOST))) return curl_exec($ch);
+    $port = (int)(parse_url($url, PHP_URL_PORT) ?: (str_starts_with(strtolower($url), 'https') ? 443 : 80));
+    curl_setopt_array($ch, [CURLOPT_RESOLVE => [$host . ':' . $port . ':127.0.0.1'], CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0]);
+    $body = curl_exec($ch);
+    if ((int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE) !== 0) return $body;
+    curl_setopt($ch, CURLOPT_RESOLVE, ['-' . $host . ':' . $port]); // nothing on the loopback: the public way
+    return curl_exec($ch);
+}
+
 function http_self_request_blocked(string $url): bool
 {
     if (PHP_SAPI !== 'cli-server') return false;

@@ -29,7 +29,7 @@ function market_http_get(string $url, int $max_bytes = 20971520, ?string &$error
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 60, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json, application/zip'], market_site_headers(), $headers)]);
     curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, static fn($r, $dl_total, $dl): int => $dl > $max_bytes ? 1 : 0);
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
-    $body = curl_exec($ch);
+    $body = http_exec_prefer_local($ch, $url);
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $err = curl_error($ch);
     curl_close($ch);
@@ -73,7 +73,7 @@ function market_api_post(string $path, array $fields): array
     if (http_self_request_blocked($url)) return ['ok' => false, 'error' => 'self request skipped on the dev server'];
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($fields), CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 20, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_HTTPHEADER => array_merge(['Accept: application/json'], market_site_headers(), market_auth_headers())]);
-    $body = curl_exec($ch);
+    $body = http_exec_prefer_local($ch, $url);
     $err = curl_error($ch);
     curl_close($ch);
     if (!is_string($body)) return ['ok' => false, 'error' => $err !== '' ? $err : 'unreachable'];
@@ -134,7 +134,7 @@ function market_whoami(string $token): array
     if (http_self_request_blocked($url)) return [];
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 8, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0, CURLOPT_USERAGENT => 'flatbb/' . FLATBB_VERSION . ' market', CURLOPT_HTTPHEADER => array_merge(['Authorization: Bearer ' . $token, 'Accept: application/json'], market_site_headers())]);
-    $body = curl_exec($ch);
+    $body = http_exec_prefer_local($ch, $url);
     curl_close($ch);
     $d = is_string($body) ? json_decode_array($body) : [];
     return !empty($d['ok']) && isset($d['username']) ? ['username' => (string)$d['username'], 'is_admin' => !empty($d['is_admin']), 'points' => (int)($d['points'] ?? 0), 'purchased' => array_values(array_map('strval', (array)($d['purchased'] ?? [])))] : [];
@@ -220,7 +220,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '2.1.1',
+    'version' => '2.1.2',
     'description' => 'Browse, install and update plugins from www.flatbb.com, get plugins that cost points with your account, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

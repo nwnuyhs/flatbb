@@ -39,23 +39,16 @@ function admin_security_checks(bool $force = false): array
     if (!$force && !empty($cached['at']) && now() - (int)$cached['at'] < 3600) return $cached;
     // the single-threaded PHP dev server cannot answer a request to itself while it is busy: skip the probes
     if (PHP_SAPI === 'cli-server') return ['at' => now(), 'issues' => debug_mode() ? [t('Debug mode is on (data/config.php): error details are shown to visitors.')] : [], 'skipped' => 'cli-server'];
-    // The probe asks the web server on this machine directly (the site's host name resolved to 127.0.0.1), so a CDN or
-    // proxy in front (Cloudflare challenges a server talking to itself) cannot fake the answer; when nothing listens on
-    // the loopback it falls back to the public address.
+    // The probe goes to the web server on this machine (http_exec_prefer_local), so a CDN in front cannot fake the answer.
     $probe = static function (string $path): string {
         if (!function_exists('curl_init')) return 'unknown';
-        $host = (string)parse_url(base_url(), PHP_URL_HOST);
-        $port = (int)(parse_url(base_url(), PHP_URL_PORT) ?: (str_starts_with(base_url(), 'https') ? 443 : 80));
-        foreach ([true, false] as $local) {
-            $ch = curl_init(base_url() . $path);
-            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_USERAGENT => 'flatbb-selfcheck', CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0]);
-            if ($local) curl_setopt($ch, CURLOPT_RESOLVE, [$host . ':' . $port . ':127.0.0.1']);
-            $body = curl_exec($ch);
-            $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-            curl_close($ch);
-            if ($code !== 0) return (string)$code . (is_string($body) && trim($body) === '' ? ' empty' : '');
-        }
-        return 'unknown';
+        $ch = curl_init(base_url() . $path);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_USERAGENT => 'flatbb-selfcheck']);
+        $body = http_exec_prefer_local($ch, base_url() . $path);
+        $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+        if ($code === 0) return 'unknown';
+        return (string)$code . (is_string($body) && trim($body) === '' ? ' empty' : '');
     };
     // 403/404 = blocked by the web server; "200 empty" = the PHP guard ran and printed nothing (acceptable)
     $blocked = static fn(string $code): bool => in_array($code, ['403', '404', 'unknown', '200 empty', '403 empty', '404 empty'], true);

@@ -130,7 +130,7 @@ function plugin_publish(string $id, string $token, string $changelog = '', strin
         CURLOPT_SSL_VERIFYPEER => !$insecure, CURLOPT_SSL_VERIFYHOST => $insecure ? 0 : 2,
         CURLOPT_POSTFIELDS => $fields,
     ]);
-    $body = curl_exec($ch);
+    $body = http_exec_prefer_local($ch, $endpoint);
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $err = curl_error($ch);
     curl_close($ch);
