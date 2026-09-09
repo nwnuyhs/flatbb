@@ -201,7 +201,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '1.1.0',
+    'version' => '1.1.1',
     'description' => 'Browse, install and update plugins from www.flatbb.com, publish your own plugins with a changelog and screenshots, and activate a licence key for paid plugins or commercial use.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
@@ -212,7 +212,7 @@ return [
     'admin_pages' => [
         'market' => ['label' => 'Market', 'callback' => 'market_admin_page'],
         'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
-        'license' => ['label' => 'Licence', 'callback' => 'market_license_admin'],
+        'licence' => ['label' => 'Licence', 'callback' => 'market_license_admin'], // "licence": a path ending in "license" is refused by some nginx setups that guard the LICENSE file
     ],
     'cron' => ['license' => ['callback' => 'market_license_cron', 'interval' => 86400]],
     'hooks' => [

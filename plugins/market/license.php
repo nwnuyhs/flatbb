@@ -156,7 +156,7 @@ function market_license_info(string $product): ?array
 function market_license_admin(string $page): never
 {
     need_admin();
-    $back = url('/admin/ext/market/license');
+    $back = url('/admin/ext/market/licence');
     if (is_post()) {
         require_post();
         switch (post_str('action', 20)) {
@@ -199,5 +199,5 @@ function market_license_admin(string $page): never
     $html .= '<form method="post" action="' . h($back) . '" class="admin-form" style="margin-top:16px">' . csrf_field() . '<input type="hidden" name="action" value="activate">'
         . form_row(t('Licence key'), input('key', '', ['placeholder' => 'FB-XXXX-XXXX-XXXX-XXXX', 'maxlength' => 40, 'required' => true, 'autocomplete' => 'off', 'spellcheck' => 'false']), t('The key you received with your purchase. A key can be active on as many forums as it has seats; free a seat under My licences on the marketplace.'))
         . '<div class="form-actions"><button type="submit" class="btn btn-primary">' . icon('shield') . t('Activate') . '</button></div></form>';
-    admin_page(t('Licence'), $html, 'ext.market.license');
+    admin_page(t('Licence'), $html, 'ext.market.licence');
 }
