@@ -170,7 +170,13 @@ function dispatch(): void
     }
     $path = current_path();
     [$handler, $args] = route_match($path);
-    if ($handler === null || !function_exists($handler)) not_found();
+    if ($handler === null || !function_exists($handler)) {
+        // nothing matched: a plugin may send the visitor somewhere else (old links, redirects) or note the miss
+        $to = hook('router.not_found', '', ['path' => $path]);
+        if (is_string($to) && $to !== '') redirect($to, 301);
+        if (is_array($to) && (string)($to['url'] ?? '') !== '') redirect((string)$to['url'], (int)($to['code'] ?? 301) === 302 ? 302 : 301);
+        not_found();
+    }
     if (is_post() && !router_csrf_exempt($path)) check_csrf(); // every POST carries the token unless the route authenticates otherwise
     $handler(...$args);
 }

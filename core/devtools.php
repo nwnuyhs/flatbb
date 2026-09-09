@@ -175,8 +175,10 @@ function docs_hook_descriptions(): array
     return [
         'app.boot' => 'Every request after plugins are loaded. Preload data here.',
         'schema.install' => 'After core tables are created/upgraded.',
-        'page.options' => 'Filter the page() options (left/right columns, class, meta).',
+        'page.options' => 'Filter the page() options (left/right columns, class, description, canonical, robots, breadcrumbs, title_full = the complete <title> text).',
         'page.before_output' => 'The whole HTML document before it is sent. Use for page-level placeholder replacement.',
+        'router.not_found' => 'No route matched (ctx: path). Return a URL (301) or [url, code] to redirect instead of the 404 page; return nothing to let it 404. Also the place to record misses.',
+        'seo.sitemap' => 'GET /sitemap.xml: return the XML to serve instead of the built-in sitemap (an index, paged files); return nothing to keep the default.',
         'markdown.before' => 'Markdown source before rendering.',
         'markdown.after' => 'Rendered HTML of a post.',
         'icon.paths' => 'Add SVG icons: name => path markup.',

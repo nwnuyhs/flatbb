@@ -47,6 +47,9 @@ function feed_topics(array $rows): array
 function seo_sitemap(): never
 {
     header('Content-Type: application/xml; charset=utf-8');
+    // a plugin may serve the whole sitemap itself (an index, paged files, images); the default below is the fallback
+    $own = hook('seo.sitemap', '', ['path' => current_path()]);
+    if (is_string($own) && $own !== '') { echo $own; exit; }
     $visible = category_visible_ids();
     $where = 'is_deleted=0' . ($visible !== null ? ($visible === [] ? ' AND 0' : ' AND category_id IN (' . implode(',', $visible) . ')') : '');
     $rows = feed_topics(all("SELECT id,slug,updated_at,meta FROM fb_topics WHERE {$where} ORDER BY id DESC LIMIT 5000"));

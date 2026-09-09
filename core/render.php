@@ -21,7 +21,8 @@ function view(string $__view, array $__vars = []): string
 
 function page(string $title, string $main, array $opts = []): never
 {
-    $opts += ['left' => null, 'right' => null, 'class' => '', 'description' => '', 'canonical' => '', 'robots' => '', 'breadcrumbs' => [], 'head' => '', 'top' => ''];
+    // title_full: the complete <title> text when a plugin composes it (SEO templates); empty = the layout's own "title - site"
+    $opts += ['left' => null, 'right' => null, 'class' => '', 'description' => '', 'canonical' => '', 'robots' => '', 'breadcrumbs' => [], 'head' => '', 'top' => '', 'title_full' => ''];
     $opts = hook('page.options', $opts, ['title' => $title]);
     if ($opts['left'] === null) $opts['left'] = view('sidebar_left', []);
     if ($opts['right'] === null) $opts['right'] = view('sidebar_right', ['cards' => sidebar_cards_default()]);
