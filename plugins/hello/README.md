@@ -1,6 +1,6 @@
 # Hello Badge
 
-The smallest flatbb plugin, kept in the repository as a template.
+The smallest FlatBB plugin, kept in the repository as a template.
 
 - Adds a badge with configurable text to the right side of the footer (`region.footer.right`).
 - Registers the page `/hello`.
@@ -17,4 +17,4 @@ The smallest flatbb plugin, kept in the repository as a template.
 1. Copy `plugins/hello` to `plugins/<your_id>`.
 2. Replace every `hello`/`Hello` with your id and name (functions, CSS class, manifest).
 3. Bump the version and rewrite the description.
-4. `php flatbb plugin:check <your_id>`.
+4. `php FlatBB plugin:check <your_id>`.

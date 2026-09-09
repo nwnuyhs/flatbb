@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello — the smallest possible flatbb plugin. Shows a badge in the footer and adds a page at /hello.
+ * Hello — the smallest possible FlatBB plugin. Shows a badge in the footer and adds a page at /hello.
  * Copy this folder to start your own plugin. Full rules: docs/PLUGIN.md
  */
 if (!defined('FLATBB')) exit;
@@ -23,7 +23,7 @@ function hello_css(): string
 return [
     'id' => 'hello',
     'name' => 'Hello Badge',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'Shows a small greeting badge in the footer and a demo page at /hello.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
