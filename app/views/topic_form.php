@@ -13,8 +13,12 @@
       <div class="form-row"><label><?= t('Tags') ?></label><input type="text" name="tags" value="<?= h($tags) ?>" placeholder="<?= t('comma, separated, up to 5') ?>"></div>
     </div>
     <?= editor('body', (string)($post['body'] ?? $body ?? ''), t('Write your post…'), ['scope' => $topic ? 'topic-' . (int)$topic['id'] : 'topic-new', 'ctx' => ['topic' => $topic]]) ?>
-    <?php if (($extra = region('composer.extra', ['topic' => $topic])) !== ''): ?>
-    <details class="composer-extra"<?= str_contains($extra, 'checked') || str_contains($extra, 'selected') ? ' open' : '' ?>><summary><?= icon('settings') ?><?= t('More options') ?></summary><?= raw($extra) ?></details>
+    <?php // the fold only shows when a plugin (polls, Q&A, access…) put something visible in the region; hidden fields and scripts still render, outside the fold ?>
+    <?php $extra = region('composer.extra', ['topic' => $topic], '', false); ?>
+    <?php if (region_visible($extra)): ?>
+    <details class="composer-extra"<?= str_contains($extra, 'checked') || str_contains($extra, 'selected') ? ' open' : '' ?>><summary><?= icon('settings') ?><?= t('More options') ?></summary><div class="region region-composer-extra" data-slot="composer.extra"><?= raw($extra) ?></div></details>
+    <?php else: ?>
+    <div class="region region-composer-extra" data-slot="composer.extra"><?= raw($extra) ?></div>
     <?php endif; ?>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary"><?= $topic ? t('Save changes') : t('Create Topic') ?></button>

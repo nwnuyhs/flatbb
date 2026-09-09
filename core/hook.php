@@ -119,6 +119,19 @@ function region(string $name, array $ctx = [], string $default = '', bool $wrap 
     return '<div class="region region-' . h(str_replace('.', '-', $name)) . '" data-slot="' . h($name) . '">' . $html . '</div>';
 }
 
+/**
+ * Whether region HTML shows anything: hidden inputs, scripts and empty containers do not count. A template uses this
+ * before it draws a frame around a region ("More options" in the composer), so a plugin that only plants a hidden
+ * field or a script does not leave an empty box behind.
+ */
+function region_visible(string $html): bool
+{
+    $html = preg_replace('~<input\b[^>]*\btype="hidden"[^>]*>~i', '', $html) ?? $html;
+    $html = preg_replace('~<script\b[^>]*>.*?</script>~is', '', $html) ?? $html;
+    if (preg_match('~<(input|select|textarea|button|img|iframe|svg)\b~i', $html)) return true;
+    return trim(html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8'), " \t\r\n\xC2\xA0") !== '';
+}
+
 /** Array region: items keyed by id, each ['label'=>..,'url'=>..,'icon'=>..,'active'=>bool,'html'=>..]. */
 /**
  * Array-valued region (nav links, tabs, cards, menu items). Items are keyed by id; besides label/url/icon/html an item may carry

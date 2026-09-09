@@ -68,6 +68,7 @@ The manifest is **data**: strings, numbers, booleans, nested arrays and constant
 
 - PHP functions `myid_*`, constants `MYID_*`, classes `MyId*`.
 - Database tables `plugin_myid_*`; never alter `fb_*` core tables. Store extra per-topic/post/user data in your own table keyed by id, or in the `meta` JSON column via hooks — never add columns to core tables.
+- When you write a key into `fb_topics.meta`, read the column fresh (`val('SELECT meta FROM fb_topics WHERE id=?', [$id])`), merge your key, write, then `request_cache('topic_' . $id, null, true)`. Several plugins save their key in the same `topic.after_save` request, and `topic_by_id()` is cached per request — merging into the cached copy silently drops what the plugin before you just wrote.
 - CSS classes/ids/variables `myid-*` / `--myid-*`; `data-myid-*` attributes; JS functions and globals `myid_*`; browser storage keys `myid_*`.
 - Custom hooks fired by your plugin: `myid.event_name`. Core hooks keep their original names.
 - Plugins must not call each other's functions. Shared needs go into core.
