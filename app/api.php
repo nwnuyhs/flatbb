@@ -25,7 +25,7 @@ function api_dispatch(string $action): never
             need_login();
             $q = mb_strtolower(get_str('q', 30));
             if ($q === '') json_ok(['users' => []]);
-            $rows = all("SELECT username,avatar FROM fb_users WHERE username_lower LIKE ? ESCAPE '!' AND status=1 ORDER BY post_count DESC LIMIT 8", [rtrim(db_like($q), '%')]);
+            $rows = all("SELECT username,avatar FROM fb_users WHERE username_lower LIKE ? ESCAPE '!' AND status=1 ORDER BY post_count DESC LIMIT 8", [ltrim(db_like($q), '%')]);
             foreach ($rows as &$r) $r['avatar'] = $r['avatar'] !== '' ? upload_url((string)$r['avatar']) : '';
             json_ok(['users' => $rows]);
         case 'unread':
