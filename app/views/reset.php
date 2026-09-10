@@ -4,7 +4,7 @@
   <p class="muted"><?= t('Account: %s', $user['username']) ?></p>
   <form method="post" action="<?= h(url('/reset/' . $token)) ?>">
     <?= csrf_field() ?>
-    <div class="form-row"><label><?= t('New password') ?></label><input type="password" name="password" required minlength="8" autofocus autocomplete="new-password"></div>
+    <div class="form-row"><label><?= t('New password') ?></label><input type="password" name="password" required minlength="<?= h((string)password_min()) ?>" autofocus autocomplete="new-password"></div>
     <button type="submit" class="btn btn-primary btn-block"><?= t('Save password') ?></button>
   </form>
 </div>

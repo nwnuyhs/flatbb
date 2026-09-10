@@ -142,6 +142,10 @@ function admin_settings_fields(): array
         'registration' => [t('Registration'), [
             'allow_register' => ['checkbox', t('Allow new registrations')],
             'invite_code' => ['text', t('Invite code'), t('When set, registration requires this code.')],
+            'register_ip_limit' => ['number', t('Registrations per network per hour'), t('Accounts one IP address may create in an hour. 0 = no limit.'), null, 0, 100],
+            'password_min' => ['number', t('Minimum password length'), '', null, 4, 64],
+            'username_min' => ['number', t('Shortest username'), t('Letters, numbers, dot, dash and underscore; the first character a letter or a digit.'), null, 1, 40],
+            'username_max' => ['number', t('Longest username'), '', null, 2, 40],
             'register_verify' => ['checkbox', t('Require email verification'), t('New members confirm their address with a six-digit code before the account is created; changing the address later needs a code too. Mail is delivered by: %s.', mail_transport_label())],
             'allow_rename' => ['checkbox', t('Members may change their own username'), t('Administrators can always rename users from the Users page. Old profile links redirect to the new name.')],
             'rename_days' => ['number', t('Days between username changes'), t('Applies to members renaming themselves.'), null, 0, 3650],
@@ -246,7 +250,7 @@ function admin_page_users(): never
         db_update('fb_users', ['group_id' => (int)$group['id'], 'status' => post_int('status') ? 1 : 0], 'id=?', [(int)$u['id']]);
         $np = post_secret('password');
         if ($np !== '') {
-            if (strlen($np) < 8) fail(t('Password must be at least 8 characters.'));
+            if (password_check($np) !== '') fail(password_check($np));
             db_update('fb_users', ['password' => password_hash($np, PASSWORD_DEFAULT)], 'id=?', [(int)$u['id']]);
         }
         if (post_int('points_delta') !== 0) points_add((int)$u['id'], max(-100000, min(100000, post_int('points_delta'))), 'manual', 0, post_str('points_note', 120) ?: t('by %s', (string)me()['username']));

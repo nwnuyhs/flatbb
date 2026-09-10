@@ -46,17 +46,18 @@ function account_register(): never
         $email = mb_strtolower(post_str('email', 120));
         $pass = post_secret('password');
         $invite = post_str('invite', 60);
-        if (!username_valid($name)) $errors[] = t('Username must be 2-30 characters: letters, numbers, dot, dash or underscore.');
+        if (!username_valid($name)) $errors[] = username_rule_text();
         elseif (user_by_name($name) !== null) $errors[] = t('That username is already taken.');
         $verify = register_verify_on();
-        if ($verify && $email === '') $errors[] = t('An email address is required.');
+        if ($email === '') $errors[] = t('An email address is required.');
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = t('Please enter a valid email address.');
         elseif ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=?', [$email])) $errors[] = t('That email is already registered.');
         elseif ($verify && !email_code_check($email, post_str('code', 12))) $errors[] = t('The verification code is wrong or expired. Ask for a new one.');
-        if (strlen($pass) < 8) $errors[] = t('Password must be at least 8 characters.');
+        if (password_check($pass) !== '') $errors[] = password_check($pass);
         if (setting('invite_code', '') !== '' && !hash_equals(setting('invite_code'), $invite)) $errors[] = t('Invalid invite code.');
         if (post_str('website', 200) !== '') $errors[] = 'Spam detected.'; // honeypot
-        if ((int)val('SELECT COUNT(*) FROM fb_users WHERE created_ip=? AND created_at>?', [client_ip(), now() - 3600]) >= 3) $errors[] = t('Too many registrations from your network. Please try later.');
+        $cap = (int)setting('register_ip_limit', '3');
+        if ($cap > 0 && (int)val('SELECT COUNT(*) FROM fb_users WHERE created_ip=? AND created_at>?', [client_ip(), now() - 3600]) >= $cap) $errors[] = t('Too many registrations from your network. Please try later.');
         $errors = hook('account.register_validate', $errors, ['username' => $name, 'email' => $email]);
         if ($errors === []) {
             $uid = user_create($name, $email, $pass);
@@ -106,7 +107,7 @@ function account_reset(string $token): never
     if (is_post()) {
         check_csrf();
         $pass = post_secret('password');
-        if (strlen($pass) < 8) fail(t('Password must be at least 8 characters.'), url('/reset/' . $token));
+        if (password_check($pass) !== '') fail(password_check($pass), url('/reset/' . $token));
         $hash = password_hash($pass, PASSWORD_DEFAULT);
         db_update('fb_users', ['password' => $hash, 'reset_token' => '', 'reset_expires' => 0], 'id=?', [(int)$user['id']]);
         $user['password'] = $hash;

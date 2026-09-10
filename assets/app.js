@@ -138,6 +138,8 @@
 
   /* ---------- global click handling ---------- */
   document.addEventListener('click', function (e) {
+    var pw = e.target.closest('[data-pw-toggle]');
+    if (pw) { var inp = pw.parentElement.querySelector('input'); var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; pw.classList.toggle('on', show); inp.focus(); return; }
     var t = e.target.closest('[data-toggle]');
     if (t) {
       var what = t.getAttribute('data-toggle');

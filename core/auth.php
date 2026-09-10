@@ -268,9 +268,37 @@ function users_by_ids(array $ids): array
     return $out;
 }
 
+/** Username length rule from the settings: [min, max] (letters, numbers, dot, dash, underscore; the first character a letter or digit). */
+function username_rule(): array
+{
+    $min = max(1, min(40, (int)setting('username_min', '2')));
+    $max = max($min, min(40, (int)setting('username_max', '30')));
+    return [$min, $max];
+}
+
 function username_valid(string $name): bool
 {
-    return (bool)preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{1,29}$/', $name);
+    [$min, $max] = username_rule();
+    return (bool)preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{' . ($min - 1) . ',' . ($max - 1) . '}$/', $name);
+}
+
+/** The message for a username that breaks the rule. */
+function username_rule_text(): string
+{
+    [$min, $max] = username_rule();
+    return t('Username must be %1$d-%2$d characters: letters, numbers, dot, dash or underscore.', $min, $max);
+}
+
+/** Shortest password the settings allow. */
+function password_min(): int
+{
+    return max(4, min(64, (int)setting('password_min', '8')));
+}
+
+/** '' when the password is long enough, else the message. */
+function password_check(string $pass): string
+{
+    return strlen($pass) < password_min() ? t('Password must be at least %d characters.', password_min()) : '';
 }
 
 /**
@@ -281,7 +309,7 @@ function user_rename(array $user, string $new, int $by = 0): string
 {
     $new = trim($new);
     if ($new === (string)$user['username']) return t('That is already the username.');
-    if (!username_valid($new)) return t('Username must be 2-30 characters: letters, numbers, dot, dash or underscore.');
+    if (!username_valid($new)) return username_rule_text();
     $taken = user_by_name($new);
     if ($taken !== null && (int)$taken['id'] !== (int)$user['id']) return t('That username is already taken.');
     $former = user_former_names($user);
