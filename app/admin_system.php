@@ -93,12 +93,32 @@ function admin_page_plugins(): never
 
 /* ---------------------------------------------------------------- layout */
 
-/** Every item of a list region as the site shows it: the core's own entries plus what plugins add, in the effective order (hidden ones included). */
+/**
+ * Every item of a list region as the site shows it: the core's own entries plus what plugins add, in the effective order (hidden ones
+ * included). Each plugin callback runs on its own with ctx ['layout' => true]; a plugin that adds nothing here (its card only shows on
+ * some pages, or to members) is listed under its own id and name, so the admin can still place it. Plain HTML items take their label
+ * from the card heading.
+ */
 function admin_layout_items(string $region): array
 {
-    try { $items = hook('region.' . $region, layout_core_items($region), []); } catch (Throwable) { $items = []; }
-    $items = array_filter(is_array($items) ? $items : [], 'is_array');
-    return layout_order_items($region, $items);
+    $items = layout_core_items($region);
+    foreach (hook_registry()['region.' . $region] ?? [] as $e) {
+        $before = array_keys($items);
+        try { $r = is_callable($e['fn']) ? ($e['fn'])($items, ['layout' => true]) : null; } catch (Throwable) { $r = null; }
+        if (is_array($r)) $items = $r;
+        $pid = (string)$e['plugin'];
+        if ($pid !== '' && !isset($items[$pid]) && array_keys($items) === $before) $items[$pid] = ['label' => (string)(plugins()[$pid]['name'] ?? $pid)];
+    }
+    $out = [];
+    foreach ($items as $id => $it) {
+        if (!is_array($it)) $it = ['html' => (string)$it];
+        if (!isset($it['label'])) {
+            $it['label'] = preg_match('~<h[1-6][^>]*>(.*?)</h[1-6]>~is', (string)($it['html'] ?? ''), $m)
+                ? trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8')) : (string)(plugins()[(string)$id]['name'] ?? $id);
+        }
+        $out[$id] = $it;
+    }
+    return layout_order_items($region, $out);
 }
 
 function admin_page_layout(): never

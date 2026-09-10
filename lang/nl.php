@@ -56,6 +56,7 @@ return [
     'Appearance' => 'Uiterlijk',
     'Applies to members renaming themselves.' => 'Geldt voor leden die zichzelf hernoemen.',
     'Are you sure?' => 'Weet je het zeker?',
+    'Author' => 'Auteur',
     'Avatar' => 'Avatar',
     'Avatar must be smaller than 4 MB.' => 'De avatar moet kleiner zijn dan 4 MB.',
     'Avatar removed.' => 'Avatar verwijderd.',

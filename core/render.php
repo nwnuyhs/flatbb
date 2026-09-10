@@ -36,10 +36,10 @@ function page(string $title, string $main, array $opts = []): never
 /** Default right-column cards; plugins add through region.sidebar.right.cards. */
 function sidebar_cards_default(): array
 {
+    $core = layout_core_items('sidebar.right.cards'); // the default weights: account first, statistics last; Admin → Layout overrides
+    $views = ['user' => view('card_user', ['me' => me()]), 'stats' => view('card_stats', ['stats' => site_stats()]), 'newest' => view('card_newest', ['users' => site_stats()['newest_users'] ?? []])];
     $cards = [];
-    $cards['user'] = view('card_user', ['me' => me()]);
-    $cards['stats'] = view('card_stats', ['stats' => site_stats()]);
-    $cards['newest'] = view('card_newest', ['users' => site_stats()['newest_users'] ?? []]);
+    foreach ($views as $id => $html) $cards[$id] = ['html' => $html, 'weight' => (int)($core[$id]['weight'] ?? 0)];
     return region_list('sidebar.right.cards', $cards);
 }
 

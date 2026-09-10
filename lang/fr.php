@@ -56,6 +56,7 @@ return [
     'Appearance' => 'Apparence',
     'Applies to members renaming themselves.' => 'S\'applique aux membres qui se renomment eux-mêmes.',
     'Are you sure?' => 'Êtes-vous sûr ?',
+    'Author' => 'Auteur',
     'Avatar' => 'Avatar',
     'Avatar must be smaller than 4 MB.' => 'L\'avatar doit faire moins de 4 MB.',
     'Avatar removed.' => 'Avatar supprimé.',

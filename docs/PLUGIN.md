@@ -116,7 +116,7 @@ Frequently used hooks (full list in `docs/HOOKS.md`):
 | `topic.after_save` / `post.after_save` | React to new content (index, notify, award). |
 | `markdown.after` | Post-process rendered HTML (embeds, emoji). Called per post: no DB. |
 | `page.before_output` | Whole document: page-level placeholder replacement. |
-| `region.sidebar.right.cards` | Add a card: `$cards['myid'] = card('Title', $html)`. |
+| `region.sidebar.right.cards` | Add a card: `$cards['myid'] = card('Title', $html)`. Key it by your plugin id: Admin → Layout lists the card under that id (drag to order, switch to hide) even on pages where your callback adds nothing. |
 | `region.composer.toolbar` | Add editor buttons. |
 | `api.<action>` | JSON endpoints at `/api/<action>`. |
 | `admin.settings_fields` | Add site settings groups. |

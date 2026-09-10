@@ -57,6 +57,7 @@ return [
     'Appearance' => 'ظاهر',
     'Applies to members renaming themselves.' => 'در مورد تغییر نام توسط خود اعضا اعمال می‌شود.',
     'Are you sure?' => 'مطمئن هستید؟',
+    'Author' => 'نویسنده',
     'Avatar' => 'آواتار',
     'Avatar must be smaller than 4 MB.' => 'آواتار باید کمتر از ۴ مگابایت باشد.',
     'Avatar removed.' => 'آواتار حذف شد.',
