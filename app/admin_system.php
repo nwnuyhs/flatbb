@@ -17,9 +17,10 @@ function admin_page_plugins(): never
                     $f = $_FILES['zip'] ?? null;
                     if (!is_array($f) || ($f['error'] ?? 1) !== UPLOAD_ERR_OK) fail(t('Choose a plugin zip file.'), admin_url('plugins', ['upload' => 1]));
                     if ((int)$f['size'] > 20 * 1048576) fail(t('The package is larger than 20 MB.'), admin_url('plugins', ['upload' => 1]));
+                    $known = plugins();
                     $pid = plugin_install_zip((string)$f['tmp_name']);
                     admin_log('plugin.upload', $pid, (string)$f['name']);
-                    if (plugin_enabled($pid)) flash(t('%s updated.', $pid));
+                    if (isset($known[$pid])) flash(t('%s updated.', $pid)); // an update keeps the plugin's on/off state
                     else { // a new plugin is switched on right away; a plugin that will not enable stays off and says why
                         try { plugin_enable($pid); flash(t('%s installed and enabled.', $pid)); }
                         catch (Throwable $e) { flash(t('%s installed, but it could not be enabled: %s', $pid, $e->getMessage()), 'error'); }

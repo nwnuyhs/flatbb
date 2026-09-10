@@ -89,14 +89,16 @@ function market_admin_post(string $tab): never
         switch (post_str('action', 20)) {
             case 'install':
             case 'update':
+                $known = isset(plugins()[$id]);
                 $v = market_install($id, post_str('version', 20));
-                flash(market_enable_after_install($id, $v));
+                flash($known ? t('%s %s installed.', $id, $v) : market_enable_after_install($id, $v)); // an update keeps the on/off state
                 break;
             case 'buy': // get it for points, then install it
                 $r = market_buy($id);
                 if (!$r['ok']) fail($r['message'], $back);
+                $known = isset(plugins()[$id]);
                 $v = market_install($id, post_str('version', 20));
-                flash($r['message'] . ' ' . market_enable_after_install($id, $v));
+                flash($r['message'] . ' ' . ($known ? t('%s %s installed.', $id, $v) : market_enable_after_install($id, $v)));
                 break;
             case 'refresh':
                 market_list(true);
