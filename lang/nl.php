@@ -433,7 +433,7 @@ return [
     'Remove' => 'Verwijderen',
     'Remove current avatar' => 'Huidige avatar verwijderen',
     'Remove files' => 'Bestanden verwijderen',
-    'Removes data/cache files and rebuilds plugin assets.' => 'Verwijdert de bestanden in data/cache en bouwt de plugin-assets opnieuw op.',
+    'Removes data/cache files, rebuilds plugin assets and gives app.css and app.js a new address, so browsers fetch them again.' => 'Verwijdert de bestanden in data/cache, bouwt de plugin-assets opnieuw en geeft app.css en app.js een nieuw adres, zodat browsers ze opnieuw ophalen.',
     'Rename' => 'Hernoemen',
     'Renaming to an existing tag merges the two.' => 'Hernoemen naar een bestaande tag voegt de twee samen.',
     'Render posts again' => 'Berichten opnieuw renderen',

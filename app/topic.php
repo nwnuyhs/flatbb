@@ -138,7 +138,7 @@ function topic_view(string $id): never
     $pg = paginate_calc($total, get_int('page', 1, 1, 100000), $per);
     $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} ORDER BY id LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [(int)$topic['id']]);
     $posts = posts_attach($posts, $topic);
-    db_increment('fb_topics', 'view_count', 1, 'id=?', [(int)$topic['id']]);
+    topic_count_view((int)$topic['id']);
     if ($posts !== []) topic_mark_read((int)$topic['id'], (int)end($posts)['id']);
     $topic['category'] = $cat;
     $topic['tags'] = tags_for_topics([(int)$topic['id']])[(int)$topic['id']] ?? [];
@@ -181,6 +181,19 @@ function topic_no_access(array $topic, ?array $cat, string $why): never
         . (uid() <= 0 ? '<p><a class="btn btn-primary" href="' . h(url('/login', ['back' => current_path()])) . '">' . t('Sign in') . '</a></p>' : '')
         . region('topic.no_access', ['topic' => $topic, 'reason' => $why]) . '</div></article>';
     page((string)$topic['title'], $body, ['class' => 'page-topic', 'right' => false, 'robots' => 'noindex', 'breadcrumbs' => $cat ? [[$cat['name'], category_url($cat)]] : []]);
+}
+
+/**
+ * One view per visitor and topic: a cookie remembers the topics this browser opened in the last day, so a reload or a
+ * second page of the same topic adds nothing. Members and guests count the same way.
+ */
+function topic_count_view(int $id): void
+{
+    $seen = array_values(array_filter(explode(',', cookie_str('fb_seen', 2000)), 'ctype_digit'));
+    if (in_array((string)$id, $seen, true)) return;
+    db_increment('fb_topics', 'view_count', 1, 'id=?', [$id]);
+    $seen[] = (string)$id;
+    app_cookie('fb_seen', implode(',', array_slice($seen, -200)), now() + 86400);
 }
 
 /** Attach user rows, liked flag and reply-to previews to posts (batched). */

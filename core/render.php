@@ -97,6 +97,18 @@ function logo_mark(int $size = 28, string $class = ''): string
 }
 
 /** Inline SVG icon (24x24, currentColor). Plugins can add icons via hook icon.paths. */
+/**
+ * Address of a core asset (app.css, app.js) with a version that changes whenever the file's content changes, so browsers
+ * and proxies fetch a re-uploaded file: FLATBB_VERSION, a short hash of the file, and the stamp Tools -> Clear cache sets.
+ */
+function asset_url(string $file): string
+{
+    $path = ROOT . '/assets/' . $file;
+    $hash = is_file($path) ? substr((string)md5_file($path), 0, 10) : '0';
+    $stamp = setting('assets_ver', '');
+    return base_path() . '/assets/' . $file . '?v=' . FLATBB_VERSION . '.' . $hash . ($stamp !== '' ? '.' . $stamp : '');
+}
+
 function icon(string $name, string $class = ''): string
 {
     $paths = request_cache('icon_paths', static fn(): array => hook('icon.paths', icon_paths(), [])) ?? [];

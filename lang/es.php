@@ -433,7 +433,7 @@ return [
     'Remove' => 'Quitar',
     'Remove current avatar' => 'Quitar avatar actual',
     'Remove files' => 'Quitar archivos',
-    'Removes data/cache files and rebuilds plugin assets.' => 'Elimina los archivos de data/cache y reconstruye los recursos de los plugins.',
+    'Removes data/cache files, rebuilds plugin assets and gives app.css and app.js a new address, so browsers fetch them again.' => 'Elimina los archivos de data/cache, reconstruye los recursos de los plugins y da a app.css y app.js una nueva dirección para que los navegadores los vuelvan a descargar.',
     'Rename' => 'Renombrar',
     'Renaming to an existing tag merges the two.' => 'Renombrar a una etiqueta existente fusiona ambas.',
     'Render posts again' => 'Renderizar mensajes de nuevo',

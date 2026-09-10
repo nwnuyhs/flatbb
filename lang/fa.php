@@ -434,7 +434,7 @@ return [
     'Remove' => 'حذف',
     'Remove current avatar' => 'حذف آواتار فعلی',
     'Remove files' => 'حذف فایل‌ها',
-    'Removes data/cache files and rebuilds plugin assets.' => 'فایل‌های data/cache را حذف و assetهای پلاگین را بازسازی می‌کند.',
+    'Removes data/cache files, rebuilds plugin assets and gives app.css and app.js a new address, so browsers fetch them again.' => 'فایل‌های data/cache را حذف می‌کند، دارایی‌های افزونه‌ها را دوباره می‌سازد و به app.css و app.js نشانی تازه‌ای می‌دهد تا مرورگرها آن‌ها را دوباره بگیرند.',
     'Rename' => 'تغییر نام',
     'Renaming to an existing tag merges the two.' => 'تغییر نام به یک برچسب موجود، آن دو را ادغام می‌کند.',
     'Render posts again' => 'رندر دوبارهٔ پست‌ها',

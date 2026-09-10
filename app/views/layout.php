@@ -43,7 +43,7 @@ $unread = notifications_unread();
 <?php $fav = setting('site_favicon'); $fav_url = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg'; $fav_type = str_contains($fav_url, '.svg') ? 'image/svg+xml' : (str_contains($fav_url, '.ico') ? 'image/x-icon' : 'image/png'); ?>
 <link rel="icon" href="<?= h($fav_url) ?>" type="<?= h($fav_type) ?>">
 <?php if ($fav !== '' && $fav_type === 'image/png'): ?><link rel="apple-touch-icon" href="<?= h($fav_url) ?>"><?php endif; ?>
-<link rel="stylesheet" href="<?= h(base_path()) ?>/assets/app.css?v=<?= FLATBB_VERSION ?>.<?= (int)@filemtime(ROOT . "/assets/app.css") ?>">
+<link rel="stylesheet" href="<?= h(asset_url('app.css')) ?>">
 <?php if (strtolower($brand) !== '#e7672e'): [$br, $bg, $bb] = sscanf($brand, '#%02x%02x%02x'); $hover = sprintf('#%02x%02x%02x', (int)($br * .88), (int)($bg * .88), (int)($bb * .88)); ?>
 <style>:root{--brand:<?= h($brand) ?>;--brand-hover:<?= h($hover) ?>;--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.12)}[data-theme="dark"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}@media (prefers-color-scheme:dark){[data-theme="auto"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}}</style>
 <?php endif; ?>
@@ -92,7 +92,7 @@ $unread = notifications_unread();
 </footer>
 <div class="drawer-backdrop" data-toggle="drawer"></div>
 <script nonce="<?= h(csp_nonce()) ?>">window.FB=<?= json_encode_value(['base' => base_path(), 'csrf' => csrf_token(), 'uid' => uid(), 'rewrite' => rewrite_enabled(), 'api' => url('/api/preview'), 'upload' => url('/upload'), 'users' => url('/api/users'), 'i18n' => ['confirm' => t('Are you sure?'), 'uploading' => t('Uploading…'), 'failed' => t('Request failed.'), 'copied' => t('Link copied'), 'nothing' => t('Nothing to preview.')]]) ?></script>
-<script src="<?= h(base_path()) ?>/assets/app.js?v=<?= FLATBB_VERSION ?>.<?= (int)@filemtime(ROOT . "/assets/app.js") ?>" defer></script>
+<script src="<?= h(asset_url('app.js')) ?>" defer></script>
 <?= plugin_assets_tag('js') ?>
 <?= region('body.end', [], '', false) ?>
 <?= raw(str_replace('{nonce}', csp_nonce(), setting('foot_code'))) ?>

@@ -320,7 +320,8 @@ function admin_page_tools(): never
                 break;
             case 'clear_cache':
                 foreach (glob(CACHE_DIR . '/*') ?: [] as $f) if (is_file($f) && !str_starts_with(basename($f), 'plugins.')) @unlink($f);
-                save_settings(['stats_cache' => '']);
+                save_settings(['stats_cache' => '', 'assets_ver' => (string)now()]); // a new address for app.css / app.js, so browsers and proxies fetch them again
+                clearstatcache(true);
                 plugin_assets_build();
                 flash(t('Cache cleared.'));
                 break;
@@ -344,7 +345,7 @@ function admin_page_tools(): never
         ['search_rebuild', t('Rebuild search index'), t('Re-index every post. Run after importing data or switching database.')],
         ['rerender', t('Render posts again'), t('Rebuild the stored HTML of every post from its Markdown. Run after a FlatBB update that changed how Markdown is rendered.')],
         ['recount', t('Recalculate counters'), t('Fix topic/reply counts on users, categories and tags.')],
-        ['clear_cache', t('Clear cache'), t('Removes data/cache files and rebuilds plugin assets.')],
+        ['clear_cache', t('Clear cache'), t('Removes data/cache files, rebuilds plugin assets and gives app.css and app.js a new address, so browsers fetch them again.')],
         ['schema', t('Upgrade database schema'), t('Create any missing tables, columns and indexes (safe to repeat).')],
     ];
     $tools = (array)hook('admin.tools', $tools, []);
