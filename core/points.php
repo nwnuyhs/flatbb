@@ -176,7 +176,7 @@ function points_public(array $user): bool
 /** HTML list of history rows (the /points page, Settings → Points and the admin user drawer). */
 function points_log_html(array $rows, string $empty = ''): string
 {
-    if ($rows === []) return '<div class="empty">' . icon('star') . '<p>' . h($empty !== '' ? $empty : t('No points activity yet.')) . '</p></div>';
+    if ($rows === []) return '<div class="empty">' . icon('coin') . '<p>' . h($empty !== '' ? $empty : t('No points activity yet.')) . '</p></div>';
     $h = '<ul class="points-log">';
     foreach ($rows as $r) {
         $d = (int)$r['delta'];

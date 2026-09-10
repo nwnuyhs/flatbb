@@ -22,7 +22,7 @@ function admin_menu_items(string $active): array
         'groups' => ['label' => t('Groups'), 'icon' => 'shield', 'group' => t('Content')],
         'layout' => ['label' => t('Layout'), 'icon' => 'layout', 'group' => t('Appearance')],
         'settings' => ['label' => t('Settings'), 'icon' => 'settings', 'group' => t('System')],
-        'points' => ['label' => t('Points'), 'icon' => 'star', 'group' => t('System')],
+        'points' => ['label' => t('Points'), 'icon' => 'coin', 'group' => t('System')],
         'plugins' => ['label' => t('Plugins'), 'icon' => 'puzzle', 'group' => t('System')],
         'updates' => ['label' => t('Updates'), 'icon' => 'download', 'group' => t('System'), 'badge' => upgrade_available() ? t('new') : ''],
         'cron' => ['label' => t('Scheduled jobs'), 'icon' => 'clock', 'group' => t('System')],
