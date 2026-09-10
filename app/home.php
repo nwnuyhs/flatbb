@@ -84,6 +84,8 @@ function topic_list_fetch(string $where, array $params, string $order, array $p,
     $conds = ['t.is_deleted=0'];
     if ($visible !== null) $conds[] = $visible === [] ? '0' : 't.category_id IN (' . implode(',', $visible) . ')';
     if ($where !== '') $conds[] = '(' . $where . ')';
+    $q = hook('topic_list.query', ['where' => $conds, 'params' => $params], ['where' => $where, 'join' => $join]); // Filter every topic list: value ['where' => [conditions on alias t], 'params' => [...]]; append to both (ctx: where, join). Used to keep categories or topics out of the lists.
+    if (is_array($q)) { $conds = array_values((array)($q['where'] ?? $conds)); $params = array_values((array)($q['params'] ?? $params)); }
     $sql_where = implode(' AND ', $conds);
     $total = (int)val("SELECT COUNT(*) FROM fb_topics t {$join} WHERE {$sql_where}", $params);
     $pg = paginate_calc($total, $p['page'], $p['per_page']);

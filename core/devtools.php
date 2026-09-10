@@ -185,6 +185,7 @@ function docs_hook_descriptions(): array
         'icon.paths' => 'Add SVG icons: name => path markup.',
         'regions.known' => 'Register extra regions for Admin → Layout.',
         'topic.before_save' => 'New topic data (category_id, user_id, title, body, tags) before insert.',
+        'topic_list.query' => 'Filter the conditions of every topic list (front page, category, tag, unread): value ["where" => conditions on alias t, "params"]; append to both. Ctx: where, join.',
         'topic.after_save' => 'After a topic was created or edited (ctx: topic_id, post_id, new).',
         'topic.after_delete' => 'After a topic was soft-deleted.',
         'topic.after_action' => 'After pin/lock/move/restore (ctx: topic_id, action).',
