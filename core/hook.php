@@ -193,6 +193,7 @@ function layout_core_items(string $region): array
     return match ($region) {
         'header.right' => ['search' => ['label' => t('Search'), 'weight' => -20], 'new' => ['label' => t('New Topic'), 'weight' => -10], 'lang' => ['label' => t('Language'), 'weight' => 10], 'theme' => ['label' => t('Toggle theme'), 'weight' => 20], 'notifications' => ['label' => t('Notifications'), 'weight' => 30], 'user' => ['label' => t('Account menu'), 'weight' => 40]],
         'header.user_menu' => ['profile' => ['label' => t('Profile')], 'bookmarks' => ['label' => t('Bookmarks')], 'settings' => ['label' => t('Settings')], 'admin' => ['label' => t('Admin')]],
+        'sidebar.left.nav' => ['latest' => ['label' => t('Latest'), 'weight' => -30], 'top' => ['label' => t('Top'), 'weight' => -20], 'unread' => ['label' => t('Unread'), 'weight' => -10], 'categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')]], // the three topic lists first, plugin links after them
         'sidebar.right.cards' => ['user' => ['label' => t('Account'), 'weight' => -20], 'newest' => ['label' => t('Newest members')], 'stats' => ['label' => t('Statistics'), 'weight' => 100]], // the account card first, statistics last, plugin cards in between
         'topic.sidebar.cards' => ['author' => ['label' => t('Author')], 'related' => ['label' => t('Related topics')]],
         'footer.links' => ['categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')], 'rss' => ['label' => 'RSS']],

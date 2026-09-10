@@ -124,7 +124,7 @@ function icon_paths(): array
         'plus' => '<path d="M12 5v14M5 12h14"/>',
         'reply' => '<path d="M9 17l-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
         'eye' => '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
-        'coin' => '<circle cx="12" cy="12" r="9"/><path d="M9.5 8h3.25a2.25 2.25 0 0 1 0 4.5H9.5M9.5 8v9"/>',
+        'coin' => '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v4c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M4 10v4c0 1.66 3.58 3 8 3s8-1.34 8-3v-4"/><path d="M4 14v4c0 1.66 3.58 3 8 3s8-1.34 8-3v-4"/>',
         'eye-off' => '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/>',
         'heart' => '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>',
         'bookmark' => '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
@@ -191,8 +191,17 @@ function avatar(?array $user, int $size = 32, bool $link = true): string
         $hue = $name === '?' ? 0 : crc32(mb_strtolower($name)) % 360;
         $img = '<span class="' . $cls . ' avatar-letter" style="' . $style . ';--hue:' . $hue . '">' . h(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>';
     }
-    if (!$link || $user === null) return $img;
-    return '<a class="avatar-link" href="' . h(user_url($user)) . '" title="' . h($name) . '">' . $img . '</a>';
+    $online = $user !== null && user_online($user);
+    if ($online) $img .= '<i class="online-dot" style="' . $style . '" title="' . h(t('Online')) . '"></i>';
+    if (!$link || $user === null) return $online ? '<span class="avatar-link avatar-online">' . $img . '</span>' : $img;
+    return '<a class="avatar-link' . ($online ? ' avatar-online' : '') . '" href="' . h(user_url($user)) . '" title="' . h($name) . '">' . $img . '</a>';
+}
+
+/** Whether a member counts as online: seen in the last 15 minutes (the window the Statistics card uses) and the setting online_dot is on. */
+function user_online(array $user): bool
+{
+    if ((int)($user['last_seen'] ?? 0) <= 0 || setting('online_dot', '1') !== '1') return false;
+    return now() - (int)$user['last_seen'] < 900;
 }
 
 /**

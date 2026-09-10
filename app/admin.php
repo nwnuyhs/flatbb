@@ -123,6 +123,7 @@ function admin_settings_fields(): array
             'site_lang' => ['select', t('Language'), t('Default interface language. Visitors pick their own from the globe in the header or in Settings → Preferences. Packs live in lang/.'), lang_available()],
             'site_tz' => ['select', t('Time zone'), t('Used where the browser cannot help: emails, feeds, the admin log and the time shown without JavaScript. Visitors see times in their own time zone.'), tz_options()],
             'footer_text' => ['text', t('Footer text')],
+            'online_dot' => ['checkbox', t('Online dot on avatars'), t('A green dot on the avatar of every member seen in the last 15 minutes.')],
         ]],
         'content' => [t('Content'), [
             'per_page' => ['number', t('Topics per page'), '', null, 5, 100],

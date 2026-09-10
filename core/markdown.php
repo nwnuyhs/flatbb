@@ -221,3 +221,20 @@ function md_excerpt(string $text, int $max = 160): string
     $t = preg_replace('/\s+/', ' ', $t) ?? $t;
     return cut(trim($t), $max);
 }
+
+/** Render every post's Markdown again into body_html (in slices, so a big forum fits the request). Returns the number of posts. */
+function posts_rerender(): int
+{
+    $n = 0;
+    $last = 0;
+    while (true) {
+        $rows = all('SELECT id, body FROM fb_posts WHERE id>? ORDER BY id LIMIT 200', [$last]);
+        if ($rows === []) break;
+        foreach ($rows as $r) {
+            db_update('fb_posts', ['body_html' => md((string)$r['body'])], 'id=?', [(int)$r['id']]);
+            $last = (int)$r['id'];
+            $n++;
+        }
+    }
+    return $n;
+}

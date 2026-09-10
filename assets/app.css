@@ -178,6 +178,8 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .avatar { width: var(--s, 32px); height: var(--s, 32px); border-radius: 50%; object-fit: cover; display: inline-block; vertical-align: middle; flex: none; }
 .avatar-letter { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: calc(var(--s, 32px) * .44); line-height: 1; background: linear-gradient(135deg, hsl(var(--hue, 20) 65% 58%), hsl(var(--hue, 20) 60% 46%)); }
 .avatar-link { display: inline-flex; }
+.avatar-online { position: relative; }
+.online-dot { position: absolute; top: -1px; left: -1px; width: max(8px, calc(var(--s, 32px) * .3)); height: max(8px, calc(var(--s, 32px) * .3)); border-radius: 50%; background: #22c55e; border: 2px solid var(--panel); box-sizing: border-box; pointer-events: none; }
 .user-link { color: var(--text); font-weight: 600; }
 .user-link:hover { color: var(--brand); }
 

@@ -310,6 +310,7 @@ function admin_page_tools(): never
         check_csrf();
         switch (post_str('action', 30)) {
             case 'search_rebuild': flash(t('%d posts re-indexed.', search_rebuild())); break;
+            case 'rerender': flash(t('%d posts rendered again.', posts_rerender())); admin_log('tools.rerender'); break;
             case 'recount':
                 foreach (categories() as $c) category_refresh_stats((int)$c['id']);
                 q('UPDATE fb_users SET topic_count=(SELECT COUNT(*) FROM fb_topics WHERE fb_topics.user_id=fb_users.id AND is_deleted=0), post_count=(SELECT COUNT(*) FROM fb_posts WHERE fb_posts.user_id=fb_users.id AND is_deleted=0 AND floor>0)');
@@ -341,6 +342,7 @@ function admin_page_tools(): never
     }
     $tools = [
         ['search_rebuild', t('Rebuild search index'), t('Re-index every post. Run after importing data or switching database.')],
+        ['rerender', t('Render posts again'), t('Rebuild the stored HTML of every post from its Markdown. Run after a FlatBB update that changed how Markdown is rendered.')],
         ['recount', t('Recalculate counters'), t('Fix topic/reply counts on users, categories and tags.')],
         ['clear_cache', t('Clear cache'), t('Removes data/cache files and rebuilds plugin assets.')],
         ['schema', t('Upgrade database schema'), t('Create any missing tables, columns and indexes (safe to repeat).')],

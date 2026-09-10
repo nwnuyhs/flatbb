@@ -2,10 +2,10 @@
 /** Left column: main navigation, categories, tags. Regions: sidebar.left.top/nav/categories/bottom */
 $me = me();
 $nav = [
-    'latest' => ['label' => t('Latest'), 'url' => url('/latest'), 'icon' => 'clock', 'active' => in_array(current_path(), ['/', '/latest'], true)],
-    'top' => ['label' => t('Top'), 'url' => url('/top'), 'icon' => 'flame', 'active' => is_active_path('/top')],
+    'latest' => ['label' => t('Latest'), 'url' => url('/latest'), 'icon' => 'clock', 'active' => in_array(current_path(), ['/', '/latest'], true), 'weight' => -30],
+    'top' => ['label' => t('Top'), 'url' => url('/top'), 'icon' => 'flame', 'active' => is_active_path('/top'), 'weight' => -20],
 ];
-if ($me) $nav['unread'] = ['label' => t('Unread'), 'url' => url('/unread'), 'icon' => 'dot', 'active' => is_active_path('/unread')];
+if ($me) $nav['unread'] = ['label' => t('Unread'), 'url' => url('/unread'), 'icon' => 'dot', 'active' => is_active_path('/unread'), 'weight' => -10];
 $nav['categories'] = ['label' => t('Categories'), 'url' => url('/categories'), 'icon' => 'folder', 'active' => is_active_path('/categories')];
 $nav['tags'] = ['label' => t('Tags'), 'url' => url('/tags'), 'icon' => 'tag', 'active' => is_active_path('/tags')];
 $nav = region_list('sidebar.left.nav', $nav, []);
