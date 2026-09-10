@@ -13,6 +13,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `account.login_validate` | filter | Add errors to a sign-in attempt before the password is checked (ctx: username); a non-empty list refuses it. | `app/account.php` |
 | `account.register_validate` | filter | Add validation errors to registration. | `app/account.php` |
 | `admin.action` | event | After an admin action was logged (ctx: user_id, ip, action, target, detail). The security plugin subscribes here. | `core/security.php` |
+| `admin.category_after_save` | event | After a category was created or edited (ctx: id, data); plugins keep their own per-category options here. | `app/admin_content.php` |
 | `admin.category_save` | filter | Filter category data before saving. | `app/admin_content.php` |
 | `admin.plugin_ops` | filter | Extra buttons on a plugin row. | `app/admin_system.php` |
 | `admin.plugin_settings.before` | filter | HTML at the top of a plugin settings drawer (ctx: id, manifest). | `app/admin_system.php` |
@@ -56,6 +57,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `post.before_save` | filter | New reply data (body, reply_to_id) before insert. | `app/topic.php` |
 | `post.before_update` | filter | Reply body before an edit is saved. | `app/topic.php` |
 | `region.<action>` | filter |  | `core/hook.php`, `core/render.php` |
+| `region.admin.category.fields` | html region | Extra fields at the end of the category editor (ctx: category) | `app/admin_content.php` |
 | `region.admin.dashboard.cards` | list region | Admin dashboard cards (list) | `app/admin.php` |
 | `region.admin.menu` | list region | Admin menu items (list) | `app/admin_ui.php` |
 | `region.admin.plugins.tabs` | list region | The tab row of Admin → Plugins: Installed plus what plugins add (list; ctx: active) | `app/admin_system.php` |

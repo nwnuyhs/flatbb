@@ -48,6 +48,7 @@ function admin_page_categories(): never
             admin_category_icon_unlink($id); // switched to a built-in icon or none: the uploaded image is not needed any more
         }
         request_cache('categories', null, true);
+        fire('admin.category_after_save', ['id' => $id, 'data' => $data]); // plugins store their own per-category options (ctx: id, data)
         admin_log('category.save', '#' . $id . ' ' . (string)($data['name'] ?? ''));
         flash(t('Category saved.'));
         redirect($list_url);
@@ -83,6 +84,7 @@ function admin_page_categories(): never
             . '<div class="form-row"><label>' . t('Who can view') . '</label>' . $vc . '<div class="form-help">' . t('Nothing checked = everyone including guests.') . '</div></div>'
             . '<div class="form-row"><label>' . t('Who can create topics') . '</label>' . $pc . '<div class="form-help">' . t('Nothing checked = any member with the "post" permission.') . '</div></div>'
             . '<div class="form-row">' . checkbox('is_hidden', (int)$edit['is_hidden'] === 1, t('Hidden (admins only)')) . '</div>'
+            . region('admin.category.fields', ['category' => $edit], '', false)
             . admin_form_actions(t('Save'), $list_url) . '</form>';
         $drawer = ['title' => (int)$edit['id'] ? (string)$edit['name'] : t('New category'), 'sub' => (int)$edit['id'] ? t('Edit category') : '', 'body' => $body, 'back' => $list_url];
     } elseif (($del = category_by_id(get_int('delete', 0))) !== null) {

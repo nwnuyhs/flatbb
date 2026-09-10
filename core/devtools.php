@@ -189,6 +189,7 @@ function docs_hook_descriptions(): array
         'topic.after_save' => 'After a topic was created or edited (ctx: topic_id, post_id, new).',
         'topic.after_delete' => 'After a topic was soft-deleted.',
         'topic.after_action' => 'After pin/lock/move/restore (ctx: topic_id, action).',
+        'admin.category_after_save' => 'After a category was created or edited (ctx: id, data); plugins keep their own per-category options here.',
         'topic.view' => 'Filter the topic row shown on the topic page (ctx: posts).',
         'composer.values' => 'Filter the values a composer opens with: title, body, category_id, tags for a new topic (ctx mode new), body for a reply (ctx mode reply, topic). Used by drafts plugins.',
         'topic.title' => 'Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB.',

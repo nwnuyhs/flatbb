@@ -110,6 +110,7 @@ function regions_known(): array
         'admin.dashboard.cards' => 'Admin dashboard cards (list)',
         'points.actions' => 'Buttons on the /points page of a member: check-in, tasks, leaderboard (list)',
         'admin.plugins.tabs' => 'The tab row of Admin → Plugins: Installed plus what plugins add (list; ctx: active)',
+        'admin.category.fields' => 'Extra fields at the end of the category editor (ctx: category)',
     ], []);
 }
 
