@@ -150,6 +150,8 @@ function md_table(array $lines, int &$i): string
 /** Inline formatting on already-escaped text. */
 function md_inline(string $s): string
 {
+    // backslash escapes: \* \_ \# \. and every other ASCII punctuation mark stands for the character itself (CommonMark)
+    $s = preg_replace_callback('/\\\\([!"#$%&\'()*+,\-.\/:;<=>?@\[\\\\\]^_`{|}~])/', static fn(array $m): string => '&#' . ord($m[1]) . ';', $s) ?? $s;
     // images ![alt](url)
     $s = preg_replace_callback('/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/', static function (array $m): string {
         $u = md_safe_url(html_entity_decode($m[2], ENT_QUOTES, 'UTF-8'), true);

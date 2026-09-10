@@ -19,7 +19,11 @@ function admin_page_plugins(): never
                     if ((int)$f['size'] > 20 * 1048576) fail(t('The package is larger than 20 MB.'), admin_url('plugins', ['upload' => 1]));
                     $pid = plugin_install_zip((string)$f['tmp_name']);
                     admin_log('plugin.upload', $pid, (string)$f['name']);
-                    flash(plugin_enabled($pid) ? t('%s updated.', $pid) : t('%s installed. Enable it when you are ready.', $pid));
+                    if (plugin_enabled($pid)) flash(t('%s updated.', $pid));
+                    else { // a new plugin is switched on right away; a plugin that will not enable stays off and says why
+                        try { plugin_enable($pid); flash(t('%s installed and enabled.', $pid)); }
+                        catch (Throwable $e) { flash(t('%s installed, but it could not be enabled: %s', $pid, $e->getMessage()), 'error'); }
+                    }
                     break;
                 case 'enable': plugin_enable($id); admin_log('plugin.enable', $id); flash(t('Plugin enabled.')); break;
                 case 'disable': plugin_disable($id); admin_log('plugin.disable', $id); flash(t('Plugin disabled.')); break;

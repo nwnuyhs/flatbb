@@ -90,6 +90,14 @@ function market_buy(string $id): array
     return ['ok' => !empty($r['ok']), 'message' => (string)($r['message'] ?? $r['error'] ?? '')];
 }
 
+/** Switch a freshly installed plugin on (an update keeps its state); answers the message to show. */
+function market_enable_after_install(string $id, string $version): string
+{
+    if (plugin_enabled($id)) return t('%s %s installed.', $id, $version);
+    try { plugin_enable($id); return t('%s %s installed and enabled.', $id, $version); }
+    catch (Throwable $e) { return t('%s %s installed, but it could not be enabled: %s', $id, $version, $e->getMessage()); }
+}
+
 /** Download a plugin package from the marketplace and install it. Returns the installed version. */
 function market_install(string $id, string $version = ''): string
 {
@@ -220,7 +228,7 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '2.1.2',
+    'version' => '2.1.3',
     'description' => 'Browse, install and update plugins from www.flatbb.com, get plugins that cost points with your account, and publish your own plugins with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',

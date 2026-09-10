@@ -90,13 +90,13 @@ function market_admin_post(string $tab): never
             case 'install':
             case 'update':
                 $v = market_install($id, post_str('version', 20));
-                flash(t('%s %s installed. Enable it under Plugins.', $id, $v));
+                flash(market_enable_after_install($id, $v));
                 break;
             case 'buy': // get it for points, then install it
                 $r = market_buy($id);
                 if (!$r['ok']) fail($r['message'], $back);
                 $v = market_install($id, post_str('version', 20));
-                flash($r['message'] . ' ' . t('%s %s installed. Enable it under Plugins.', $id, $v));
+                flash($r['message'] . ' ' . market_enable_after_install($id, $v));
                 break;
             case 'refresh':
                 market_list(true);
