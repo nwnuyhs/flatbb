@@ -186,15 +186,14 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 /* ---------- tabs & list head ---------- */
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .list-head > * { min-width: 0; max-width: 100%; }
-.tabs { display: flex; background: none; border: 0; padding: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tabs { display: flex; gap: 2px; background: none; border: 0; padding: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 2px 8px; color: var(--text-muted); font-weight: 550; white-space: nowrap; flex: none; }
-.tab + .tab { margin-inline-start: 18px; }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--brand); box-shadow: inset 0 -3px 0 var(--brand); }
+.tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: 550; white-space: nowrap; flex: none; }
+.tab:hover { color: var(--text); background: var(--panel-2); }
+.tab.active { background: var(--brand-soft); color: var(--brand); }
 /* the tab row and the list it belongs to are one card: the row is its head */
 .list-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.list-card > .list-head { margin: 0; padding: 8px 12px 10px 14px; border-bottom: 1px solid var(--line-soft); }
+.list-card > .list-head { margin: 0; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
 .list-card > .topic-rows, .list-card > .post-rows, .list-card > .category-list { border: 0; border-radius: 0; background: none; }
 .list-card > .empty { margin: 0; border: 0; }
 .tabs-sub { border: 0; background: none; padding: 0; margin-bottom: 12px; }
@@ -211,9 +210,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .cat-item.active { color: var(--brand); border-bottom-color: var(--brand); }
 .cat-item.active .icon { opacity: 1; }
 .cat-bar-mobile { display: none; }
-.tabs-sub .tab { padding: 4px 10px; font-size: var(--font-size-sm); border-radius: var(--radius-pill); box-shadow: none; }
-.tabs-sub .tab + .tab { margin-inline-start: 4px; }
-.tabs-sub .tab.active { background: var(--brand-soft); box-shadow: none; }
+.tabs-sub .tab { padding: 4px 10px; font-size: var(--font-size-sm); }
 .icon-picker { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
 .icon-pick { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); color: var(--text-muted); cursor: pointer; }
 .icon-pick:hover { color: var(--text); border-color: var(--text-muted); }
@@ -633,11 +630,8 @@ body.adrawer-open { overflow: hidden; }
   :root { --gap: 12px; }
   .page-grid { padding-top: 12px; }
   .list-head { margin-bottom: 8px; gap: 8px; }
-  .list-card > .list-head { padding: 6px 10px 8px 12px; }
-  .tab + .tab { margin-inline-start: 12px; }
+  .list-card > .list-head { padding: 6px 8px; }
   .cat-bar { margin: -12px -12px 10px; padding: 0 6px; }
-  .list-head .btn-primary span { display: none; }
-  .list-head .btn-primary { padding-inline: 11px; }
   .editor-toolbar { flex-wrap: wrap; overflow: visible; row-gap: 2px; } /* every button in view: the toolbar wraps instead of scrolling sideways */
   .editor-toolbar .tb-spacer { flex: 1 0 0; }
   .tab { padding: 4px 9px; font-size: var(--font-size-sm); }
