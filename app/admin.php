@@ -159,7 +159,7 @@ function admin_settings_fields(): array
             'mail_from' => ['text', t('Sender address'), t('Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.')],
         ]],
         'uploads' => [t('Uploads'), [
-            'upload_max_mb' => ['number', t('Max upload size (MB)'), '', null, 1, 100],
+            'upload_max_mb' => ['decimal', t('Max upload size (MB)'), t('Fractions are allowed: 0.3 keeps uploads under about 300 KB.'), null, 0.1, 100],
             'upload_types' => ['text', t('Allowed extensions'), t('Comma separated.')],
         ]],
         'security' => [t('Security'), [
@@ -200,6 +200,7 @@ function admin_page_settings(): never
             $save[$name] = match ($def[0]) {
                 'checkbox' => $raw ? '1' : '0',
                 'number' => (string)max((int)($def[4] ?? PHP_INT_MIN), min((int)($def[5] ?? PHP_INT_MAX), (int)$raw)),
+                'decimal' => rtrim(rtrim(number_format(max((float)($def[4] ?? 0), min((float)($def[5] ?? 1000000), (float)str_replace(',', '.', trim($raw)))), 3, '.', ''), '0'), '.') ?: (string)($def[4] ?? 0),
                 'select' => isset($def[3][(string)$raw]) ? (string)$raw : setting($name),
                 'color' => preg_match('/^#[0-9a-f]{6}$/i', (string)$raw) ? strtolower((string)$raw) : '#e7672e',
                 'code', 'textarea' => is_string($raw) ? cut(str_replace("\r\n", "\n", $raw), 20000, '') : '',
@@ -224,6 +225,7 @@ function admin_page_settings(): never
             'code' => textarea($name, $v, ['rows' => 4, 'class' => 'mono']),
             'select' => select($name, (array)$def[3], $v),
             'number' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000]),
+            'decimal' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000, 'step' => 'any']), // any: 0.3 and 0.25 are both fine, the browser refuses nothing
             'color' => input($name, $v ?: '#e7672e', ['type' => 'color']),
             'image' => ($v !== '' ? '<div class="image-current"><img src="' . h(upload_url($v)) . '" alt=""> ' . checkbox($name . '_remove', false, t('Remove')) . '</div>' : '') . input($name, '', ['type' => 'file', 'accept' => implode(',', array_map(static fn(string $e): string => '.' . $e, (array)($def[3] ?? [])))]),
             default => input($name, $v),

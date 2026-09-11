@@ -204,6 +204,7 @@ return [
     'Forgot password?' => 'Passwort vergessen?',
     'Formatting help' => 'Formatierungshilfe',
     'Former names: %s' => 'Frühere Namen: %s',
+    'Fractions are allowed: 0.3 keeps uploads under about 300 KB.' => 'Nachkommastellen sind erlaubt: 0.3 hält Uploads unter etwa 300 KB.',
     'Fullscreen' => 'Vollbild',
     'Fullscreen button' => 'Vollbild-Schaltfläche',
     'General' => 'Allgemein',

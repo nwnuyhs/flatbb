@@ -204,6 +204,7 @@ return [
     'Forgot password?' => 'Wachtwoord vergeten?',
     'Formatting help' => 'Opmaakhulp',
     'Former names: %s' => 'Vorige namen: %s',
+    'Fractions are allowed: 0.3 keeps uploads under about 300 KB.' => 'Decimalen mogen: 0.3 houdt uploads onder ongeveer 300 KB.',
     'Fullscreen' => 'Volledig scherm',
     'Fullscreen button' => 'Knop voor volledig scherm',
     'General' => 'Algemeen',

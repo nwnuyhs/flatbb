@@ -205,6 +205,7 @@ return [
     'Forgot password?' => 'پسورد را فراموش کرده‌اید؟',
     'Formatting help' => 'راهنمای قالب‌بندی',
     'Former names: %s' => 'نام‌های قبلی: %s',
+    'Fractions are allowed: 0.3 keeps uploads under about 300 KB.' => 'اعشار مجاز است: مقدار ۰٫۳ بارگذاری‌ها را زیر حدود ۳۰۰ کیلوبایت نگه می‌دارد.',
     'Fullscreen' => 'تمام‌صفحه',
     'Fullscreen button' => 'دکمه‌ی تمام‌صفحه',
     'General' => 'عمومی',

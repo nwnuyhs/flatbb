@@ -65,7 +65,7 @@ function upload_handle(): never
 /** Validate, move and register an uploaded file. Throws RuntimeException with a user message. */
 function upload_store(array $user, string $tmp, string $original): array
 {
-    $max = (int)setting('upload_max_mb', '5') * 1048576;
+    $max = (int)round((float)setting('upload_max_mb', '5') * 1048576); // the setting may be a fraction of a megabyte (0.3)
     $size = (int)@filesize($tmp);
     if ($size <= 0 || $size > $max) throw new RuntimeException(t('File must be smaller than %s.', human_size($max)));
     $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));

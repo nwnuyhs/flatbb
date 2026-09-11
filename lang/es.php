@@ -204,6 +204,7 @@ return [
     'Forgot password?' => '¿Olvidaste tu contraseña?',
     'Formatting help' => 'Ayuda de formato',
     'Former names: %s' => 'Nombres anteriores: %s',
+    'Fractions are allowed: 0.3 keeps uploads under about 300 KB.' => 'Se permiten decimales: 0.3 mantiene las subidas por debajo de unos 300 KB.',
     'Fullscreen' => 'Pantalla completa',
     'Fullscreen button' => 'Botón de pantalla completa',
     'General' => 'General',
