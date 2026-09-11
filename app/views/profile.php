@@ -23,7 +23,9 @@
     </div>
   </header>
   <?= region('user.profile.after', ['user' => $user, 'self' => $self]) ?>
-  <div class="list-head" data-slot="user.profile.tabs"><?= raw($tabs) ?></div>
-  <?= raw($body) ?>
+  <div class="list-card">
+    <div class="list-head" data-slot="user.profile.tabs"><?= raw($tabs) ?></div>
+    <?= raw($body) ?>
+  </div>
   <?= raw($pagination) ?>
 </div>
