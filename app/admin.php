@@ -255,6 +255,14 @@ function admin_page_users(): never
             if ($err !== '') fail($err, admin_url('users', ['q' => $q, 'edit' => $u['id']]));
         }
         db_update('fb_users', ['group_id' => (int)$group['id'], 'status' => post_int('status') ? 1 : 0], 'id=?', [(int)$u['id']]);
+        $af = $_FILES['avatar'] ?? null;
+        if (post_int('avatar_remove') === 1) {
+            db_update('fb_users', ['avatar' => ''], 'id=?', [(int)$u['id']]);
+        } elseif (is_array($af) && ($af['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            if ((int)$af['size'] > 4 * 1048576) fail(t('Avatar must be smaller than 4 MB.'), admin_url('users', ['q' => $q, 'edit' => $u['id']]));
+            try { db_update('fb_users', ['avatar' => avatar_store((int)$u['id'], (string)$af['tmp_name'])], 'id=?', [(int)$u['id']]); }
+            catch (RuntimeException $e) { fail($e->getMessage(), admin_url('users', ['q' => $q, 'edit' => $u['id']])); }
+        }
         $np = post_secret('password');
         if ($np !== '') {
             if (password_check($np) !== '') fail(password_check($np));
@@ -287,7 +295,8 @@ function admin_page_users(): never
         $opts = [];
         foreach (groups() as $g) $opts[(string)$g['id']] = $g['name'];
         $former = array_map(static fn(array $f): string => (string)$f['name'], user_former_names($edit));
-        $body = '<form method="post" action="' . h($list_url) . '">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
+        $body = '<form method="post" action="' . h($list_url) . '" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
+            . form_row(t('Picture'), '<div class="image-current">' . avatar($edit, 48, false) . ' ' . ((string)$edit['avatar'] !== '' ? checkbox('avatar_remove', false, t('Remove')) : '') . '</div>' . input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It is cropped to a square.'))
             . form_row(t('Username'), input('username', (string)$edit['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), t('Letters, numbers, dot, dash or underscore. Links to the old name redirect to the new one.') . ($former !== [] ? ' ' . t('Former names: %s', implode(', ', $former)) : ''))
             . form_row(t('Group'), select('group_id', $opts, (string)$edit['group_id']))
             . form_row(t('Status'), select('status', ['1' => t('Active'), '0' => t('Suspended')], (string)$edit['status']))

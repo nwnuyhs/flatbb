@@ -29,8 +29,15 @@
 
   /* ---------- theme ---------- */
   var root = document.documentElement;
-  function applyTheme(t) { root.setAttribute('data-theme', t); try { localStorage.setItem('fb_theme', t); } catch (e) {} }
-  try { var saved = localStorage.getItem('fb_theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  function applyTheme(t) {
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('fb_theme', t); } catch (e) {}
+    // a member's choice belongs to the account: the server then paints the right theme on the first request, on every device
+    if (FB.uid > 0) { var fd = new FormData(); fd.append('theme', t); fd.append('_token', FB.csrf); request(FB.base + '/api/theme', { method: 'POST', body: fd }); }
+  }
+  // a visitor's choice lives in their browser; the head of the page already applied it, this only keeps a stale value from
+  // an older version in step. A member's theme comes from the server, so nothing overrides it here.
+  try { var saved = localStorage.getItem('fb_theme'); if (saved && FB.uid <= 0) root.setAttribute('data-theme', saved); } catch (e) {}
   function currentDark() {
     var t = root.getAttribute('data-theme');
     if (t === 'auto') return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -173,6 +180,7 @@
   /* ---------- email verification codes ---------- */
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-send-code]'); if (!b) return;
+    var row = document.querySelector('[data-code-row]'); if (row) row.hidden = false;
     var form = b.closest('form'), input = form && form.querySelector('[name="' + (b.getAttribute('data-email') || 'email') + '"]');
     if (!input || !input.value) { if (input) input.focus(); return; }
     var fd = new FormData(); fd.append('email', input.value); fd.append('_token', FB.csrf);
@@ -183,6 +191,12 @@
       var left = 60, label = b.textContent;
       var tick = setInterval(function () { left--; b.textContent = label + ' (' + left + ')'; if (left <= 0) { clearInterval(tick); b.textContent = label; b.disabled = false; } }, 1000);
     });
+  });
+
+  /* the verification code box: hidden while the saved address is verified, back as soon as it is edited */
+  document.addEventListener('input', function (e) {
+    var f = e.target.closest('[data-verified-value]'); if (!f) return;
+    var row = document.querySelector('[data-code-row]'); if (row) row.hidden = f.value === f.getAttribute('data-verified-value');
   });
 
   /* ---------- ajax forms ---------- */

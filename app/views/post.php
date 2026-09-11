@@ -47,7 +47,9 @@ $actions = region_list('post.actions', $actions, $ctx);
     <?php endif; ?>
     <?php if ($deleted): ?>
       <div class="post-content muted"><em><?= t('This reply was deleted.') ?></em></div>
-      <?php if (is_mod()): ?><div class="post-content" dir="auto"><?= raw($post['body_html']) ?></div><?php endif; ?>
+      <?php if (is_mod()): /* the staff can read what was deleted, folded away: pictures of a deleted post stay out of the page */ ?>
+        <details class="post-deleted"><summary><?= t('Show what was deleted') ?></summary><div class="post-content" dir="auto"><?= raw($post['body_html']) ?></div></details>
+      <?php endif; ?>
     <?php else: ?>
       <div class="post-content" dir="auto"><?= raw($post['body_html']) ?></div>
     <?php endif; ?>

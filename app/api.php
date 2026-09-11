@@ -21,6 +21,14 @@ function api_dispatch(string $action): never
             $err = email_code_send($email, client_ip());
             if ($err !== '') json_error($err);
             json_ok(['sent' => true, 'message' => t('Code sent. Check your inbox (and the spam folder).')]);
+        case 'theme':
+            require_post();
+            need_login();
+            $me = me();
+            $prefs = json_decode_array((string)$me['prefs']);
+            $prefs['theme'] = in_array(post_str('theme', 10), ['auto', 'light', 'dark'], true) ? post_str('theme', 10) : 'auto';
+            db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$me['id']]);
+            json_ok(['theme' => $prefs['theme']]);
         case 'users':
             need_login();
             $q = mb_strtolower(get_str('q', 30));

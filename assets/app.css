@@ -374,6 +374,18 @@ body.editor-fs { overflow: hidden; }
 .pw-toggle .icon:last-child, .pw-toggle.on .icon:first-child { display: none; }
 .pw-toggle.on .icon:last-child { display: block; }
 .auth-alt { text-align: center; margin: 16px 0 0; color: var(--text-muted); }
+.field-check { position: relative; display: block; }
+.field-check input { padding-inline-end: 38px; }
+.field-check.ok input { border-color: var(--success); }
+.field-mark { position: absolute; top: 50%; inset-inline-end: 10px; transform: translateY(-50%); display: inline-flex; color: var(--success); pointer-events: none; }
+.field-mark svg { width: 18px; height: 18px; }
+.category-head h1 { display: flex; align-items: center; gap: 8px; }
+.category-head h1 > svg, .category-head h1 > img { width: 26px; height: 26px; flex: none; color: var(--text-muted); }
+.category-head h1 > img { border-radius: var(--radius-sm); object-fit: cover; }
+.post-deleted { margin-top: 6px; }
+.post-deleted > summary { display: inline-flex; cursor: pointer; font-size: var(--font-size-sm); color: var(--text-subtle); }
+.post-deleted > summary:hover { color: var(--text-muted); }
+.post-deleted .post-content { margin-top: 8px; opacity: .75; }
 .profile-head { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 18px; align-items: start; padding: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; }
 .profile-info { min-width: 0; }
 .profile-info h1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px; }

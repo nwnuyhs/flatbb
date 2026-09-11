@@ -25,16 +25,17 @@ foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($
       <?php if (user_rename_allowed()): ?>
       <?= form_row(t('Username'), input('username', (string)$user['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), user_rename_next($user) > now() ? t('You can change your username again on %s.', date('Y-m-d', user_rename_next($user))) : t('Letters, numbers, dot, dash or underscore. Links to your old profile name keep working.')) ?>
       <?php endif; ?>
-      <?php if (register_verify_on()): ?>
-      <div class="form-row"><label><?= t('Email') ?></label><div class="code-row"><input type="email" name="email" value="<?= h((string)$user['email']) ?>" autocomplete="email"><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="email"><?= t('Send code') ?></button></div><div class="form-help"><?= (int)$user['email_verified'] === 1 ? t('Verified.') : t('Not verified yet.') ?> <?= t('A code is only needed when you change the address.') ?></div></div>
-      <?= form_row(t('Verification code'), input('code', '', ['inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'placeholder' => '123456'])) ?>
+      <?php if (register_verify_on()): $verified = (int)$user['email_verified'] === 1; ?>
+      <div class="form-row"><label><?= t('Email') ?></label>
+        <div class="code-row"><span class="field-check<?= $verified ? ' ok' : '' ?>"><input type="email" name="email" value="<?= h((string)$user['email']) ?>" autocomplete="email" data-verified-value="<?= h((string)$user['email']) ?>"><?php if ($verified): ?><i class="field-mark" title="<?= h(t('Verified')) ?>"><?= icon('check') ?></i><?php endif; ?></span><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="email"><?= t('Send code') ?></button></div>
+        <div class="form-help"><?= $verified ? t('Verified.') : t('Not verified yet. Press "Send code", then enter the code below.') ?> <?= t('A code is also needed when you change the address.') ?></div></div>
+      <div class="form-row" data-code-row<?= $verified ? ' hidden' : '' ?>><label for="fb-code"><?= t('Verification code') ?></label><?= input('code', '', ['id' => 'fb-code', 'inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'placeholder' => '123456']) ?></div>
       <?php else: ?>
       <?= form_row(t('Email'), input('email', (string)$user['email'], ['type' => 'email'])) ?>
       <?php endif; ?>
       <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>
       <?= form_row(t('Location'), input('location', (string)$user['location'])) ?>
-      <?= form_row(t('Signature'), textarea('signature', (string)$user['signature'], ['rows' => 2, 'maxlength' => 300])) ?>
     <?php elseif ($tab === 'avatar'): ?>
       <div class="form-row"><?= avatar($user, 96, false) ?></div>
       <?= form_row(t('Upload a new avatar'), input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It will be cropped to a square.')) ?>

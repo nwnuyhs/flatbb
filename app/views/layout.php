@@ -44,6 +44,9 @@ $unread = notifications_unread();
 <link rel="icon" href="<?= h($fav_url) ?>" type="<?= h($fav_type) ?>">
 <?php if ($fav !== '' && $fav_type === 'image/png'): ?><link rel="apple-touch-icon" href="<?= h($fav_url) ?>"><?php endif; ?>
 <link rel="stylesheet" href="<?= h(asset_url('app.css')) ?>">
+<?php if (uid() <= 0): /* a visitor's choice lives in their browser: read it here, before anything is painted, or the page flashes the other theme */ ?>
+<?= raw(script_tag("try{var t=localStorage.getItem('fb_theme');if(t&&t!==document.documentElement.getAttribute('data-theme'))document.documentElement.setAttribute('data-theme',t);}catch(e){}")) ?>
+<?php endif; ?>
 <?php if (strtolower($brand) !== '#e7672e'): [$br, $bg, $bb] = sscanf($brand, '#%02x%02x%02x'); $hover = sprintf('#%02x%02x%02x', (int)($br * .88), (int)($bg * .88), (int)($bb * .88)); ?>
 <style>:root{--brand:<?= h($brand) ?>;--brand-hover:<?= h($hover) ?>;--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.12)}[data-theme="dark"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}@media (prefers-color-scheme:dark){[data-theme="auto"]{--brand-soft:rgba(<?= (int)$br ?>,<?= (int)$bg ?>,<?= (int)$bb ?>,.16)}}</style>
 <?php endif; ?>
