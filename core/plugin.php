@@ -202,7 +202,12 @@ function plugin_sync(): array
         db_upsert('fb_plugins', $data, ['id']);
     }
     foreach (plugins() as $id => $row) {
-        if (!isset($found[$id])) db_delete('fb_plugins', 'id=?', [$id]);
+        if (isset($found[$id])) continue;
+        // The files are gone (an interrupted upload, a folder lost while copying files, a plugin that cannot be read today).
+        // A plugin that was installed keeps its row: its settings, its on/off state and its data belong to the forum, the list
+        // marks it "file missing", and putting the folder back brings it up exactly as it was. Nothing else is forgotten here.
+        if ((int)($row['installed'] ?? 0) === 1) continue;
+        db_delete('fb_plugins', 'id=?', [$id]);
     }
     plugins(true);
     plugin_assets_build();

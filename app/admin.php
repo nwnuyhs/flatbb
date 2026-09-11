@@ -40,23 +40,27 @@ function admin_security_checks(bool $force = false): array
     // the single-threaded PHP dev server cannot answer a request to itself while it is busy: skip the probes
     if (PHP_SAPI === 'cli-server') return ['at' => now(), 'issues' => debug_mode() ? [t('Debug mode is on (data/config.php): error details are shown to visitors.')] : [], 'skipped' => 'cli-server'];
     // The probe goes to the web server on this machine (http_exec_prefer_local), so a CDN in front cannot fake the answer.
-    $probe = static function (string $path): string {
+    $probe = static function (string $path, bool $public = false): string {
         if (!function_exists('curl_init')) return 'unknown';
         $ch = curl_init(base_url() . $path);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_USERAGENT => 'flatbb-selfcheck']);
-        $body = http_exec_prefer_local($ch, base_url() . $path);
+        $body = $public ? curl_exec($ch) : http_exec_prefer_local($ch, base_url() . $path);
         $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         curl_close($ch);
         if ($code === 0) return 'unknown';
         return (string)$code . (is_string($body) && trim($body) === '' ? ' empty' : '');
     };
+    // Does the loopback answer for this site at all? Several sites on one server, or a proxy in front, can make it answer
+    // from somewhere else, and then every probe below would describe another site. A file that certainly exists here says so.
+    $local = str_starts_with($probe('/assets/app.css'), '200');
     // 403/404 = blocked by the web server; "200 empty" = the PHP guard ran and printed nothing (acceptable)
     $blocked = static fn(string $code): bool => in_array($code, ['403', '404', 'unknown', '200 empty', '403 empty', '404 empty'], true);
-    $r = ['data' => $probe('/data/index.html'), 'core' => $probe('/core/boot.php'), 'plugins' => $probe('/plugins/hello/plugin.php'), 'rewrite' => $probe('/__rewrite_check'), 'at' => now(), 'issues' => []];
+    $r = ['data' => $probe('/data/index.html', !$local), 'core' => $probe('/core/boot.php', !$local), 'plugins' => $probe('/plugins/hello/plugin.php', !$local), 'rewrite' => $probe('/__rewrite_check', !$local), 'at' => now(), 'issues' => [], 'local' => $local];
     if (str_starts_with($r['data'], '200')) $r['issues'][] = t('data/ is reachable over HTTP (contains the configuration and, with SQLite, the database).');
     if (!$blocked($r['core'])) $r['issues'][] = t('core/ and app/ are reachable over HTTP.');
     if (!$blocked($r['plugins'])) $r['issues'][] = t('PHP files under plugins/ can be executed directly.');
-    if (!str_starts_with($r['rewrite'], '200') && $r['rewrite'] !== 'unknown' && rewrite_enabled()) $r['issues'][] = t('Clean URLs are enabled in settings but /__rewrite_check does not answer (HTTP %s); links may be broken.', $r['rewrite']);
+    // rewrite_proven(): this page was opened at a clean URL, so they work here whatever a probe says
+    if (!str_starts_with($r['rewrite'], '200') && $r['rewrite'] !== 'unknown' && rewrite_enabled() && !rewrite_proven()) $r['issues'][] = t('Clean URLs are enabled in settings but /__rewrite_check does not answer (HTTP %s); links may be broken.', $r['rewrite']);
     if (debug_mode()) $r['issues'][] = t('Debug mode is on (data/config.php): error details are shown to visitors.');
     save_settings(['security_check' => json_encode_value($r)]);
     return $r;

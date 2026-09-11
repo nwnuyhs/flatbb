@@ -29,7 +29,7 @@ function admin_page_plugins(): never
                 case 'enable': plugin_enable($id); admin_log('plugin.enable', $id); flash(t('Plugin enabled.')); break;
                 case 'disable': plugin_disable($id); admin_log('plugin.disable', $id); flash(t('Plugin disabled.')); break;
                 case 'uninstall': plugin_uninstall($id); admin_log('plugin.uninstall', $id); flash(t('Plugin uninstalled. Its files are still in plugins/%s.', $id)); break;
-                case 'delete': plugin_uninstall($id); plugin_delete_files($id); admin_log('plugin.delete', $id); flash(t('Plugin removed.')); break;
+                case 'delete': plugin_delete_files($id); admin_log('plugin.delete', $id); flash(t('Files removed. The data of %s stays in the database; installing it again brings it back.', $id)); break; // dropping the data is the other button, on purpose
                 case 'settings':
                     $post = [];
                     foreach ($_POST as $k => $v) if (str_starts_with((string)$k, 'plugin_')) $post[substr((string)$k, 7)] = $v;
@@ -49,15 +49,15 @@ function admin_page_plugins(): never
     foreach (plugins() as $id => $p) {
         $m = $p['manifest'];
         $enabled = (int)$p['enabled'] === 1;
-        $snapshot = is_array($row['manifest'] ?? null) ? $row['manifest'] : json_decode_array((string)($row['manifest'] ?? ''));
+        $snapshot = is_array($p['manifest'] ?? null) ? $p['manifest'] : json_decode_array((string)($p['manifest'] ?? ''));
         $live = $enabled ? plugin_read_manifest($id) : ($snapshot !== [] ? $snapshot + ['id' => $id] : plugin_peek($id)); // a disabled plugin's code never runs: its manifest was read by the tokenizer at scan time
         $has_settings = $live !== null && (!empty($live['settings']) || !empty($live['admin_pages']));
         $update = $live !== null && version_compare((string)$live['version'], (string)$p['version'], '>') ? ' <span class="flag">' . t('%s on enable', $live['version']) . '</span>' : '';
         $menu = [];
         $extra = (string)hook('admin.plugin_ops', '', ['plugin' => $p]);
         if ($extra !== '') $menu[] = $extra;
-        if ((int)$p['installed'] === 1 && !$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('trash') . t('Uninstall (drop data)') . '</button>', ['action' => 'uninstall', 'id' => $id], '', t('Run the uninstall routine of %s? Its tables and data are removed.', $id));
-        if (!$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('x') . t('Remove files') . '</button>', ['action' => 'delete', 'id' => $id], '', t('Delete plugins/%s from disk?', $id));
+        if ((int)$p['installed'] === 1 && !$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('trash') . t('Uninstall (drop data)') . '</button>', ['action' => 'uninstall', 'id' => $id], '', t('Delete everything %s saved in this forum? Its tables are dropped and the content in them (messages, entries, settings) cannot be brought back.', $id));
+        if (!$enabled) $menu[] = action_form($list_url, '<button type="submit" class="danger">' . icon('x') . t('Remove files') . '</button>', ['action' => 'delete', 'id' => $id], '', t('Delete plugins/%s from disk? Its data stays in the database.', $id));
         $rows[] = [
             '<b>' . h($p['name']) . '</b>' . $update . ($live === null ? ' <span class="flag flag-danger">' . t('file missing') . '</span>' : '') . '<br><small class="muted plugin-desc">' . h((string)($m['description'] ?? '')) . '</small>',
             '<span class="mono small">' . h($id) . '</span><br><small class="muted">v' . h((string)$p['version']) . (!empty($m['author']) ? ' · ' . h((string)$m['author']) : '') . '</small>',

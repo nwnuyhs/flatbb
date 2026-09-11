@@ -110,6 +110,21 @@ function rewrite_enabled(): bool
     return setting('rewrite', '0') === '1';
 }
 
+/**
+ * Whether this very request proves that clean URLs work: it arrived at a path of its own instead of through
+ * index.php. Reading the request is the one check no probe can get wrong (a server may answer a request to its
+ * own loopback address from another site, and then the probe 404s while every visitor's link is fine).
+ */
+function rewrite_proven(): bool
+{
+    if (!rewrite_enabled() || get_str('r', 300) !== '') return false;
+    $uri = (string)parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+    $base = base_path();
+    if ($base !== '' && str_starts_with($uri, $base)) $uri = substr($uri, strlen($base));
+    $uri = '/' . ltrim($uri, '/');
+    return $uri !== '/' && !str_starts_with($uri, '/index.php');
+}
+
 /** Build an in-app URL. url('/t/hello-1', ['page' => 2]) */
 function url(string $path = '/', array $params = []): string
 {

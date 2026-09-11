@@ -244,3 +244,71 @@ function test_pending_login_cookie_round_trip(): void
     test_assert(login_pending_user() === null, 'tampered cookie refused');
     login_pending_clear();
 }
+
+/**
+ * A plugin that keeps data in the database must never lose it by accident: its registration survives while its files are
+ * away, and removing the files is not the same as dropping its tables (a forum lost every private message this way).
+ */
+function test_plugin_data_survives_missing_files_and_file_removal(): void
+{
+    $id = 'zz_keep_test';
+    $dir = PLUGIN_DIR . '/' . $id;
+    $table = 'plugin_zz_keep_test_items';
+    $src = "<?php\nif (!defined('FLATBB')) exit;\n"
+        . "function zz_keep_test_install(array \$m): void { db_create_table('{$table}', ['id' => 'id', 'body' => 'string']); }\n"
+        . "function zz_keep_test_uninstall(array \$m): void { db_drop_table('{$table}'); }\n"
+        . "return ['id' => '{$id}', 'name' => 'Keep', 'version' => '1.0.0', 'description' => 'test only',\n"
+        . "    'requires' => ['flatbb' => '0.1.0'], 'install' => 'zz_keep_test_install', 'uninstall' => 'zz_keep_test_uninstall'];\n";
+    $write = static function () use ($dir, $src): void { @mkdir($dir, 0755, true); file_put_contents($dir . '/plugin.php', $src); };
+    $wipe = static function () use ($dir): void { @unlink($dir . '/plugin.php'); @rmdir($dir); };
+    try {
+        $write();
+        plugin_sync();
+        plugin_enable($id);
+        plugin_save_settings($id, ['kept' => 'yes']);
+        db_insert($table, ['body' => 'a private message']);
+        $wipe(); // the folder is gone: an interrupted upload, files replaced by hand, a half-finished update
+        plugin_sync();
+        $row = one('SELECT * FROM fb_plugins WHERE id=?', [$id]);
+        test_assert($row !== null, 'an installed plugin stays registered while its files are missing');
+        test_same('yes', (string)(json_decode_array((string)$row['settings'])['kept'] ?? ''), 'its settings are kept');
+        test_same(1, (int)val("SELECT COUNT(*) FROM `{$table}`"), 'its data is untouched');
+        $write(); // the files come back: it picks up where it was
+        plugin_sync();
+        test_same(1, (int)val('SELECT enabled FROM fb_plugins WHERE id=?', [$id]), 'it is still switched on');
+        plugin_disable($id);
+        plugin_delete_files($id);
+        test_assert(!is_dir($dir), 'the files are gone');
+        test_same(1, (int)val("SELECT COUNT(*) FROM `{$table}`"), 'removing the files leaves the data alone');
+    } finally {
+        $wipe();
+        db_drop_table($table);
+        db_delete('fb_plugins', 'id=?', [$id]);
+        plugins(true);
+    }
+}
+
+/** The request itself tells whether clean URLs work, whatever a probe to the loopback says. */
+function test_rewrite_proven_reads_the_current_request(): void
+{
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    $rewrite = setting('rewrite', '0');
+    try {
+        save_settings(['rewrite' => '1']);
+        foreach (['/admin' => true, '/t/hello-1' => true, '/index.php/admin' => false, '/index.php' => false, '/' => false] as $path => $expected) {
+            $_SERVER['REQUEST_URI'] = $path;
+            test_same($expected, rewrite_proven(), 'rewrite_proven() on ' . $path);
+        }
+        $_SERVER['REQUEST_URI'] = '/index.php?r=/admin';
+        $_GET['r'] = '/admin';
+        test_same(false, rewrite_proven(), 'the index.php?r= fallback proves nothing');
+        unset($_GET['r']);
+        save_settings(['rewrite' => '0']);
+        $_SERVER['REQUEST_URI'] = '/admin';
+        test_same(false, rewrite_proven(), 'nothing to prove when clean URLs are off');
+    } finally {
+        save_settings(['rewrite' => $rewrite]);
+        unset($_GET['r']);
+        $_SERVER['REQUEST_URI'] = $uri;
+    }
+}
