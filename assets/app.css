@@ -617,7 +617,7 @@ body.adrawer-open { overflow: hidden; }
   .cat-stats { flex-direction: row; gap: 12px; }
 }
 @media (max-width: 640px) {
-  .container { padding: 0 12px; }
+  .container { padding: 0 4px; }
   .search-form { display: none; }
   .search-toggle { display: inline-flex; }
   .admin-toolbar .search-form { display: flex; width: 100%; flex: 1 1 100%; }
@@ -635,7 +635,9 @@ body.adrawer-open { overflow: hidden; }
   .editor-toolbar { flex-wrap: wrap; overflow: visible; row-gap: 2px; } /* every button in view: the toolbar wraps instead of scrolling sideways */
   .editor-toolbar .tb-spacer { flex: 1 0 0; }
   .tab { padding: 4px 9px; font-size: var(--font-size-sm); }
-  .topic-rows { margin: 0 -12px; border-inline: 0; border-radius: 0; }
+  .topic-rows { margin: 0 -4px; border-inline: 0; border-radius: 0; }
+  /* inside the list card the rows keep the card's own margin: pulling them out would push them past its frame */
+  .list-card > .topic-rows, .list-card > .post-rows, .list-card > .category-list { margin: 0; }
   .topic-row { gap: 8px; padding: 10px; }
   .row-avatar .avatar { width: 32px; height: 32px; font-size: 14px; }
   .row-title { font-size: 15px; margin-bottom: 5px; }
