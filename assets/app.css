@@ -631,6 +631,10 @@ body.adrawer-open { overflow: hidden; }
   .page-grid { padding-top: 12px; }
   .list-head { margin-bottom: 8px; gap: 8px; }
   .list-card > .list-head { padding: 6px 8px; }
+  /* the New Topic button is a round + on a phone, so the tabs keep the row to themselves */
+  .list-head .btn-primary span { display: none; }
+  .list-head .btn-primary { width: 38px; height: 38px; padding: 0; border-radius: 50%; justify-content: center; }
+  .list-head .btn-primary .icon { width: 20px; height: 20px; }
   .cat-bar { margin: -12px -12px 10px; padding: 0 6px; }
   .editor-toolbar { flex-wrap: wrap; overflow: visible; row-gap: 2px; } /* every button in view: the toolbar wraps instead of scrolling sideways */
   .editor-toolbar .tb-spacer { flex: 1 0 0; }
