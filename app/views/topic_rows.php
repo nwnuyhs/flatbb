@@ -14,9 +14,10 @@
     <div class="row-avatar"><?= avatar($t['user'], 40) ?></div>
     <div class="row-main">
       <h3 class="row-title" dir="auto">
-        <?php if ((int)$t['is_pinned']): ?><span class="row-icon" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
+        <?php if ((int)$t['is_pinned']): ?><span class="row-icon row-icon-pin" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
         <?php if ((int)$t['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
         <a href="<?= h(topic_url($t)) ?>"><?= raw(hook('topic.title', h($t['title']), ['topic' => $t, 'where' => 'list'])) ?></a>
+        <?php if (now() - (int)$t['created_at'] < TOPIC_NEW_FOR): ?><span class="row-new"><?= t('New') ?></span><?php endif; ?>
         <?= slot('topic_list.item.title_suffix', $ctx) ?>
       </h3>
       <div class="row-meta">

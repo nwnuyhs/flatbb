@@ -128,6 +128,7 @@ function category_list(string $slug, string $mode, string $period = 'week'): nev
         'title' => $c['name'], 'tabs' => list_tabs($mode, [], $c), 'sub_tabs' => $sub, 'topics' => $list['topics'],
         'pagination' => pagination($list['pagination'], static fn(int $n): string => url($page_url, $n > 1 ? ['page' => $n] : [])),
         'heading' => $heading, 'empty' => $mode === 'unread' ? t('Nothing unread here.') : t('No topics in this category yet.'),
+        'new' => $mode === 'latest' && $p['page'] === 1 ? topic_list_new_config($list['topics'], $ids) : null,
     ]);
     page($c['name'], $main, ['class' => 'page-list page-category', 'top' => category_bar('category'), 'description' => (string)$c['description'], 'breadcrumbs' => [[t('Categories'), url('/categories')], [$c['name'], '']]]);
 }

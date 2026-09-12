@@ -38,6 +38,9 @@ function api_dispatch(string $action): never
             json_ok(['users' => $rows]);
         case 'unread':
             json_ok(['count' => notifications_unread()]);
+        case 'new_topics': // the pill of a Latest list: topics new or updated after the newest one the page shows
+            $since = get_int('since', 0, 0);
+            json_ok(['count' => $since > 0 ? topic_list_new_count($since, explode(',', get_str('c', 500))) : 0]);
         case 'info':
             json_ok(['name' => setting('site_name'), 'version' => FLATBB_VERSION, 'topics' => site_stats()['topics'] ?? 0, 'users' => site_stats()['users'] ?? 0]);
     }

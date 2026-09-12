@@ -199,6 +199,24 @@
     var row = document.querySelector('[data-code-row]'); if (row) row.hidden = f.value === f.getAttribute('data-verified-value');
   });
 
+  /* ---------- "See N new or updated topics" on a Latest list ---------- */
+  (function () {
+    var box = $('[data-new-topics]'); if (!box) return;
+    var btn = box.querySelector('button'), url = box.getAttribute('data-new-topics');
+    function check() {
+      if (document.hidden) return;
+      request(url).then(function (r) {
+        var n = r && r.ok ? (r.count | 0) : 0;
+        if (n <= 0) return;
+        btn.textContent = n === 1 ? box.getAttribute('data-one') : box.getAttribute('data-many').replace('%d', n);
+        box.hidden = false;
+      });
+    }
+    btn.addEventListener('click', function () { btn.disabled = true; window.location.reload(); });
+    setInterval(check, 60000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  })();
+
   /* ---------- ajax forms ---------- */
   document.addEventListener('submit', function (e) {
     var form = e.target;

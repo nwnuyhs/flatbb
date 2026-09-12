@@ -14,7 +14,7 @@ function home_latest(): never
 {
     $p = topic_list_page();
     $list = topic_list_fetch('', [], 'is_pinned DESC, pinned_at DESC, last_post_at DESC', $p, $p['page'] === 1);
-    topic_list_page_render(t('Latest'), $list, 'latest', static fn(int $n): string => url('/latest', $n > 1 ? ['page' => $n] : []));
+    topic_list_page_render(t('Latest'), $list, 'latest', static fn(int $n): string => url('/latest', $n > 1 ? ['page' => $n] : []), '', ['new' => $p['page'] === 1 ? topic_list_new_config($list['topics']) : null]);
 }
 
 function home_top(string $period = 'week'): never
@@ -95,6 +95,32 @@ function topic_list_fetch(string $where, array $params, string $order, array $p,
     return ['topics' => topic_list_attach($rows), 'pagination' => $pg];
 }
 
+/** What the "See N new or updated topics" pill of a Latest list asks about: the newest activity the page shows, and its categories. */
+function topic_list_new_config(array $topics, array $category_ids = []): array
+{
+    $since = 0;
+    foreach ($topics as $t) $since = max($since, (int)$t['last_post_at']);
+    return ['since' => $since > 0 ? $since : now(), 'cats' => array_values(array_map('intval', $category_ids))];
+}
+
+/**
+ * Topics that became new or got a reply after $since, with the visibility of the lists themselves (hidden categories,
+ * the topic_list.query filter), so a count never reveals a topic the reader could not open. A member's own posts do not count.
+ */
+function topic_list_new_count(int $since, array $category_ids = []): int
+{
+    $conds = ['t.is_deleted=0', 't.last_post_at>?'];
+    $params = [$since];
+    $visible = category_visible_ids();
+    if ($visible !== null) $conds[] = $visible === [] ? '0' : 't.category_id IN (' . implode(',', $visible) . ')';
+    $category_ids = array_values(array_filter(array_map('intval', $category_ids)));
+    if ($category_ids !== []) $conds[] = 't.category_id IN (' . implode(',', $category_ids) . ')';
+    if (uid() > 0) { $conds[] = 't.last_user_id<>?'; $params[] = uid(); }
+    $q = hook('topic_list.query', ['where' => $conds, 'params' => $params], ['where' => '', 'join' => '']);
+    if (is_array($q)) { $conds = array_values((array)($q['where'] ?? $conds)); $params = array_values((array)($q['params'] ?? $params)); }
+    return (int)val('SELECT COUNT(*) FROM fb_topics t WHERE ' . implode(' AND ', $conds), $params);
+}
+
 /** Attach user, last_user, category, tags and (for members) unread flag to topic rows. */
 function topic_list_attach(array $rows): array
 {
@@ -130,7 +156,9 @@ function topic_list_page_render(string $title, array $list, string $active, call
         'pagination' => pagination($list['pagination'], $url_fn),
         'heading' => $opts['heading'] ?? '',
         'empty' => $opts['empty'] ?? t('No topics yet.'),
+        'new' => $opts['new'] ?? null,
     ]);
+    unset($opts['new']);
     page($title, $main, ['class' => 'page-list page-' . $active, 'top' => category_bar($active)] + $opts);
 }
 
