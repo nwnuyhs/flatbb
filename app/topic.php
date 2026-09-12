@@ -139,7 +139,7 @@ function topic_view(string $id): never
     $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} ORDER BY id LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [(int)$topic['id']]);
     $posts = posts_attach($posts, $topic);
     topic_count_view((int)$topic['id']);
-    if ($posts !== []) topic_mark_read((int)$topic['id'], (int)end($posts)['id']);
+    if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max((int)end($posts)['id'], (int)$topic['last_post_id']) : (int)end($posts)['id']);
     $topic['category'] = $cat;
     $topic['tags'] = tags_for_topics([(int)$topic['id']])[(int)$topic['id']] ?? [];
     $topic['user'] = $posts[0]['user'] ?? user_by_id((int)$topic['user_id']);

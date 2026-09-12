@@ -238,7 +238,6 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .topic-row.read .row-title a { color: var(--text-muted); font-weight: 450; }
 .topic-row.read .row-title a:hover { color: var(--brand); }
 .topic-row.unread .row-title a { font-weight: 650; }
-.topic-row.unread .row-title::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-inline-end: 8px; vertical-align: 2px; }
 .row-icon { color: var(--text-subtle); display: inline-flex; vertical-align: -2px; margin-inline-end: 2px; }
 .row-icon .icon { width: 14px; height: 14px; }
 .row-icon-pin { background: linear-gradient(135deg, #fb923c, #ea580c); color: #fff; border-radius: 6px; padding: 3px; vertical-align: -4px; box-shadow: 0 1px 2px rgba(234, 88, 12, .35); }
@@ -637,6 +636,7 @@ body.adrawer-open { overflow: hidden; }
   .page-grid { padding-top: 12px; }
   .list-head { margin-bottom: 8px; gap: 8px; }
   .list-card > .list-head { padding: 6px 8px; }
+  .page-topic .col-main { padding-inline: 8px; }
   /* the New Topic button is a round + on a phone, so the tabs keep the row to themselves */
   .list-head .btn-primary span { display: none; }
   .list-head .btn-primary { width: 38px; height: 38px; padding: 0; border-radius: 50%; justify-content: center; }
