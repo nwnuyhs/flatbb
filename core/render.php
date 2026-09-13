@@ -2,20 +2,40 @@
 /**
  * Rendering: views, the page shell, and small HTML helpers.
  *
- * view('topic_list', $vars)   -> renders app/views/topic_list.php with $vars extracted
+ * view('topic_list', $vars)   -> renders app/views/topic_list.php with $vars extracted (or the active theme's copy, core/theme.php)
  * page($title, $main, $opts)  -> full three-column page (see app/views/layout.php)
  *   $opts: left (html|null=default nav|false=hidden), right (html|null=default cards|false=hidden),
  *          class, description, canonical, robots, breadcrumbs (array of [label,url]), head (extra html),
  *          top (html at the top of the main column, above breadcrumbs: the category bar on list pages)
  */
 
-function view(string $__view, array $__vars = []): string
+function view(string $view, array $vars = []): string
 {
-    $__file = VIEW_DIR . '/' . $__view . '.php';
-    if (!is_file($__file)) throw new RuntimeException('View not found: ' . $__view);
+    $theme = theme_view_file($view); // the active theme's copy (plugins/<id>/views/<name>.php), see core/theme.php
+    if ($theme !== '') {
+        try {
+            return view_render($theme, $vars);
+        } catch (Throwable $e) {
+            theme_view_failed($view, $theme, $e); // a broken theme template never breaks the page: the core template renders instead
+        }
+    }
+    $file = VIEW_DIR . '/' . $view . '.php';
+    if (!is_file($file)) throw new RuntimeException('View not found: ' . $view);
+    return view_render($file, $vars);
+}
+
+/** Include one template file with $vars extracted and return its output (buffers are unwound when it throws). */
+function view_render(string $__file, array $__vars): string
+{
     extract($__vars, EXTR_SKIP);
+    $__level = ob_get_level();
     ob_start();
-    include $__file;
+    try {
+        include $__file;
+    } catch (Throwable $__e) {
+        while (ob_get_level() > $__level) ob_end_clean();
+        throw $__e;
+    }
     return (string)ob_get_clean();
 }
 
@@ -28,6 +48,7 @@ function page(string $title, string $main, array $opts = []): never
     if ($opts['right'] === null) $opts['right'] = view('sidebar_right', ['cards' => sidebar_cards_default()]);
     $html = view('layout', ['title' => $title, 'main' => $main] + $opts);
     $html = (string)hook('page.before_output', $html, ['title' => $title]);
+    $html = theme_preview_inject($html); // the "Previewing theme" bar of an admin, whatever the layout template looks like
     header('Content-Type: text/html; charset=utf-8');
     echo $html;
     exit;
@@ -166,6 +187,7 @@ function icon_paths(): array
         'upload' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>',
         'puzzle' => '<path d="M14 3a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v3h-1.5a1.5 1.5 0 0 0 0 3H20v3a2 2 0 0 1-2 2h-3v-1.5a1.5 1.5 0 0 0-3 0V20H9a2 2 0 0 1-2-2v-3H5.5a1.5 1.5 0 0 1 0-3H7V9a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2z"/>',
         'layout' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+        'palette' => '<path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4.5-4.5 4.5H15a2 2 0 0 0-1.5 3.3A1.4 1.4 0 0 1 12 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="10.5" cy="6.5" r="1"/><circle cx="15.5" cy="7.5" r="1"/>',
         'chart' => '<path d="M18 20V10M12 20V4M6 20v-6"/>',
         'flag' => '<path d="M4 22V4a1 1 0 0 1 1-1h11l-1 4 1 4H5"/>',
         'arrow-left' => '<path d="M19 12H5M12 19l-7-7 7-7"/>',

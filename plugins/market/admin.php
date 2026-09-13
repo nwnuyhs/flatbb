@@ -80,10 +80,10 @@ function market_admin_page(string $page): never
 }
 
 /** Every POST of the page. */
-function market_admin_post(string $tab): never
+function market_admin_post(string $tab, string $back = ''): never
 {
     check_csrf();
-    $back = market_admin_url($tab);
+    $back = $back !== '' ? $back : market_admin_url($tab);
     $id = post_str('id', 40);
     try {
         switch (post_str('action', 20)) {
@@ -91,14 +91,14 @@ function market_admin_post(string $tab): never
             case 'update':
                 $known = isset(plugins()[$id]);
                 $v = market_install($id, post_str('version', 20));
-                flash($known ? t('%s %s installed.', $id, $v) : market_enable_after_install($id, $v)); // an update keeps the on/off state
+                flash(market_installed_message($id, $v, $known)); // an update keeps the on/off state
                 break;
             case 'buy': // get it for points, then install it
                 $r = market_buy($id);
                 if (!$r['ok']) fail($r['message'], $back);
                 $known = isset(plugins()[$id]);
                 $v = market_install($id, post_str('version', 20));
-                flash($r['message'] . ' ' . ($known ? t('%s %s installed.', $id, $v) : market_enable_after_install($id, $v)));
+                flash($r['message'] . ' ' . market_installed_message($id, $v, $known));
                 break;
             case 'refresh':
                 market_list(true);
@@ -169,37 +169,100 @@ function market_tab_browse(array $account): string
     $cards = '';
     foreach ((array)($data['plugins'] ?? []) as $p) {
         $id = (string)($p['id'] ?? '');
-        if (!plugin_id_valid($id)) continue;
+        if (!plugin_id_valid($id) || (string)($p['type'] ?? '') === 'theme') continue; // themes are browsed under Appearance → Themes → Marketplace
         $installed = $local[$id] ?? null;
         $remote_v = (string)($p['version'] ?? '0');
-        $points = (int)($p['points'] ?? 0);
-        $mine = $account !== [] && (in_array($id, $owned, true) || strcasecmp((string)($p['publisher'] ?? ''), (string)$account['username']) === 0);
         $newer = $installed !== null && version_compare($remote_v, (string)$installed['version'], '>');
         if (($kind === 'installed' && $installed === null) || ($kind === 'updates' && !$newer)) continue;
         $shown++;
-        $status = (string)($p['status'] ?? 'certified');
-        $badge = $status === 'certified' ? '<span class="flag flag-success" title="' . h(t('Reviewed by the marketplace')) . '">' . t('Certified') . '</span>' : ($status === 'community' ? '<span class="flag" title="' . h(t('Passed the automatic checks; not reviewed by a person yet')) . '">' . t('Community') . '</span>' : '<span class="flag flag-danger">' . h($status) . '</span>');
-        $badge .= ' ' . market_points_badge($points, $mine);
-        $confirm = $status === 'certified' ? '' : t('%s passed the automatic checks but has not been reviewed by the marketplace yet. Install it?', $id);
-        if ($installed !== null && $newer) {
-            $ops = action_form(market_admin_url('browse'), '<button class="btn btn-sm btn-primary">' . icon('refresh') . t('Update to %s', $remote_v) . '</button>', ['action' => 'update', 'id' => $id, 'version' => $remote_v], '', t('Update %s? Your settings are kept.', $id));
-        } elseif ($installed !== null) {
-            $ops = '<span class="flag flag-success">' . t('installed') . '</span> <a class="btn btn-sm" href="' . h(admin_url('plugins')) . '">' . t('Manage') . '</a>';
-        } elseif ($points <= 0 || $mine) {
-            $ops = action_form(market_admin_url('browse'), '<button class="btn btn-sm btn-primary">' . icon('download') . t('Install') . '</button>', ['action' => 'install', 'id' => $id, 'version' => $remote_v], '', $confirm);
-        } elseif ($account === []) {
-            $ops = '<a class="btn btn-sm" href="' . h(market_admin_url('account')) . '">' . icon('user') . t('Connect account to get it') . '</a>';
-        } else {
-            $have = (int)($account['points'] ?? 0);
-            $ops = action_form(market_admin_url('browse'), '<button class="btn btn-sm btn-primary"' . ($have < $points ? ' disabled title="' . h(t('You have %d points.', $have)) . '"' : '') . '>' . icon('star') . t('Get for %d points and install', $points) . '</button>', ['action' => 'buy', 'id' => $id, 'version' => $remote_v], '', t('Spend %1$d points on %2$s? They go to its author; the plugin is yours for good.', $points, $id))
-                . ($have < $points ? '<small class="muted">' . t('You have %d points.', $have) . '</small>' : '');
-        }
+        $badge = market_item_badges($p, $account);
+        $ops = market_item_ops($p, $installed, $account, market_admin_url('browse'), admin_url('plugins'));
         $cards .= '<div class="plugin-item"><div class="plugin-main"><h3>' . h((string)($p['name'] ?? $id)) . ' ' . $badge . '</h3>'
             . '<div class="plugin-meta"><span>ID ' . h($id) . '</span><span>v' . h($remote_v) . '</span>' . (!empty($p['author']) ? '<span>' . t('by') . ' ' . h((string)$p['author']) . '</span>' : '') . (isset($p['downloads']) ? '<span>' . (int)$p['downloads'] . ' ' . t('installs') . '</span>' : '') . (!empty($p['url']) ? '<a href="' . h((string)$p['url']) . '" target="_blank" rel="noopener">' . t('Website') . '</a>' : '') . '</div>'
             . '<p class="muted">' . h((string)($p['description'] ?? '')) . '</p></div><div class="plugin-ops">' . $ops . '</div></div>';
     }
     if ($shown === 0) $html .= '<div class="empty">' . icon('puzzle') . '<p>' . ($kind === 'updates' ? t('Every installed plugin is up to date.') : t('No plugins found.')) . '</p></div>';
     return $html . $cards . '<p class="muted small market-foot">' . t('Plugins come from %s.', '<a href="' . h(market_site_url('/market')) . '" target="_blank" rel="noopener">' . h((string)parse_url(market_endpoint(), PHP_URL_HOST)) . '</a>') . '</p>';
+}
+
+/** Whether the connected account owns a listing: bought it, or publishes it. */
+function market_item_mine(array $p, array $account): bool
+{
+    return $account !== [] && (in_array((string)($p['id'] ?? ''), (array)($account['purchased'] ?? []), true) || strcasecmp((string)($p['publisher'] ?? ''), (string)($account['username'] ?? '')) === 0);
+}
+
+/** Certified / Community label and the points label of a listing. */
+function market_item_badges(array $p, array $account): string
+{
+    $status = (string)($p['status'] ?? 'certified');
+    $badge = $status === 'certified' ? '<span class="flag flag-success" title="' . h(t('Reviewed by the marketplace')) . '">' . t('Certified') . '</span>' : ($status === 'community' ? '<span class="flag" title="' . h(t('Passed the automatic checks; not reviewed by a person yet')) . '">' . t('Community') . '</span>' : '<span class="flag flag-danger">' . h($status) . '</span>');
+    return $badge . ' ' . market_points_badge((int)($p['points'] ?? 0), market_item_mine($p, $account));
+}
+
+/** The buttons of a listing: Update, installed + Manage ($manage), Install, Connect account, or Get for points. Forms post to $back. */
+function market_item_ops(array $p, ?array $installed, array $account, string $back, string $manage): string
+{
+    $id = (string)$p['id'];
+    $remote_v = (string)($p['version'] ?? '0');
+    $points = (int)($p['points'] ?? 0);
+    $status = (string)($p['status'] ?? 'certified');
+    if ($installed !== null && version_compare($remote_v, (string)$installed['version'], '>')) {
+        return action_form($back, '<button class="btn btn-sm btn-primary">' . icon('refresh') . t('Update to %s', $remote_v) . '</button>', ['action' => 'update', 'id' => $id, 'version' => $remote_v], '', t('Update %s? Your settings are kept.', $id));
+    }
+    if ($installed !== null) return '<span class="flag flag-success">' . t('installed') . '</span> <a class="btn btn-sm" href="' . h($manage) . '">' . t('Manage') . '</a>';
+    if ($points <= 0 || market_item_mine($p, $account)) {
+        return action_form($back, '<button class="btn btn-sm btn-primary">' . icon('download') . t('Install') . '</button>', ['action' => 'install', 'id' => $id, 'version' => $remote_v], '', $status === 'certified' ? '' : t('%s passed the automatic checks but has not been reviewed by the marketplace yet. Install it?', $id));
+    }
+    if ($account === []) return '<a class="btn btn-sm" href="' . h(market_admin_url('account')) . '">' . icon('user') . t('Connect account to get it') . '</a>';
+    $have = (int)($account['points'] ?? 0);
+    return action_form($back, '<button class="btn btn-sm btn-primary"' . ($have < $points ? ' disabled title="' . h(t('You have %d points.', $have)) . '"' : '') . '>' . icon('star') . t('Get for %d points and install', $points) . '</button>', ['action' => 'buy', 'id' => $id, 'version' => $remote_v], '', t('Spend %1$d points on %2$s? They go to its author; the plugin is yours for good.', $points, $id))
+        . ($have < $points ? '<small class="muted">' . t('You have %d points.', $have) . '</small>' : '');
+}
+
+/** What to say after installing: a plugin is switched on, a theme waits for Preview or Activate (an update keeps either state). */
+function market_installed_message(string $id, string $version, bool $known): string
+{
+    if ($known) return t('%s %s installed.', $id, $version);
+    if (function_exists('plugin_is_theme') && plugin_is_theme(plugin_peek($id))) return t('%s %s installed. Preview it or activate it under Installed.', $id, $version);
+    return market_enable_after_install($id, $version);
+}
+
+/** region.admin.themes.tabs: Marketplace next to Installed on Appearance → Themes. */
+function market_themes_tabs(array $tabs, array $ctx): array
+{
+    $tabs['market'] = ['label' => t('Marketplace'), 'url' => url('/admin/ext/market/themes'), 'active' => (string)($ctx['active'] ?? '') === 'market', 'weight' => 10];
+    return $tabs;
+}
+
+/** GET|POST /admin/ext/market/themes — the marketplace's themes as cards, under Appearance → Themes. */
+function market_admin_themes(string $page): never
+{
+    need_admin();
+    $back = url('/admin/ext/market/themes');
+    if (is_post()) market_admin_post('browse', $back);
+    $account = market_account();
+    $q = get_str('q', 60);
+    $data = market_list(false, $q);
+    $local = plugins();
+    $html = tabs(region_list('admin.themes.tabs', ['installed' => ['label' => t('Installed'), 'url' => admin_url('themes'), 'badge' => count(themes()) ?: '', 'weight' => 0]], ['active' => 'market'])) . '<div style="height:12px"></div>'
+        . '<div class="market-filter-row"><form method="get" action="' . h($back) . '" class="search-form market-search">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/themes">') . icon('search') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . h(t('Search')) . '"></form>'
+        . action_form($back, '<button class="icon-btn" type="submit" title="' . h(t('Fetch the list again')) . '">' . icon('refresh') . '</button>', ['action' => 'refresh'], 'inline') . '</div>';
+    if (!empty($data['error'])) $html .= '<div class="flash flash-error">' . t('Could not reach the marketplace: %s', (string)$data['error']) . '</div>';
+    $cards = '';
+    foreach ((array)($data['plugins'] ?? []) as $p) {
+        $id = (string)($p['id'] ?? '');
+        if (!plugin_id_valid($id) || (string)($p['type'] ?? '') !== 'theme') continue;
+        $installed = $local[$id] ?? null;
+        $cover = (string)(((array)($p['images'] ?? []))[0] ?? '');
+        $shot = preg_match('#^https?://#i', $cover) ? '<img src="' . h($cover) . '" alt="" loading="lazy">' : '<span class="market-theme-blank">' . icon('palette') . '</span>';
+        $cards .= '<div class="theme-card' . ($installed !== null && (int)$installed['enabled'] === 1 ? ' is-active' : '') . '"><div class="theme-shot">' . $shot . '</div><div class="theme-body">'
+            . '<h3>' . h((string)($p['name'] ?? $id)) . '</h3><div class="muted small">v' . h((string)($p['version'] ?? '')) . (!empty($p['author']) ? ' · ' . h((string)$p['author']) : '') . (isset($p['downloads']) ? ' · ' . (int)$p['downloads'] . ' ' . t('installs') : '') . '</div>'
+            . '<div class="market-theme-badges">' . market_item_badges($p, $account) . '</div><p class="theme-desc">' . h((string)($p['description'] ?? '')) . '</p>'
+            . '<div class="theme-ops">' . market_item_ops($p, $installed, $account, $back, admin_url('themes')) . '</div></div></div>';
+    }
+    $html .= $cards !== '' ? '<div class="theme-grid">' . $cards . '</div>' : '<div class="empty">' . icon('palette') . '<p>' . ($q !== '' ? t('No themes found.') : t('No themes on the marketplace yet.')) . '</p></div>';
+    $html .= '<p class="muted small market-foot">' . t('Themes come from %s.', '<a href="' . h(market_site_url('/market?type=theme')) . '" target="_blank" rel="noopener">' . h((string)parse_url(market_endpoint(), PHP_URL_HOST)) . '</a>') . '</p>';
+    admin_page(t('Themes'), $html, 'themes');
 }
 
 /** "Free", "50 points", or "Yours" when the connected account has it. */
@@ -256,5 +319,6 @@ function market_css(): string
         . '.market-tabs{margin-bottom:12px}.market-free{background:var(--success-soft,#dcfce7);color:var(--success,#15803d)}.market-paid{background:#fff1e6;color:#c2410c}[data-theme=dark] .market-paid{background:rgba(194,65,12,.25);color:#fdba74}'
         . '.market-account{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;color:var(--text-muted);font-size:var(--font-size-sm);white-space:nowrap}.market-account svg{width:16px;height:16px}.market-account b{color:var(--text)}'
         . '.market-account-card{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2)}.market-account-card>svg{width:28px;height:28px;color:var(--brand);flex:none}.market-account-card>div:first-of-type{flex:1;min-width:200px}.market-account-card .btn-row{margin-inline-start:auto}'
-        . '.plugin-ops small{display:block;text-align:right;margin-top:4px}.plugin-ops .btn[disabled]{opacity:.5;cursor:default}.market-foot{margin-top:14px}';
+        . '.plugin-ops small{display:block;text-align:right;margin-top:4px}.plugin-ops .btn[disabled]{opacity:.5;cursor:default}.market-foot{margin-top:14px}'
+        . '.market-theme-blank{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-subtle)}.market-theme-blank .icon{width:40px;height:40px}.market-theme-badges{margin:2px 0}.theme-ops small{display:block;width:100%}';
 }

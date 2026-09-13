@@ -9,7 +9,7 @@ flatbb 是纯 PHP 8.1+ 的轻量论坛：无框架、无 Composer、无构建；
 | 任务 | 先读 | 只改 |
 | --- | --- | --- |
 | 写或改**插件** | `docs/PLUGIN.md`（规则）、`docs/HOOKS.md`（位置）、`docs/API.md`（函数） | `plugins/<id>/` |
-| 改**外观** | `docs/THEME.md` | `assets/app.css`、`app/views/*.php`，更好的做法是主题插件 |
+| 改**外观** | `docs/THEME.md` | 做成主题：`plugins/<id>/`，manifest 写 `'type' => 'theme'`（`php flatbb theme:new <id>`）；改默认外观本身才动 `assets/app.css`、`app/views/*.php` |
 | 改**核心行为** | `docs/ARCHITECTURE.md` | `core/*.php`、`app/*.php` |
 | 改**数据库** | `docs/DATABASE.md` | `core/schema.php`（核心）或插件的 `install` |
 | 发布插件到官网 | `docs/PUBLISH.md` | `php flatbb plugin:publish <id>` |
@@ -27,6 +27,8 @@ core/              内核，每个文件只管一件事，全部是普通函数
   auth.php         me()/uid()、Cookie、CSRF、用户组、can()、users_by_ids()
   hook.php         hook()/fire()、region()/region_list()/slot()、regions_known()、后台自定义 HTML 块
   plugin.php       插件注册表、manifest、设置表单、启用/停用、资源合并
+  theme.php        主题（type 为 theme 的插件）：同时只启用一个、设计变量、主题样式表、模板覆盖、预览
+  theme_dev.php    theme:new、theme:override（带版本戳的模板副本）、theme:check 规则（仅命令行）
   render.php       view()、page()、icon()、avatar()、pagination()、表单助手、editor()
   markdown.php     md() 安全 Markdown 渲染、md_excerpt()、md_mentions()
   upload.php       附件、头像、图片缩放
@@ -73,6 +75,9 @@ php flatbb plugin:check <id>      # 语法 + 命名规则检查（官网审核�
 php flatbb plugin:sync            # 注册 plugins/ 里的插件
 php flatbb plugin:enable <id>
 php flatbb plugin:publish <id>    # 打包并上传到 www.flatbb.com（需要 FLATBB_TOKEN）
+php flatbb theme:new <id>         # 在 plugins/<id>/ 生成主题骨架（docs/THEME.md）
+php flatbb theme:override <id> <模板>   # 把 app/views/<模板>.php 复制进主题并打上版本戳
+php flatbb theme:check <id>       # plugin:check 加上主题规则
 php flatbb hooks:list > docs/HOOKS.md
 php flatbb api:list   > docs/API.md
 php flatbb cron

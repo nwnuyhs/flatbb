@@ -48,6 +48,7 @@ function admin_page_plugins(): never
     $rows = [];
     foreach (plugins() as $id => $p) {
         $m = $p['manifest'];
+        if (plugin_is_theme(is_array($m) ? $m : [])) continue; // themes have their own page: Appearance → Themes
         $enabled = (int)$p['enabled'] === 1;
         $snapshot = is_array($p['manifest'] ?? null) ? $p['manifest'] : json_decode_array((string)($p['manifest'] ?? ''));
         $live = $enabled ? plugin_read_manifest($id) : ($snapshot !== [] ? $snapshot + ['id' => $id] : plugin_peek($id)); // a disabled plugin's code never runs: its manifest was read by the tokenizer at scan time
@@ -67,7 +68,8 @@ function admin_page_plugins(): never
     }
     // plugins add their tabs here (the Plugin Market adds Marketplace and Account) and draw the same row on their own pages
     $tabs = region_list('admin.plugins.tabs', ['installed' => ['label' => t('Installed'), 'url' => $list_url, 'active' => true, 'badge' => count($rows) ?: '', 'weight' => 0]], ['active' => 'installed']);
-    $html = tabs($tabs) . '<div style="height:12px"></div>' . admin_table([t('Plugin'), t('ID / version'), t('Enabled'), ''], $rows, t('No plugins registered yet. Put a plugin in plugins/<id>/plugin.php and click "Scan plugins folder".'));
+    $html = tabs($tabs) . '<div style="height:12px"></div>' . admin_table([t('Plugin'), t('ID / version'), t('Enabled'), ''], $rows, t('No plugins registered yet. Put a plugin in plugins/<id>/plugin.php and click "Scan plugins folder".'))
+        . (themes() !== [] ? '<p class="muted small">' . t('Themes are listed under %s.', '<a href="' . h(admin_url('themes')) . '">' . t('Appearance → Themes') . '</a>') . '</p>' : '');
     $drawer = null;
     if (get_int('upload', 0) === 1) {
         $body = '<form method="post" action="' . h($list_url) . '" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="action" value="upload">'

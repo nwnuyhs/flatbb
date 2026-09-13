@@ -12,6 +12,9 @@
  *   php flatbb plugin:check <id>       lint + naming rules (what the marketplace checks)
  *   php flatbb plugin:package <id>     build dist/<id>-<version>.zip
  *   php flatbb plugin:publish <id>     package and upload to www.flatbb.com (needs FLATBB_TOKEN; --changelog=, --images=a.png,b.png, --insecure, --confirm-other=1 when an administrator republishes someone else's plugin)
+ *   php flatbb theme:new <id> [--name="My Theme"]   create plugins/<id>/ with a starter theme (docs/THEME.md)
+ *   php flatbb theme:override <id> <template> [--force|--stamp]   copy app/views/<template>.php into the theme with its stamp
+ *   php flatbb theme:check <id>        plugin:check for a theme (tokens, template stamps, screenshot, CSS hints)
  *   php flatbb hooks:list              print every hook/region found in core (used for docs/HOOKS.md)
  *   php flatbb api:list                print core function signatures (used for docs/API.md)
  *   php flatbb lang:sync <code>        create/update lang/<code>.php with every t() string (empty = untranslated)
@@ -40,7 +43,7 @@ $flag = static function (string $name, ?string $default = null) use ($flags): ?s
     return $default;
 };
 $out = static fn(string $s) => fwrite(STDOUT, $s . "\n");
-if (!in_array($cmd, ['help', 'hooks:list', 'api:list', 'lang:sync', 'security:check', 'test', 'plugin:check', 'plugin:package', 'plugin:publish', 'release'], true)) {
+if (!in_array($cmd, ['help', 'hooks:list', 'api:list', 'lang:sync', 'security:check', 'test', 'plugin:check', 'plugin:package', 'plugin:publish', 'release', 'theme:new', 'theme:override', 'theme:check'], true)) {
     if (!is_installed()) exit("flatbb is not installed yet. Open the site in a browser first.\n");
     app_boot();
 }
@@ -64,8 +67,18 @@ switch ($cmd) {
         plugin_disable((string)($args[0] ?? ''));
         $out('disabled ' . $args[0]);
         break;
+    case 'theme:new':
+        foreach (theme_scaffold((string)($args[0] ?? ''), (string)($flag('name') ?? '')) as $f) $out('written ' . $f);
+        $out('Next: edit the tokens in plugin.php, add screenshot.png, run php flatbb theme:check ' . $args[0] . ', then Admin → Appearance → Themes → Scan plugins folder.');
+        break;
+    case 'theme:override':
+        $file = theme_override((string)($args[0] ?? ''), (string)($args[1] ?? ''), $flag('stamp') === '1' ? 'stamp' : ($flag('force') === '1' ? 'force' : ''));
+        $out(($flag('stamp') === '1' ? 'stamped ' : 'written ') . $file);
+        break;
+    case 'theme:check':
     case 'plugin:check':
         $r = plugin_check((string)($args[0] ?? ''));
+        if ($cmd === 'theme:check' && $r['manifest'] !== null && !plugin_is_theme($r['manifest'])) $r['errors'][] = 'plugins/' . $args[0] . " is a plugin, not a theme: add 'type' => 'theme' to its manifest";
         foreach ($r['errors'] as $e) $out('ERROR   ' . $e);
         foreach ($r['warnings'] as $w) $out('WARNING ' . $w);
         $out($r['errors'] === [] ? 'OK ' . $args[0] . ' ' . ($r['manifest']['version'] ?? '') : 'FAILED');

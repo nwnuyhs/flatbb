@@ -228,18 +228,20 @@ function market_dashboard_cards(array $cards, array $ctx): array
 return [
     'id' => 'market',
     'name' => 'Plugin Market',
-    'version' => '2.1.4',
-    'description' => 'Browse, install and update plugins from www.flatbb.com, get plugins that cost points with your account, and publish your own plugins with a changelog and screenshots.',
+    'version' => '2.2.0',
+    'description' => 'Browse, install and update plugins and themes from www.flatbb.com, get the ones that cost points with your account, and publish your own with a changelog and screenshots.',
     'author' => 'flatbb',
     'url' => 'https://www.flatbb.com',
-    'requires' => ['flatbb' => '0.1.49'],
+    'requires' => ['flatbb' => '0.1.89'],
     'admin_pages' => [
         'market' => ['label' => 'Marketplace', 'callback' => 'market_admin_page'],
         'publish' => ['label' => '', 'callback' => 'market_admin_publish'],
+        'themes' => ['label' => '', 'callback' => 'market_admin_themes'],
     ],
     'hooks' => [
         'admin.plugin_ops' => 'market_plugin_ops',
         'region.admin.plugins.tabs' => 'market_plugins_tabs',
+        'region.admin.themes.tabs' => 'market_themes_tabs',
         'region.admin.dashboard.cards' => 'market_dashboard_cards',
     ],
     'assets' => ['css' => ['market_css']],

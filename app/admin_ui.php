@@ -20,6 +20,7 @@ function admin_menu_items(string $active): array
         'tags' => ['label' => t('Tags'), 'icon' => 'tag', 'group' => t('Content')],
         'users' => ['label' => t('Users'), 'icon' => 'users', 'group' => t('Content')],
         'groups' => ['label' => t('Groups'), 'icon' => 'shield', 'group' => t('Content')],
+        'themes' => ['label' => t('Themes'), 'icon' => 'palette', 'group' => t('Appearance')],
         'layout' => ['label' => t('Layout'), 'icon' => 'layout', 'group' => t('Appearance')],
         'settings' => ['label' => t('Settings'), 'icon' => 'settings', 'group' => t('System')],
         'points' => ['label' => t('Points'), 'icon' => 'coin', 'group' => t('System')],

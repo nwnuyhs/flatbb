@@ -8,7 +8,7 @@ Read this file first. It tells you where things are and the rules that keep the 
 | Task | Read | Touch |
 | --- | --- | --- |
 | Build or change a **plugin** | `docs/PLUGIN.md` (rules), `docs/HOOKS.md` (positions), `docs/API.md` (functions) | only `plugins/<id>/` |
-| Change the **look** | `docs/THEME.md` | `assets/app.css`, `app/views/*.php`, or better: a theme plugin |
+| Change the **look** | `docs/THEME.md` | a theme: `plugins/<id>/` with `'type' => 'theme'` (`php flatbb theme:new <id>`); the default look itself: `assets/app.css`, `app/views/*.php` |
 | Change **core behaviour** | `docs/ARCHITECTURE.md` | `core/*.php`, `app/*.php` |
 | Change the **database** | `docs/DATABASE.md` | `core/schema.php` (core) or your plugin's `install` |
 | Publish a plugin to www.flatbb.com | `docs/PUBLISH.md` | `php flatbb plugin:publish <id>` |
@@ -26,6 +26,8 @@ core/              the kernel — small files, one concern each, all plain funct
   auth.php         me()/uid(), cookies, csrf, groups, can(), users_by_ids()
   hook.php         hook()/fire(), region()/region_list()/slot(), regions_known(), admin layout blocks
   plugin.php       plugin registry, manifests, settings schema, enable/disable, asset bundling
+  theme.php        themes (plugins with 'type' => 'theme'): one active, tokens, theme stylesheet, template overrides, preview
+  theme_dev.php    theme:new, theme:override (stamped template copies), theme:check rules (CLI only)
   render.php       view(), page(), icon(), avatar(), pagination(), form helpers, editor()
   markdown.php     md() safe markdown renderer, md_excerpt(), md_mentions()
   upload.php       attachments, avatars, image resizing
@@ -35,7 +37,7 @@ core/              the kernel — small files, one concern each, all plain funct
   devtools.php     plugin_check(), plugin_package(), plugin_publish(), docs generators (CLI only)
 app/               request handlers: one file per area, functions named <area>_<action>()
   home.php category.php tag.php topic.php user.php account.php notification.php search.php api.php setup.php
-  admin.php admin_content.php admin_system.php
+  admin.php admin_content.php admin_system.php admin_theme.php
 app/views/         PHP templates rendered by view('name', $vars). layout.php is the page shell.
 assets/            app.css (CSS variables, three-column grid), app.js (vanilla, data-* driven), favicon.svg
 plugins/<id>/      plugins. plugin.php returns the manifest. hello/ is the reference example.
@@ -77,6 +79,9 @@ php flatbb plugin:check <id>      # lint + naming rules (what the marketplace ch
 php flatbb plugin:sync            # register plugins found in plugins/
 php flatbb plugin:enable <id>
 php flatbb plugin:publish <id>    # package and upload to www.flatbb.com (FLATBB_TOKEN)
+php flatbb theme:new <id>         # starter theme in plugins/<id>/ (docs/THEME.md)
+php flatbb theme:override <id> <template>   # copy app/views/<template>.php into the theme, stamped
+php flatbb theme:check <id>       # plugin:check plus the theme rules
 php flatbb hooks:list > docs/HOOKS.md
 php flatbb api:list   > docs/API.md
 php flatbb lang:sync <code>       # create/refresh lang/<code>.php with every t() string

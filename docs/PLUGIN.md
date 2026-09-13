@@ -48,6 +48,7 @@ Register it once with `php flatbb plugin:sync` or Admin → Plugins → "Scan pl
 | Key | Required | Meaning |
 | --- | --- | --- |
 | `id` | yes | Same as the directory name. |
+| `type` | no | `'theme'` makes the plugin a theme ([THEME.md](THEME.md)): one at a time, managed under Admin → Appearance → Themes, with `tokens`, `screenshot` and template overrides in `views/`. Leave it out for a plugin. |
 | `name`, `version`, `description`, `author` | yes | `version` is semantic `x.y.z`. `description` is for end users: what it does, no tech words. |
 | `url` | no | Homepage or repository. |
 | `requires` | no | `['flatbb' => '0.1.0']` minimum core version. |

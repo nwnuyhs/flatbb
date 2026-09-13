@@ -27,7 +27,7 @@ function plugin_url(string $id, string $file): string
 /** Registered plugins keyed by id (rows from fb_plugins with decoded JSON). */
 function plugins(bool $refresh = false): array
 {
-    if ($refresh) request_cache('plugins', null, true);
+    if ($refresh) foreach (['plugins', 'themes', 'theme_preview'] as $key) request_cache($key, null, true);
     return request_cache('plugins', static function (): array {
         $out = [];
         foreach (all('SELECT * FROM fb_plugins ORDER BY sort,id') as $row) {
@@ -190,7 +190,7 @@ function plugin_sync(): array
         $m = $enabled ? plugin_read_manifest($id) : plugin_peek($id);
         if ($m === null) continue;
         $found[$id] = $m;
-        $snapshot = array_intersect_key($m, array_flip(['name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings']));
+        $snapshot = array_intersect_key($m, array_flip(['type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'tokens', 'screenshot']));
         $existing = plugins()[$id] ?? null;
         // files changed underneath an installed plugin (scan, zip upload, core upgrade): run its install routine for the new version now,
         // because the version stored below is what plugin_enable() compares against later
@@ -232,6 +232,11 @@ function plugin_enable(string $id): void
         $install($m);
     }
     db_update('fb_plugins', ['enabled' => 1, 'installed' => 1, 'version' => (string)$m['version'], 'updated_at' => now()], 'id=?', [$id]);
+    if (plugin_is_theme($m)) { // one theme at a time: the one switched on replaces the previous one
+        foreach (plugins(true) as $other => $row) {
+            if ((string)$other !== $id && (int)$row['enabled'] === 1 && plugin_is_theme(is_array($row['manifest']) ? $row['manifest'] : [])) db_update('fb_plugins', ['enabled' => 0, 'updated_at' => now()], 'id=?', [(string)$other]);
+        }
+    }
     plugins(true);
     plugin_assets_build();
 }
@@ -326,6 +331,7 @@ function plugin_assets_build(): void
         $m = plugin_read_manifest($id);
         if ($m === null) continue;
         foreach (['css', 'js'] as $type) {
+            if ($type === 'css' && plugin_is_theme($m)) continue; // a theme's CSS is its own file, loaded after every plugin's (theme_assets_build)
             foreach ((array)($m['assets'][$type] ?? []) as $src) {
                 $code = '';
                 if (is_string($src) && function_exists($src)) $code = (string)$src();
@@ -336,6 +342,7 @@ function plugin_assets_build(): void
     }
     foreach ($out as $type => $code) @file_put_contents(CACHE_DIR . '/plugins.' . $type, $code, LOCK_EX);
     save_settings(['plugin_assets_hash' => substr(md5($out['css'] . $out['js']), 0, 8)]);
+    theme_assets_build();
 }
 
 function plugin_assets_tag(string $type): string
@@ -354,8 +361,8 @@ function plugin_assets_tag(string $type): string
 
 function plugin_assets_serve(string $type): never
 {
-    $type = $type === 'js' ? 'js' : 'css';
-    $file = CACHE_DIR . '/plugins.' . $type;
+    $type = in_array($type, ['js', 'theme'], true) ? $type : 'css';
+    $file = CACHE_DIR . '/' . ($type === 'theme' ? 'theme.css' : 'plugins.' . $type);
     header('Content-Type: ' . ($type === 'js' ? 'application/javascript' : 'text/css') . '; charset=utf-8');
     header('Cache-Control: public, max-age=31536000, immutable');
     echo is_file($file) ? file_get_contents($file) : '';

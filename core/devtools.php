@@ -52,6 +52,8 @@ function plugin_check(string $id): array
     preg_match_all('/db_create_table\(\s*[\'"]([a-z0-9_]+)[\'"]/', $src, $tables);
     foreach ($tables[1] as $t) if (!str_starts_with($t, 'plugin_' . $id . '_')) $errors[] = 'Table ' . $t . ' must be named plugin_' . $id . '_*';
     foreach (security_scan(security_files(plugin_path($id))) as $f) $errors[] = $f;
+    if (plugin_is_theme($m)) { [$te, $tw] = theme_check($id, $m); $errors = array_merge($errors, $te); $warnings = array_merge($warnings, $tw); } // core/theme_dev.php
+    elseif (isset($m['type']) && $m['type'] !== 'plugin') $errors[] = 'type must be "theme" or left out (a plugin), got "' . (is_scalar($m['type']) ? (string)$m['type'] : '?') . '"';
     if (preg_match('/(foreach|for|while)\s*\([^)]*\)\s*\{[^}]*\b(q|one|val|all)\s*\(/s', $src)) $warnings[] = 'Possible database query inside a loop (N+1). Batch with rows_by_ids()/IN (...)';
     $installed = version_compare((string)FLATBB_VERSION, (string)($m['requires']['flatbb'] ?? '0'), '>=');
     if (!$installed) $warnings[] = 'requires flatbb ' . $m['requires']['flatbb'] . ' but this is ' . FLATBB_VERSION;
@@ -84,11 +86,11 @@ function plugin_package(string $id): string
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS));
     foreach ($it as $f) {
         $rel = str_replace('\\', '/', substr($f->getPathname(), strlen($dir) + 1));
-        if (preg_match('#(^|/)(\.git|node_modules|\.DS_Store|\.idea)(/|$)#', $rel)) continue;
+        if (preg_match('#(^|/)(\.git|node_modules|\.DS_Store|\.idea)(/|$)#', $rel) || str_ends_with($rel, '.bak')) continue; // .bak: copies theme:override --force kept
         $zip->addFile($f->getPathname(), $id . '/' . $rel);
     }
     // by-product for tools and services that read metadata without PHP; plugin.php stays the source of truth
-    $meta = array_intersect_key($r['manifest'], array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'assets', 'csrf_exempt']));
+    $meta = array_intersect_key($r['manifest'], array_flip(['id', 'type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'assets', 'csrf_exempt', 'tokens', 'screenshot']));
     $zip->addFromString($id . '/plugin.json', json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
     $zip->close();
     return $file;
@@ -115,7 +117,7 @@ function plugin_publish(string $id, string $token, string $changelog = '', strin
     $ch = curl_init($endpoint);
     $fields = [
         'id' => $id, 'version' => (string)$m['version'], 'changelog' => $changelog, 'readme' => $readme,
-        'manifest' => json_encode_value(array_intersect_key($m, array_flip(['id', 'name', 'version', 'description', 'author', 'url', 'requires']))),
+        'manifest' => json_encode_value(array_intersect_key($m, array_flip(['id', 'type', 'name', 'version', 'description', 'author', 'url', 'requires']))),
         'flatbb_version' => FLATBB_VERSION,
         'confirm_other' => $confirm_other ? '1' : '0', // a marketplace administrator publishing another developer's id must say so
         'file' => new CURLFile($zip, 'application/zip', basename($zip)),

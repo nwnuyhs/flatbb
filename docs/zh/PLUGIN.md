@@ -46,6 +46,7 @@ return [
 | 键 | 必需 | 含义 |
 | --- | --- | --- |
 | `id` | 是 | 与目录名相同 |
+| `type` | 否 | 写 `'theme'` 表示这是主题（见 THEME.md）：同时只启用一个，在后台 外观 → 主题 管理，可带 `tokens`、`screenshot` 和 `views/` 模板覆盖。插件不写。 |
 | `name`、`version`、`description`、`author` | 是 | `version` 为语义化 `x.y.z`；`description` 面向普通用户，只说功能，不写技术词 |
 | `url` | 否 | 主页或仓库 |
 | `requires` | 否 | `['flatbb' => '0.1.0']` 最低核心版本 |
