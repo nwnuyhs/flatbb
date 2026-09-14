@@ -41,6 +41,7 @@ function routes_core(): array
         '~^/t/(?:[^/]*-)?(\d+)$' => 'topic_view',
         '/new-topic' => 'topic_new',
         '/t/{id}/reply' => 'topic_reply',
+        '/t/{id}/unread' => 'topic_unread',
         '/t/{id}/edit' => 'topic_edit',
         '/t/{id}/action' => 'topic_action',
         '/t/{id}/bookmark' => 'topic_bookmark',
@@ -235,6 +236,12 @@ function topic_url(array $topic, int $page = 1, int $post_id = 0): string
 {
     $u = url('/t/' . ($topic['slug'] !== '' ? $topic['slug'] . '-' : '') . (int)$topic['id'], $page > 1 ? ['page' => $page] : []);
     return $post_id > 0 ? $u . '#post-' . $post_id : $u;
+}
+
+/** Where a list sends a member for a topic they have partly read: the first post they have not read (topic_unread()). */
+function topic_unread_url(array $topic): string
+{
+    return url('/t/' . (int)$topic['id'] . '/unread');
 }
 
 function category_url(array $category): string

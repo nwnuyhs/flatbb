@@ -1,6 +1,6 @@
 <?php
 /**
- * One post in the stream. Variables: post, topic.
+ * One post in the stream. Variables: post, topic, head (the opening post on its page: title, stats, tools and header region html from topic.php).
  * In-loop slots (no DB in hooks): post.before, post.content_after, post.actions (list), post.after
  */
 $u = $post['user'];
@@ -23,24 +23,29 @@ if (uid() > 0 && !$deleted) {
 if ($deleted && is_mod()) $actions['restore'] = ['html' => action_form(url('/post/' . $post['id'] . '/delete'), '<button type="submit" class="act">' . icon('refresh') . '<span>' . t('Restore') . '</span></button>', ['action' => 'restore'], 'inline')];
 $actions['link'] = ['html' => '<a class="act" href="' . h(url('/post/' . $post['id'])) . '" data-copy="' . h(absolute_url('/post/' . $post['id'])) . '" title="' . t('Copy link to this post') . '">' . icon('link') . '<span>' . t('Link') . '</span></a>'];
 $actions = region_list('post.actions', $actions, $ctx);
+$head = $head ?? null;
 ?>
 <?= slot('post.before', $ctx) ?>
 <article class="post<?= $deleted ? ' deleted' : '' ?><?= (int)$post['floor'] === 0 ? ' first' : '' ?>" id="post-<?= (int)$post['id'] ?>" data-post-id="<?= (int)$post['id'] ?>" data-floor="<?= (int)$post['floor'] ?>" data-slot="post">
+  <?php if ($head): ?><header class="topic-head" data-slot="topic.header"><?= raw((string)$head['title']) ?></header><?php endif; ?>
   <header class="post-head">
     <div class="post-avatar"><?= avatar($u, 40) ?></div>
     <div class="post-who">
       <div class="post-name">
         <?= user_link($u) ?>
+        <?php if ((int)$post['floor'] > 0 && (int)$post['user_id'] > 0 && (int)$post['user_id'] === (int)($topic['user_id'] ?? 0)): ?><span class="flag flag-op" title="<?= t('Topic author') ?>"><?= t('OP') ?></span><?php endif; ?>
         <?php $g = $u ? group_by_id((int)$u['group_id']) : null; if ($g && ((int)$g['is_admin'] || (int)$g['is_mod'])): ?><span class="flag" style="<?= !empty($g['color']) ? 'color:' . h($g['color']) : '' ?>"><?= h($g['name']) ?></span><?php endif; ?>
       </div>
       <div class="post-meta">
         <a class="post-time" href="<?= h(url('/post/' . $post['id'])) ?>"><?= time_tag((int)$post['created_at']) ?></a>
         <?php if ((int)$post['edit_count'] > 0): ?><span class="post-edited" title="<?= t('Edited %s', human_time((int)$post['edited_at'])) ?>"><?= icon('edit') ?> <?= t('edited') ?></span><?php endif; ?>
         <?= slot('post.meta', $ctx) ?>
+        <?php if ($head): ?><span class="topic-meta"><?= raw((string)$head['stats']) ?></span><?php endif; ?>
       </div>
     </div>
     <span class="post-floor">#<?= (int)$post['floor'] + 1 ?></span>
   </header>
+  <?php if ($head): ?><?= raw((string)$head['region']) ?><?php endif; ?>
   <div class="post-body">
     <?php if ($post['reply_to']): ?>
       <a class="reply-quote" href="#post-<?= (int)$post['reply_to']['id'] ?>"><?= icon('reply') ?><b><?= h($post['reply_to']['user']['username'] ?? t('deleted')) ?></b><span><?= h($post['reply_to']['excerpt']) ?></span></a>
@@ -57,6 +62,7 @@ $actions = region_list('post.actions', $actions, $ctx);
     <?= slot('post.content_after', $ctx) ?>
     <footer class="post-actions" data-slot="post.actions">
       <?php foreach ($actions as $a): ?><?= raw($a['html'] ?? '') ?><?php endforeach; ?>
+      <?php if ($head): ?><?= raw((string)$head['tools']) ?><?php endif; ?>
     </footer>
   </div>
 </article>

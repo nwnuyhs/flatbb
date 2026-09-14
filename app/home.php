@@ -140,6 +140,7 @@ function topic_list_attach(array $rows): array
         $t['category'] = category_by_id((int)$t['category_id']);
         $t['tags'] = $tags[(int)$t['id']] ?? [];
         $t['unread'] = uid() > 0 && (int)$t['last_post_at'] > (int)(me()['created_at'] ?? 0) && (!isset($reads[(int)$t['id']]) || $reads[(int)$t['id']] < (int)$t['last_post_id']);
+        $t['read_post_id'] = $reads[(int)$t['id']] ?? 0; // partly read and unread: the title links to the first unread post
     }
     unset($t);
     return (array)hook('topic_list.rows', $rows, []);

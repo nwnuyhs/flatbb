@@ -290,16 +290,29 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .topic-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: 10px; }
 .topic-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .topic-tools .inline { display: inline; }
+/* page 1: the title, the numbers and the topic's buttons live inside the opening post */
+.post.first .topic-head { margin: 0 0 14px; }
+.post.first .topic-title { margin: 0; }
+.post-meta { flex-wrap: wrap; row-gap: 3px; }
+.post-meta .topic-meta { display: inline-flex; align-items: center; gap: 10px; margin: 0; font-size: inherit; color: inherit; flex-wrap: wrap; }
+.post-meta .topic-meta .stat { display: inline-flex; align-items: center; gap: 3px; }
+.post-meta .topic-meta .icon { width: 13px; height: 13px; }
+.post-meta .topic-meta .cat-badge { font-size: inherit; font-weight: 500; }
+.post-actions .topic-tools { margin-inline-start: auto; gap: 6px; }
 .dropdown-form { padding: 4px 6px; }
 .post-stream { display: flex; flex-direction: column; gap: 12px; }
 .post { display: block; padding: var(--post-pad, 16px); background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, var(--shadow)); scroll-margin-top: calc(var(--topbar-h) + 12px); }
 
 .post.deleted { opacity: .7; border-style: dashed; }
 .post.highlight { animation: highlight 2.5s ease-out; }
+.post[id^="post-"], .posts-new-line { scroll-margin-top: calc(var(--topbar-h) + 12px); } /* a linked post is not hidden under the sticky top bar */
+.posts-new-line { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; }
+.posts-new-line::before, .posts-new-line::after { content: ""; flex: 1; height: 1px; background: var(--brand); opacity: .45; }
 @keyframes highlight { 0% { box-shadow: 0 0 0 3px var(--brand); } 100% { box-shadow: var(--shadow); } }
 /* post header: avatar on the left, name above the meta line; the body below runs the full width */
 .post-body { min-width: 0; }
 .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.flag.flag-op { background: var(--brand-soft); color: color-mix(in srgb, var(--brand) 50%, var(--text)); font-weight: 600; } /* two classes: a theme restyling .flag keeps the label in the brand colour */
 .post-avatar { flex: none; }
 .post-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .post-name { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-md); line-height: 1.3; min-width: 0; }
@@ -669,6 +682,13 @@ body.adrawer-open { overflow: hidden; }
   .post-avatar .avatar { width: 36px; height: 36px; font-size: 15px; }
   .act span, .tb-preview span { display: none; }
   .act[data-like] span { display: inline; }
+  .post-actions { gap: 0; }
+  .act { padding: 4px 5px; }
+  /* the opening post: Bookmark, Share and the other topic buttons become icons like the actions beside them, all on the same row */
+  .post-actions .topic-tools { gap: 0; flex-wrap: nowrap; }
+  .post-actions .topic-tools .btn { padding: 4px 5px; border-color: transparent; background: none; box-shadow: none; color: var(--text-subtle); }
+  .post-actions .topic-tools .btn.active { color: var(--brand); }
+  .post-actions .topic-tools .btn span { display: none; }
   .profile-head { grid-template-columns: auto 1fr; gap: 4px 12px; padding: 14px; }
   .profile-head .avatar { width: 56px; height: 56px; font-size: 22px; }
   .profile-side { grid-column: 1 / -1; flex-wrap: wrap; margin-top: 6px; }

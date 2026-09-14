@@ -139,6 +139,7 @@ function topic_view(string $id): never
     $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} ORDER BY id LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [(int)$topic['id']]);
     $posts = posts_attach($posts, $topic);
     topic_count_view((int)$topic['id']);
+    $prev_read = uid() > 0 ? (int)(val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [uid(), (int)$topic['id']]) ?? 0) : 0; // before this visit moves it
     if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max((int)end($posts)['id'], (int)$topic['last_post_id']) : (int)end($posts)['id']);
     $topic['category'] = $cat;
     $topic['tags'] = tags_for_topics([(int)$topic['id']])[(int)$topic['id']] ?? [];
@@ -146,7 +147,7 @@ function topic_view(string $id): never
     $topic['bookmarked'] = uid() > 0 && (bool)val('SELECT 1 FROM fb_bookmarks WHERE user_id=? AND topic_id=?', [uid(), (int)$topic['id']]);
     $topic = hook('topic.view', $topic, ['posts' => $posts]);
     $main = view('topic', [
-        'topic' => $topic, 'posts' => $posts, 'page' => $pg,
+        'topic' => $topic, 'posts' => $posts, 'page' => $pg, 'new_from' => topic_new_from($posts, $prev_read),
         'pagination' => pagination($pg, static fn(int $n): string => topic_url($topic, $n)),
         'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '' && ($hold = post_hold(me() ?? [])) === [],
         'reply_denied' => uid() > 0 ? topic_reply_denied($topic) : '',
@@ -154,6 +155,40 @@ function topic_view(string $id): never
     ]);
     $right = view('sidebar_topic', ['topic' => $topic, 'cards' => region_list('topic.sidebar.cards', ['author' => view('card_author', ['user' => $topic['user']]), 'related' => view('card_related', ['topics' => topic_related($topic)])], ['topic' => $topic])]);
     page($topic['title'], $main, ['class' => 'page-topic', 'right' => $right, 'description' => md_excerpt((string)($posts[0]['body'] ?? '')), 'canonical' => absolute_url('/t/' . $topic['slug'] . '-' . $topic['id'], $pg['page'] > 1 ? ['page' => $pg['page']] : []), 'breadcrumbs' => $cat ? [[$cat['name'], category_url($cat)]] : []]);
+}
+
+/**
+ * GET /t/{id}/unread: the page of the first post the member has not read, scrolled to the "New replies" line above it (the way Discourse and Flarum do). A topic opened only on its first page stayed
+ * unread for good when the new replies were on a later page. Nothing read yet, all read, a visitor or no access: the topic itself.
+ */
+function topic_unread(string $id): never
+{
+    $topic = topic_by_id((int)$id);
+    if ($topic === null) not_found();
+    $cat = category_by_id((int)$topic['category_id']);
+    $visible = ((int)$topic['is_deleted'] === 0 || is_mod()) && ($cat === null || category_can_view($cat)) && topic_access_denied($topic) === '';
+    $target = $visible ? topic_first_unread($topic, uid()) : null;
+    redirect($target !== null ? topic_url($topic, $target['page']) . '#new' : topic_url($topic)); // #new: the "New replies" line on that page
+}
+
+/** The first post on this page the member had not read before this visit (the "New replies" line goes above it); 0 when none or never opened. */
+function topic_new_from(array $posts, int $prev_read): int
+{
+    if ($prev_read <= 0) return 0;
+    foreach ($posts as $p) if ((int)$p['id'] > $prev_read && empty($p['is_deleted'])) return (int)$p['id'];
+    return 0;
+}
+
+/** ['post_id' => …, 'page' => …] of the first post $uid has not read in $topic, or null (never opened, nothing unread, a visitor). */
+function topic_first_unread(array $topic, int $uid): ?array
+{
+    if ($uid <= 0) return null;
+    $read = (int)(val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [$uid, (int)$topic['id']]) ?? 0);
+    if ($read <= 0) return null;
+    $first = (int)(val('SELECT MIN(id) FROM fb_posts WHERE topic_id=? AND is_deleted=0 AND id>?', [(int)$topic['id'], $read]) ?? 0);
+    if ($first <= 0) return null;
+    $before = (int)val('SELECT COUNT(*) FROM fb_posts WHERE topic_id=? AND is_deleted=0 AND id<?', [(int)$topic['id'], $first]);
+    return ['post_id' => $first, 'page' => intdiv($before, max(5, min(100, (int)setting('posts_per_page', '20')))) + 1];
 }
 
 /** Why the visitor may not reply to this topic, '' when they may (hook topic.can_reply); moderators and the author always pass. */

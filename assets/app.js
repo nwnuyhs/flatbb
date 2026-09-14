@@ -244,7 +244,19 @@
         bb.querySelector('span').textContent = r.bookmarked ? 'Bookmarked' : 'Bookmark';
         return;
       }
-      if (r.redirect) { window.location.href = r.redirect; if (r.redirect.indexOf('#') > -1) window.location.reload(); return; }
+      if (r.redirect) {
+        // a new reply: the old code changed the hash and reloaded at once, so the browser kept the old scroll position (same page)
+        // or the reload cut the navigation short (next page). Same page: reload without restoring the scroll; another page: go there.
+        var to = new URL(r.redirect, location.href);
+        if (to.hash && to.pathname === location.pathname && to.search === location.search) {
+          try { history.scrollRestoration = 'manual'; } catch (x) {}
+          history.replaceState(null, '', to.pathname + to.search + to.hash);
+          window.location.reload();
+        } else {
+          window.location.href = to.href;
+        }
+        return;
+      }
       window.location.reload();
     });
   });
@@ -585,8 +597,16 @@
   /* ---------- misc ---------- */
   var flash = $('[data-flash]');
   if (flash) setTimeout(function () { flash.classList.add('fade'); }, 4000);
-  if (location.hash && location.hash.indexOf('#post-') === 0) {
-    var target = $(location.hash); if (target) target.classList.add('highlight');
+  var target = location.hash === '#new' ? $('#new') : (location.hash.indexOf('#post-') === 0 ? $(location.hash) : null);
+  if (target) {
+    {
+      if (target.classList.contains('post')) target.classList.add('highlight'); // a linked or new post flashes; the "New replies" line is enough on its own
+      // bring the post under the top bar now and again once pictures above it have loaded, unless the reader has scrolled meanwhile
+      var moved = false, land = function () { if (!moved) target.scrollIntoView({ block: 'start' }); };
+      ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { moved = true; }, { once: true, passive: true }); });
+      land();
+      window.addEventListener('load', land, { once: true });
+    }
   }
   // keep unread badge fresh every 60s
   if (FB.uid) setInterval(function () {

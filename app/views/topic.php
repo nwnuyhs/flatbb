@@ -1,31 +1,32 @@
 <?php
 /**
- * Topic page. Variables: topic, posts, page, pagination, can_reply.
+ * Topic page. Variables: topic, posts, page, pagination, can_reply, new_from.
  * Regions: topic.header, topic.actions, topic.replies_after, composer.extra
+ * On the page that holds the opening post, the title, the topic's numbers, its buttons and the topic.header region sit inside
+ * that post (post.php receives them as `head`), so the title and what it introduces read as one card. Later pages keep a
+ * compact header above the replies.
  */
 $me = me();
 $manage = can_manage_topic($topic);
 $first = $posts[0] ?? null;
-$can_edit_topic = $first !== null && (int)$first['floor'] === 0 && can_edit_post($first);
+$merge = $first !== null && (int)$first['floor'] === 0;
 $actions = [];
 if ($me) $actions['bookmark'] = ['html' => action_form(url('/t/' . $topic['id'] . '/bookmark'), '<button type="submit" class="btn btn-sm' . ($topic['bookmarked'] ? ' active' : '') . '" data-bookmark>' . icon('bookmark') . '<span>' . ($topic['bookmarked'] ? t('Bookmarked') : t('Bookmark')) . '</span></button>', [], 'inline')];
-if ($can_edit_topic) $actions['edit'] = ['html' => '<a class="btn btn-sm" href="' . h(url('/t/' . $topic['id'] . '/edit')) . '">' . icon('edit') . '<span>' . t('Edit') . '</span></a>'];
+// Edit is not repeated here: the opening post carries its own Edit, which opens the topic editor
 $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
-?>
-<article class="topic-page" data-topic-id="<?= (int)$topic['id'] ?>">
-  <header class="topic-head" data-slot="topic.header">
+ob_start(); ?>
     <h1 class="topic-title" dir="auto">
       <?php if ((int)$topic['is_pinned']): ?><span class="row-icon row-icon-pin" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
       <?php if ((int)$topic['is_locked']): ?><span class="row-icon" title="<?= t('Locked') ?>"><?= icon('lock') ?></span><?php endif; ?>
       <?= raw(hook('topic.title', h($topic['title']), ['topic' => $topic, 'where' => 'page'])) ?>
     </h1>
-    <div class="topic-meta">
+<?php $title_html = (string)ob_get_clean(); ob_start(); ?>
       <?= category_badge($topic['category']) ?>
-      <span class="stat"><?= icon('reply') ?><?= (int)$topic['reply_count'] ?></span>
-      <span class="stat"><?= icon('eye') ?><?= (int)$topic['view_count'] ?></span>
-      <span class="stat"><?= icon('heart') ?><?= (int)$topic['like_count'] ?></span>
+      <span class="stat" title="<?= t('Replies') ?>"><?= icon('reply') ?><?= (int)$topic['reply_count'] ?></span>
+      <span class="stat" title="<?= t('Views') ?>"><?= icon('eye') ?><?= (int)$topic['view_count'] ?></span>
+      <?php if (!$merge): ?><span class="stat"><?= icon('heart') ?><?= (int)$topic['like_count'] ?></span><?php endif; ?>
       <?php if ((int)$topic['is_deleted']): ?><span class="flag flag-danger"><?= t('Deleted') ?></span><?php endif; ?>
-    </div>
+<?php $stats_html = (string)ob_get_clean(); ob_start(); ?>
     <div class="topic-tools" data-slot="topic.actions">
       <?php foreach ($actions as $a): ?><?= raw($a['html'] ?? '') ?><?php endforeach; ?>
       <?php if (is_mod() || $manage): ?>
@@ -47,10 +48,18 @@ $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
       </div>
       <?php endif; ?>
     </div>
+<?php $tools_html = (string)ob_get_clean(); $header_region = region('topic.header', ['topic' => $topic]); ?>
+<article class="topic-page<?= $merge ? ' topic-merged' : '' ?>" data-topic-id="<?= (int)$topic['id'] ?>">
+  <?php if (!$merge): ?>
+  <header class="topic-head" data-slot="topic.header">
+    <?= raw($title_html) ?>
+    <div class="topic-meta"><?= raw($stats_html) ?></div>
+    <?= raw($tools_html) ?>
   </header>
-  <?= region('topic.header', ['topic' => $topic]) ?>
+  <?= raw($header_region) ?>
+  <?php endif; ?>
   <div class="post-stream" data-slot="topic.posts">
-    <?php foreach ($posts as $p): ?><?= view('post', ['post' => $p, 'topic' => $topic]) ?><?php endforeach; ?>
+    <?php foreach ($posts as $p): ?><?php if ((int)$p['id'] === (int)($new_from ?? 0)): ?><div class="posts-new-line" id="new"><span><?= t('New replies') ?></span></div><?php endif; ?><?= view('post', ['post' => $p, 'topic' => $topic, 'head' => $merge && (int)$p['floor'] === 0 ? ['title' => $title_html, 'stats' => $stats_html, 'tools' => $tools_html, 'region' => $header_region] : null]) ?><?php endforeach; ?>
   </div>
   <?= raw($pagination) ?>
   <?= region('topic.replies_after', ['topic' => $topic]) ?>
