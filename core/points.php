@@ -173,18 +173,47 @@ function points_public(array $user): bool
     return (int)(json_decode_array((string)($user['prefs'] ?? ''))['show_points'] ?? 1) === 1;
 }
 
-/** HTML list of history rows (the /points page, Settings → Points and the admin user drawer). */
-function points_log_html(array $rows, string $empty = ''): string
+/**
+ * HTML list of history rows (the /points page, Settings → Points and the admin user drawer): an icon for earned or spent,
+ * what happened and where with the time under it, the amount in a column of its own. $by_day puts a Today / Yesterday /
+ * date line above each day.
+ */
+function points_log_html(array $rows, string $empty = '', bool $by_day = false): string
 {
     if ($rows === []) return '<div class="empty">' . icon('coin') . '<p>' . h($empty !== '' ? $empty : t('No points activity yet.')) . '</p></div>';
     $h = '<ul class="points-log">';
+    $day = '';
+    $today = date('Y-m-d', now());
+    $yesterday = date('Y-m-d', now() - 86400);
     foreach ($rows as $r) {
         $d = (int)$r['delta'];
-        $what = h((string)($r['label'] ?? points_label((string)$r['reason'])));
+        $at = (int)$r['created_at'];
+        if ($by_day && ($key = date('Y-m-d', $at)) !== $day) {
+            $day = $key;
+            $h .= '<li class="points-day">' . ($key === $today ? t('Today') : ($key === $yesterday ? t('Yesterday') : time_tag($at, 'date'))) . '</li>';
+        }
+        $reason = (string)$r['reason'];
+        $what = h((string)($r['label'] ?? points_label($reason)));
         $title = (string)($r['title'] ?? '');
         $url = (string)($r['url'] ?? '');
         $sub = $title !== '' ? cut($title, 60) : (string)($r['note'] ?? '');
-        $h .= '<li><span class="points-what">' . ($url !== '' ? '<a href="' . h($url) . '">' . $what . '</a>' : $what) . ($sub !== '' ? ' <small class="muted">· ' . h($sub) . '</small>' : '') . '</span><b class="' . ($d >= 0 ? 'up' : 'down') . '">' . ($d > 0 ? '+' : '') . $d . '</b><small>' . time_tag((int)$r['created_at']) . '</small></li>';
+        $h .= '<li><span class="points-icon ' . ($d >= 0 ? 'up' : 'down') . '">' . icon(points_icon($reason, $d)) . '</span>'
+            . '<span class="points-what">' . ($url !== '' ? '<a href="' . h($url) . '">' . $what . '</a>' : $what) . '<small>' . ($sub !== '' ? h($sub) . ' · ' : '') . time_tag($at) . '</small></span>'
+            . '<b class="' . ($d >= 0 ? 'up' : 'down') . '">' . ($d >= 0 ? '+' : '−') . abs($d) . '</b></li>';
     }
     return $h . '</ul>';
+}
+
+/** The icon of a history line, by reason; plugins answer for their own reasons through the points.icon filter. Memory only. */
+function points_icon(string $reason, int $delta): string
+{
+    $map = ['like' => 'heart', 'liked' => 'heart', 'unlike' => 'heart', 'topic' => 'message', 'reply' => 'reply', 'checkin' => 'check', 'manual' => 'shield'];
+    $icon = $map[$reason] ?? match (true) {
+        str_starts_with($reason, 'task') => 'flag',
+        str_starts_with($reason, 'invite') => 'users',
+        str_starts_with($reason, 'reward'), str_starts_with($reason, 'qa_') => 'star',
+        str_starts_with($reason, 'tip') => 'coin',
+        default => $delta >= 0 ? 'plus' : 'coin',
+    };
+    return (string)hook('points.icon', $icon, ['reason' => $reason, 'delta' => $delta]);
 }

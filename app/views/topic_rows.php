@@ -1,7 +1,7 @@
 <?php
 /**
  * Topic rows: avatar, title, one meta line under the title, category tag on the right.
- * Variables: topics, empty.
+ * Variables: topics, empty, hide_author (a member's own list on their profile: no avatar and name repeated on every row).
  * In-loop slots and filters (no DB queries allowed in their hooks): topic.title, topic_list.item.title_suffix, topic_list.item.meta, topic_list.item.after
  */
 ?>
@@ -11,7 +11,7 @@
 <?php endif; ?>
 <?php foreach ($topics as $t): $ctx = ['topic' => $t]; ?>
   <article class="topic-row<?= uid() > 0 ? ($t['unread'] ? ' unread' : ' read') : '' ?><?= (int)$t['is_pinned'] ? ' pinned' : '' ?>" data-topic-id="<?= (int)$t['id'] ?>" data-slot="topic_list.item">
-    <div class="row-avatar"><?= avatar($t['user'], 40) ?></div>
+    <?php if (empty($hide_author)): ?><div class="row-avatar"><?= avatar($t['user'], 40) ?></div><?php endif; ?>
     <div class="row-main">
       <h3 class="row-title" dir="auto">
         <?php if ((int)$t['is_pinned']): ?><span class="row-icon row-icon-pin" title="<?= t('Pinned') ?>"><?= icon('pin') ?></span><?php endif; ?>
@@ -21,7 +21,7 @@
         <?= slot('topic_list.item.title_suffix', $ctx) ?>
       </h3>
       <div class="row-meta">
-        <span class="meta"><?= icon('user') ?><?= user_link($t['user'], 'user-link plain') ?></span>
+        <?php if (empty($hide_author)): ?><span class="meta"><?= icon('user') ?><?= user_link($t['user'], 'user-link plain') ?></span><?php endif; ?>
         <span class="meta" title="<?= t('Views') ?>"><?= icon('eye') ?><?= human_number((int)$t['view_count']) ?></span>
         <span class="meta" title="<?= t('Replies') ?>"><?= icon('message') ?><?= human_number((int)$t['reply_count']) ?></span>
         <?php if ((int)$t['reply_count'] > 0 && $t['last_user']): ?><span class="meta" title="<?= t('Last reply') ?>"><?= icon('reply') ?><?= user_link($t['last_user'], 'user-link plain') ?></span><?php endif; ?>

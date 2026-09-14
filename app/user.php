@@ -40,7 +40,7 @@ function user_profile(string $name, string $tab = 'topics'): never
     $url_fn = static fn(int $n): string => user_url($user) . ($tab === 'topics' ? '' : '/' . $tab) . ($n > 1 ? '?page=' . $n : '');
     if ($tab === 'topics') {
         $list = topic_list_fetch('user_id=?', [(int)$user['id']], 'created_at DESC', $p);
-        $body = view('topic_rows', ['topics' => $list['topics'], 'empty' => t('No topics yet.')]);
+        $body = view('topic_rows', ['topics' => $list['topics'], 'empty' => t('No topics yet.'), 'hide_author' => true]);
         $pg = $list['pagination'];
     } elseif ($tab === 'replies') {
         $pg = paginate_calc((int)val('SELECT COUNT(*) FROM fb_posts WHERE user_id=? AND floor>0 AND is_deleted=0', [(int)$user['id']]), $p['page'], $p['per_page']);
@@ -61,9 +61,11 @@ function user_profile(string $name, string $tab = 'topics'): never
     ];
     if (points_public($user) && ((int)$user['points'] !== 0 || $self)) $base_stats['points'] = ['label' => t('Points'), 'value' => human_number((int)$user['points']), 'url' => $self ? url('/settings/points') : ''];
     $stats = region_list('user.profile.stats', $base_stats, ['user' => $user]);
-    $main = view('profile', ['user' => $user, 'group' => group_by_id((int)$user['group_id']), 'self' => $self, 'tabs' => tabs($tabs), 'body' => $body, 'pagination' => pagination($pg, $url_fn), 'stats' => $stats]);
     $cards = region_list('user.profile.cards', [], ['user' => $user]);
-    page($user['username'], $main, ['class' => 'page-profile', 'right' => $cards === [] ? false : view('sidebar_right', ['cards' => $cards])]);
+    $main = view('profile', ['user' => $user, 'group' => group_by_id((int)$user['group_id']), 'self' => $self, 'tabs' => tabs($tabs), 'body' => $body, 'pagination' => pagination($pg, $url_fn), 'stats' => $stats, 'cards' => $cards]);
+    // the profile card takes the place of both site columns: the right one is off, the left menu is hidden on wide screens by
+    // CSS only, so a phone keeps it in the drawer
+    page($user['username'], $main, ['class' => 'page-profile', 'right' => false]);
 }
 
 /** GET|POST /settings[/{tab}] tabs: profile, avatar, password, preferences */

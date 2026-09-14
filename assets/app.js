@@ -241,7 +241,7 @@
       if (form.querySelector('[data-bookmark]') && typeof r.bookmarked !== 'undefined') {
         var bb = form.querySelector('[data-bookmark]');
         bb.classList.toggle('active', r.bookmarked);
-        bb.querySelector('span').textContent = r.bookmarked ? 'Bookmarked' : 'Bookmark';
+        bb.title = bb.querySelector('span').textContent = r.bookmarked ? 'Bookmarked' : 'Bookmark'; // the name is also the tooltip of the icon-only button
         return;
       }
       if (r.redirect) {
@@ -253,6 +253,7 @@
           history.replaceState(null, '', to.pathname + to.search + to.hash);
           window.location.reload();
         } else {
+          if (!to.hash && to.pathname === location.pathname && to.search === location.search) keepPlace(form);
           window.location.href = to.href;
         }
         return;
@@ -265,6 +266,20 @@
   document.addEventListener('submit', function (e) {
     var f = e.target;
     if (f.matches('form[data-confirm]:not([data-ajax])') && !window.confirm(f.getAttribute('data-confirm') || FB.i18n.confirm)) e.preventDefault();
+  });
+
+  /* ---------- a form posted back to its own page keeps the reader's place ---------- */
+  // a switch or a row button posts, the server redirects back to the same page, and a new page load starts at the top.
+  // Remember where the form sat on screen; the next load of this page scrolls it back there (see misc below).
+  function keepPlace(form) {
+    try {
+      sessionStorage.setItem('fb_keep_place', JSON.stringify({ path: location.pathname + location.search, y: window.scrollY, form: [].indexOf.call(document.forms, form), action: form.getAttribute('action') || '', top: form.getBoundingClientRect().top, t: Date.now() }));
+    } catch (x) {}
+  }
+  document.addEventListener('submit', function (e) {
+    var f = e.target; // ajax forms called preventDefault already and keep the page themselves
+    if (e.defaultPrevented || (f.getAttribute('method') || '').toLowerCase() !== 'post' || f.getAttribute('target') === '_blank') return;
+    keepPlace(f);
   });
 
   /* ---------- reply target / quote ---------- */
@@ -596,6 +611,21 @@
 
   /* ---------- misc ---------- */
   var flash = $('[data-flash]');
+  var kept = null;
+  try { kept = JSON.parse(sessionStorage.getItem('fb_keep_place') || 'null'); sessionStorage.removeItem('fb_keep_place'); } catch (x) {}
+  if (kept && Date.now() - kept.t < 20000 && kept.path === location.pathname + location.search && !location.hash) {
+    if (flash) { toast(flash.textContent, flash.classList.contains('flash-error') ? 'error' : 'success'); flash.remove(); flash = null; }
+    // the same form (same position among the forms, same action) goes back to the same height on screen; otherwise the old scroll offset
+    var keptMoved = false, backToPlace = function () {
+      if (keptMoved) return;
+      var f = document.forms[kept.form];
+      if (f && (f.getAttribute('action') || '') === kept.action) window.scrollBy(0, f.getBoundingClientRect().top - kept.top);
+      else window.scrollTo(0, kept.y);
+    };
+    ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { keptMoved = true; }, { once: true, passive: true }); });
+    backToPlace();
+    window.addEventListener('load', backToPlace, { once: true });
+  }
   if (flash) setTimeout(function () { flash.classList.add('fade'); }, 4000);
   var target = location.hash === '#new' ? $('#new') : (location.hash.indexOf('#post-') === 0 ? $(location.hash) : null);
   if (target) {

@@ -48,6 +48,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `plugin.settings_saved` | event | After plugin settings were saved (ctx: id). | `app/admin_system.php`, `app/admin_theme.php` |
 | `points.after_change` | event | After points were added or removed (ctx: user_id, delta, reason, ref_id, balance). | `core/points.php` |
 | `points.before_change` | filter | Filter or veto a points change (return false to block). | `core/points.php` |
+| `points.icon` | filter | The icon name of a points history line (ctx: reason, delta). Runs inside lists: no database access. | `core/points.php` |
 | `points.reasons` | filter | Register point reason codes: $value['checkin'] = 'Daily check-in'. Labels show in the private history. | `core/points.php` |
 | `points.ref_url` | filter |  | `core/points.php` |
 | `points.rules` | filter |  | `core/points.php` |
@@ -76,18 +77,22 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.header.right` | list region | Header, right side: search, new topic, language, theme, notifications, account menu (list) | `core/render.php` |
 | `region.header.right.after_search` | html region | Header, right of the search box | `core/render.php` |
 | `region.header.right.before_search` | html region | Header, left of the search box | `core/render.php` |
-| `region.header.user_menu` | list region | User dropdown menu items (list) | `app/views/layout.php` |
+| `region.header.user_menu` | list region | User dropdown menu items (list: label, url, icon, count, group "you" or "site", weight) | `app/views/layout.php` |
+| `region.header.user_menu.labels` | html region | User dropdown, under the name next to the group label: short labels such as the level (ctx: user) | `app/views/user_menu.php` |
+| `region.header.user_menu.stats` | list region | User dropdown numbers strip (list: label, value, url; ctx: user) | `app/views/user_menu.php` |
 | `region.main.after` | html region | Below the main content on every page | `app/views/layout.php` |
 | `region.main.before` | html region | Above the main content on every page | `app/views/layout.php` |
 | `region.main.categories` | list region | Category bar above the list tabs: All + top-level categories (list) | `app/home.php` |
 | `region.main.tabs` | list region | Tabs above topic lists (list) | `app/home.php` |
 | `region.main.toolbar` | html region | Right of the list tabs | `app/home.php` |
-| `region.points.actions` | list region | Buttons on the /points page of a member: check-in, tasks, leaderboard (list) | `app/points.php` |
+| `region.points.actions` | list region | Ways to earn on the /points page, as tiles (list: label, title, sub, url, icon, primary, done; ctx: user) | `app/points.php` |
+| `region.points.summary` | list region | Short facts next to the balance on the /points page, such as the level (list: label, sub, progress 0..1, url; ctx: user) | `app/points.php` |
 | `region.post.actions` | list region | Post action buttons (list, loop, no DB) | `app/views/post.php` |
 | `region.post.after` | inline region (loop, no DB) | After each post (loop, no DB) | `app/views/post.php` |
 | `region.post.before` | inline region (loop, no DB) | Before each post (loop, no DB) | `app/views/post.php` |
 | `region.post.content_after` | inline region (loop, no DB) | After each post body (loop, no DB) | `app/views/post.php` |
 | `region.post.meta` | inline region (loop, no DB) | Post meta line, after the time: level, title, badges (loop, no DB) | `app/views/post.php` |
+| `region.post.name` | inline region (loop, no DB) | Post name row, after the username, OP and group labels: a short label such as the level (loop, no DB) | `app/views/post.php` |
 | `region.sidebar.left.bottom` | html region | Left column, bottom | `app/views/sidebar_left.php` |
 | `region.sidebar.left.nav` | list region | Left column navigation links (list) | `app/views/sidebar_left.php` |
 | `region.sidebar.left.top` | html region | Left column, top | `app/views/sidebar_left.php` |
@@ -107,10 +112,11 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.topic_list.item.meta` | inline region (loop, no DB) | In each topic row meta line (loop, no DB) | `app/views/topic_rows.php` |
 | `region.topic_list.item.title_suffix` | inline region (loop, no DB) | After each topic title (loop, no DB) | `app/views/topic_rows.php` |
 | `region.user.profile.actions` | html region |  | `app/views/profile.php` |
-| `region.user.profile.after` | html region | Profile page, below the header | `app/views/profile.php` |
-| `region.user.profile.cards` | list region | Profile page right column cards (list) | `app/user.php` |
-| `region.user.profile.meta` | inline region (loop, no DB) | Profile meta line, after Joined / Seen: level, title, badges (ctx: user, self) | `app/views/profile.php` |
-| `region.user.profile.stats` | list region | Profile header statistics (list of label/value/url) | `app/user.php` |
+| `region.user.profile.after` | html region | Sections inside the profile card, under the numbers: badges (ctx: user, self) | `app/views/profile.php` |
+| `region.user.profile.cards` | list region | Cards under the profile card (list) | `app/user.php` |
+| `region.user.profile.labels` | html region | Profile card, after the group label: short labels such as a custom title (ctx: user, self) | `app/views/profile.php` |
+| `region.user.profile.meta` | inline region (loop, no DB) | Profile card details, after Joined / Seen / website: short items with an icon (ctx: user, self) | `app/views/profile.php` |
+| `region.user.profile.stats` | list region | Profile card numbers (list of label, value, url, sub; progress 0..1 draws a bar across the card) | `app/user.php` |
 | `region.user.profile.tabs` | list region | Profile page tabs (list) | `app/user.php` |
 | `region.user.settings.tabs` | list region | Settings page menu, a section list on phones (list): id => [label, group account|preferences|security|community|developer|more, weight] | `app/user.php` |
 | `regions.known` | filter | Register extra regions for Admin → Layout. | `core/hook.php` |
@@ -133,6 +139,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `upgrade.after_apply` | event |  | `core/upgrade.php` |
 | `user.after_rename` | event | After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically. | `core/auth.php` |
 | `user.after_save` | event | After the profile was saved. | `app/user.php` |
+| `user.avatar_after` | filter | HTML placed inside the avatar, over its lower corner (ctx: user, size in px); the wrapper is positioned, so use position:absolute. Runs inside lists: no database access. | `core/render.php` |
 | `user.before_save` | filter | Profile fields before saving. | `app/user.php` |
 | `user.link_after` | filter | HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access. | `core/render.php`, `app/views/card_newest.php`, `app/views/profile.php` |
 | `user.logout_everywhere` | event | After every session of a user was invalidated (ctx: user_id). | `core/auth.php` |

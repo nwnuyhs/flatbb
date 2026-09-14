@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.91');
+define('FLATBB_VERSION', '0.1.92');
 const TOPIC_NEW_FOR = 86400; // a topic wears the "New" mark for its first day
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');

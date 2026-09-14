@@ -2,16 +2,17 @@
 /**
  * Topic page. Variables: topic, posts, page, pagination, can_reply, new_from.
  * Regions: topic.header, topic.actions, topic.replies_after, composer.extra
- * On the page that holds the opening post, the title, the topic's numbers, its buttons and the topic.header region sit inside
- * that post (post.php receives them as `head`), so the title and what it introduces read as one card. Later pages keep a
- * compact header above the replies.
+ * The title has a line of its own (a long one wraps, nothing squeezes it); under it one bar holds the topic's numbers on the
+ * left and its buttons as icons on the right. On the page that holds the opening post both sit at the top of that post
+ * (post.php receives them as `head`), so the title and what it introduces read as one card; later pages show the same two
+ * lines above the replies.
  */
 $me = me();
 $manage = can_manage_topic($topic);
 $first = $posts[0] ?? null;
 $merge = $first !== null && (int)$first['floor'] === 0;
 $actions = [];
-if ($me) $actions['bookmark'] = ['html' => action_form(url('/t/' . $topic['id'] . '/bookmark'), '<button type="submit" class="btn btn-sm' . ($topic['bookmarked'] ? ' active' : '') . '" data-bookmark>' . icon('bookmark') . '<span>' . ($topic['bookmarked'] ? t('Bookmarked') : t('Bookmark')) . '</span></button>', [], 'inline')];
+if ($me) $actions['bookmark'] = ['html' => action_form(url('/t/' . $topic['id'] . '/bookmark'), '<button type="submit" class="btn btn-sm' . ($topic['bookmarked'] ? ' active' : '') . '" data-bookmark title="' . ($topic['bookmarked'] ? t('Bookmarked') : t('Bookmark')) . '">' . icon('bookmark') . '<span>' . ($topic['bookmarked'] ? t('Bookmarked') : t('Bookmark')) . '</span></button>', [], 'inline')];
 // Edit is not repeated here: the opening post carries its own Edit, which opens the topic editor
 $actions = region_list('topic.actions', $actions, ['topic' => $topic]);
 ob_start(); ?>
@@ -24,14 +25,13 @@ ob_start(); ?>
       <?= category_badge($topic['category']) ?>
       <span class="stat" title="<?= t('Replies') ?>"><?= icon('reply') ?><?= (int)$topic['reply_count'] ?></span>
       <span class="stat" title="<?= t('Views') ?>"><?= icon('eye') ?><?= (int)$topic['view_count'] ?></span>
-      <?php if (!$merge): ?><span class="stat"><?= icon('heart') ?><?= (int)$topic['like_count'] ?></span><?php endif; ?>
       <?php if ((int)$topic['is_deleted']): ?><span class="flag flag-danger"><?= t('Deleted') ?></span><?php endif; ?>
 <?php $stats_html = (string)ob_get_clean(); ob_start(); ?>
     <div class="topic-tools" data-slot="topic.actions">
       <?php foreach ($actions as $a): ?><?= raw($a['html'] ?? '') ?><?php endforeach; ?>
       <?php if (is_mod() || $manage): ?>
       <div class="dropdown" data-dropdown>
-        <button type="button" class="btn btn-sm dropdown-toggle"><?= icon('more') ?><span><?= t('Manage') ?></span></button>
+        <button type="button" class="btn btn-sm dropdown-toggle" title="<?= t('Manage') ?>"><?= icon('more') ?><span><?= t('Manage') ?></span></button>
         <div class="dropdown-menu">
           <?php if (is_mod()): ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('pin') . ((int)$topic['is_pinned'] ? t('Unpin') : t('Pin')) . '</button>', ['action' => (int)$topic['is_pinned'] ? 'unpin' : 'pin']) ?>
@@ -48,18 +48,18 @@ ob_start(); ?>
       </div>
       <?php endif; ?>
     </div>
-<?php $tools_html = (string)ob_get_clean(); $header_region = region('topic.header', ['topic' => $topic]); ?>
+<?php $tools_html = (string)ob_get_clean(); $header_region = region('topic.header', ['topic' => $topic]);
+$bar_html = '<div class="topic-bar"><div class="topic-meta">' . $stats_html . '</div>' . $tools_html . '</div>'; ?>
 <article class="topic-page<?= $merge ? ' topic-merged' : '' ?>" data-topic-id="<?= (int)$topic['id'] ?>">
   <?php if (!$merge): ?>
   <header class="topic-head" data-slot="topic.header">
     <?= raw($title_html) ?>
-    <div class="topic-meta"><?= raw($stats_html) ?></div>
-    <?= raw($tools_html) ?>
+    <?= raw($bar_html) ?>
   </header>
   <?= raw($header_region) ?>
   <?php endif; ?>
   <div class="post-stream" data-slot="topic.posts">
-    <?php foreach ($posts as $p): ?><?php if ((int)$p['id'] === (int)($new_from ?? 0)): ?><div class="posts-new-line" id="new"><span><?= t('New replies') ?></span></div><?php endif; ?><?= view('post', ['post' => $p, 'topic' => $topic, 'head' => $merge && (int)$p['floor'] === 0 ? ['title' => $title_html, 'stats' => $stats_html, 'tools' => $tools_html, 'region' => $header_region] : null]) ?><?php endforeach; ?>
+    <?php foreach ($posts as $p): ?><?php if ((int)$p['id'] === (int)($new_from ?? 0)): ?><div class="posts-new-line" id="new"><span><?= t('New replies') ?></span></div><?php endif; ?><?= view('post', ['post' => $p, 'topic' => $topic, 'head' => $merge && (int)$p['floor'] === 0 ? ['title' => $title_html, 'bar' => $bar_html, 'region' => $header_region] : null]) ?><?php endforeach; ?>
   </div>
   <?= raw($pagination) ?>
   <?= region('topic.replies_after', ['topic' => $topic]) ?>

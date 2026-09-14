@@ -227,7 +227,9 @@ function avatar(?array $user, int $size = 32, bool $link = true): string
     }
     $online = $user !== null && user_online($user);
     if ($online) $img .= '<i class="online-dot" style="' . $style . '" title="' . h(t('Online')) . '"></i>';
-    if (!$link || $user === null) return $online ? '<span class="avatar-link avatar-online">' . $img . '</span>' : $img;
+    $mark = $user !== null ? (string)hook('user.avatar_after', '', ['user' => $user, 'size' => $size]) : ''; // a plugin's corner mark (a verified badge)
+    $img .= $mark;
+    if (!$link || $user === null) return $online || $mark !== '' ? '<span class="avatar-link' . ($online ? ' avatar-online' : '') . '">' . $img . '</span>' : $img;
     return '<a class="avatar-link' . ($online ? ' avatar-online' : '') . '" href="' . h(user_url($user)) . '" title="' . h($name) . '">' . $img . '</a>';
 }
 
@@ -402,11 +404,7 @@ function header_right_items(?array $me, int $unread, array $user_menu): array
     $items['theme'] = ['label' => t('Toggle theme'), 'weight' => 20, 'html' => '<button class="icon-btn theme-toggle" type="button" aria-label="' . t('Toggle theme') . '" data-toggle="theme">' . icon('sun', 'theme-sun') . icon('moon', 'theme-moon') . '</button>'];
     if ($me !== null) {
         $items['notifications'] = ['label' => t('Notifications'), 'weight' => 30, 'html' => '<a class="icon-btn notif-btn" href="' . h(url('/notifications')) . '" aria-label="' . t('Notifications') . '">' . icon('bell') . '<b class="badge' . ($unread > 0 ? '' : ' hidden') . '" data-unread>' . $unread . '</b></a>'];
-        $links = '';
-        foreach ($user_menu as $item) $links .= '<a href="' . h((string)$item['url']) . '">' . (!empty($item['icon']) ? icon((string)$item['icon']) : '') . h((string)$item['label']) . '</a>';
-        $items['user'] = ['label' => t('Account menu'), 'weight' => 40, 'html' => '<div class="dropdown user-menu" data-dropdown><button class="dropdown-toggle" type="button" aria-haspopup="true">' . avatar($me, 32, false) . '</button>'
-            . '<div class="dropdown-menu" data-slot="header.user_menu"><div class="dropdown-head">' . h((string)$me['username']) . '</div>' . $links
-            . '<form method="post" action="' . h(url('/logout')) . '">' . csrf_field() . '<button type="submit">' . icon('logout') . t('Sign out') . '</button></form></div></div>'];
+        $items['user'] = ['label' => t('Account menu'), 'weight' => 40, 'html' => view('user_menu', ['me' => $me, 'items' => $user_menu])];
     } else {
         $items['user'] = ['label' => t('Sign in / Sign up'), 'weight' => 40, 'html' => '<a class="btn btn-ghost" href="' . h(url('/login', current_path() !== '/' && !str_starts_with(current_path(), '/login') ? ['back' => current_path()] : [])) . '">' . t('Sign in') . '</a>'
             . (setting('allow_register', '1') === '1' ? '<a class="btn btn-primary" href="' . h(url('/register')) . '">' . t('Sign up') . '</a>' : '')];

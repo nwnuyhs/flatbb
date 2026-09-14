@@ -126,6 +126,21 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .lang-menu .dropdown-toggle { width: 36px; height: 36px; padding: 0; }
 .lang-menu .dropdown-menu { min-width: 150px; }
 .dropdown-menu button.active { color: var(--brand); font-weight: 600; }
+/* account menu: who is signed in, their numbers, then the menu in groups */
+.user-menu .dropdown-menu { min-width: 250px; }
+.dropdown-menu a.um-head { gap: 10px; padding: 8px; }
+.um-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.um-id b { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.um-labels { display: flex; flex-wrap: wrap; gap: 4px; }
+.um-labels:empty { display: none; }
+.um-stats { display: flex; margin: 2px 4px 6px; border-radius: var(--radius-sm); background: var(--panel-2); }
+.dropdown-menu .um-stats a { flex: 1; flex-direction: column; gap: 0; min-width: 0; padding: 6px 4px; text-align: center; }
+.dropdown-menu .um-stats a:hover { background: var(--brand-soft); }
+.um-stats b { font-size: var(--font-size-md); line-height: 1.25; }
+.um-stats span { color: var(--text-muted); font-size: var(--font-size-xs); }
+.um-group { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line-soft); }
+.um-group .icon { color: var(--text-muted); }
+.um-count { margin-inline-start: auto; padding: 0 7px; border-radius: var(--radius-pill); background: var(--brand-soft); color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; line-height: 1.6; }
 .dropdown-head { padding: 6px 10px; font-weight: 600; color: var(--text-muted); font-size: var(--font-size-sm); border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; }
 
 /* ---------- three-column grid ---------- */
@@ -178,7 +193,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 /* ---------- avatars ---------- */
 .avatar { width: var(--s, 32px); height: var(--s, 32px); border-radius: var(--avatar-radius, 50%); object-fit: cover; display: inline-block; vertical-align: middle; flex: none; }
 .avatar-letter { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: calc(var(--s, 32px) * .44); line-height: 1; background: linear-gradient(135deg, hsl(var(--hue, 20) 65% 58%), hsl(var(--hue, 20) 60% 46%)); }
-.avatar-link { display: inline-flex; }
+.avatar-link { display: inline-flex; position: relative; } /* holds the online dot and a plugin's corner mark (user.avatar_after) */
 .avatar-online { position: relative; }
 .online-dot { position: absolute; top: -1px; left: -1px; width: max(8px, calc(var(--s, 32px) * .3)); height: max(8px, calc(var(--s, 32px) * .3)); border-radius: 50%; background: #22c55e; border: 2px solid var(--panel); box-sizing: border-box; pointer-events: none; }
 .user-link { color: var(--text); font-weight: 600; }
@@ -290,15 +305,21 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .topic-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: 10px; }
 .topic-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .topic-tools .inline { display: inline; }
-/* page 1: the title, the numbers and the topic's buttons live inside the opening post */
-.post.first .topic-head { margin: 0 0 14px; }
-.post.first .topic-title { margin: 0; }
+/* the title on a line of its own (a long one wraps), then one bar: the topic's numbers on the left, its buttons as icons on the right.
+   On page 1 both sit at the top of the opening post; later pages show them above the replies. */
+.topic-head .topic-title { margin-bottom: 6px; }
+.topic-bar { display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.topic-bar .topic-meta { margin: 0; min-width: 0; }
+.topic-bar .stat { display: inline-flex; align-items: center; gap: 4px; }
+.topic-bar .topic-meta .icon { width: 14px; height: 14px; }
+.topic-bar .topic-tools { margin-inline-start: auto; gap: 2px; flex-wrap: nowrap; }
+.topic-bar .topic-tools .btn { width: 32px; height: 30px; padding: 0; justify-content: center; border: 0; border-radius: var(--radius-sm); background: none; box-shadow: none; color: var(--text-muted); font-size: var(--font-size-sm); }
+.topic-bar .topic-tools .btn:hover { background: var(--panel-2); color: var(--text); }
+.topic-bar .topic-tools .btn.active { background: var(--brand-soft); color: var(--brand); }
+.topic-bar .topic-tools .btn > span { display: none; } /* icons only: each button carries its name as a tooltip */
+.topic-bar .topic-tools .btn .icon { width: 18px; height: 18px; }
+.post.first .topic-head { margin: 0 0 12px; }
 .post-meta { flex-wrap: wrap; row-gap: 3px; }
-.post-meta .topic-meta { display: inline-flex; align-items: center; gap: 10px; margin: 0; font-size: inherit; color: inherit; flex-wrap: wrap; }
-.post-meta .topic-meta .stat { display: inline-flex; align-items: center; gap: 3px; }
-.post-meta .topic-meta .icon { width: 13px; height: 13px; }
-.post-meta .topic-meta .cat-badge { font-size: inherit; font-weight: 500; }
-.post-actions .topic-tools { margin-inline-start: auto; gap: 6px; }
 .dropdown-form { padding: 4px 6px; }
 .post-stream { display: flex; flex-direction: column; gap: 12px; }
 .post { display: block; padding: var(--post-pad, 16px); background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, var(--shadow)); scroll-margin-top: calc(var(--topbar-h) + 12px); }
@@ -418,18 +439,38 @@ body.editor-fs { overflow: hidden; }
 .post-deleted > summary { display: inline-flex; cursor: pointer; font-size: var(--font-size-sm); color: var(--text-subtle); }
 .post-deleted > summary:hover { color: var(--text-muted); }
 .post-deleted .post-content { margin-top: 8px; opacity: .75; }
-.profile-head { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 18px; align-items: start; padding: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; }
-.profile-info { min-width: 0; }
-.profile-info h1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px; }
-.profile-bio { color: var(--text-muted); margin: 4px 0 6px; }
-.profile-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: var(--font-size-sm); color: var(--text-muted); }
-.profile-meta span { display: inline-flex; align-items: center; gap: 4px; }
-.profile-side { display: flex; gap: 6px; }
-.profile-stats { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
-.pstat { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: var(--radius-sm); background: var(--panel-2); color: var(--text); }
-.pstat b { font-size: var(--font-size-lg); }
-.pstat span, .pstat small { color: var(--text-muted); font-size: var(--font-size-sm); }
-a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
+/* profile: a card on the left (avatar, name, labels, bio, buttons, details, numbers, plugin sections), the lists on the right */
+.profile { display: grid; grid-template-columns: var(--right-w) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+.profile-card { grid-column: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 20px; background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, none); }
+.profile-main { grid-column: 2; grid-row: 1 / span 2; min-width: 0; }
+.profile-cards { grid-column: 1; min-width: 0; }
+.profile-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.profile-head .avatar { width: 96px; height: 96px; font-size: 38px; }
+.profile-head .online-dot { width: 18px; height: 18px; top: 4px; left: 4px; border-width: 3px; } /* sized for the big avatar, not in proportion to it */
+.profile-id { min-width: 0; max-width: 100%; }
+.profile-name { margin: 0; font-size: var(--font-size-2xl); line-height: 1.25; overflow-wrap: anywhere; }
+.profile-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 6px; }
+.profile-labels:empty { display: none; }
+.profile-bio { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.profile-side { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.profile-side:empty { display: none; }
+.profile-side > .btn { flex: 1 1 auto; justify-content: center; }
+.profile-side > .btn-primary { order: -1; } /* the main action on someone else's profile (Message) comes first */
+.profile-meta { display: flex; flex-direction: column; gap: 7px; padding-top: 14px; border-top: 1px solid var(--line-soft); font-size: var(--font-size-sm); color: var(--text-muted); }
+.profile-meta > span { display: inline-flex; align-items: center; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; } /* no flex gap: it would also split "Joined" from its date */
+.profile-meta > [data-slot]:empty { display: none; }
+.profile-meta .icon { width: 15px; height: 15px; flex: none; margin-inline-end: 6px; }
+.profile-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.pstat { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 9px 11px; border-radius: var(--radius-sm); background: var(--panel-2); color: var(--text); }
+.pstat b { font-size: var(--font-size-lg); line-height: 1.2; }
+.pstat span, .pstat small { overflow: hidden; color: var(--text-muted); font-size: var(--font-size-xs); white-space: nowrap; text-overflow: ellipsis; }
+a.pstat:hover { background: var(--brand-soft); }
+a.pstat:hover b { color: var(--brand); }
+/* a number with progress (the level) runs across the card with its bar */
+.pstat-wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; column-gap: 8px; }
+.pstat-bar { grid-column: 1 / -1; display: block; height: 6px; margin-top: 7px; border-radius: 3px; background: linear-gradient(var(--brand), var(--brand)) 0 0 / var(--p, 0%) 100% no-repeat, var(--line); }
+.profile-card > .region { padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.profile-card > .region:empty { display: none; }
 .post-rows { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .post-row { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
 .post-row:last-child { border: 0; }
@@ -494,25 +535,48 @@ a.pstat:hover { background: var(--brand-soft); color: var(--brand); }
 /* ---------- points (core ledger UI) ---------- */
 .points-balance { margin: 0 0 12px; }
 .points-balance b { font-size: var(--font-size-2xl); color: var(--brand); margin-inline-end: 4px; }
-.points-summary { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
-.points-big small, .points-month small { display: block; color: var(--text-muted); font-size: var(--font-size-sm); }
-.points-big b { font-size: 34px; line-height: 1.1; color: var(--brand); }
-.points-month { display: flex; gap: 20px; }
-.points-month b { font-size: var(--font-size-xl); }
-.points-actions { margin-top: 14px; }
-.points-head .card-body { padding: 18px 20px; }
+/* /points: balance card, ways to earn as tiles, history by day */
+.points-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; padding: 20px 22px; background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 20%, var(--line)); }
+.points-hero small { display: block; color: color-mix(in srgb, var(--brand) 55%, var(--text)); font-size: var(--font-size-sm); }
+.points-hero-balance { display: flex; align-items: baseline; gap: 6px; color: var(--brand); font-size: 40px; line-height: 1.1; }
+.points-hero-balance span { font-size: var(--font-size-md); font-weight: 500; }
+.points-hero-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.points-chip { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; min-width: 150px; padding: 5px 10px; border-radius: var(--radius-sm); background: var(--panel); color: var(--text); font-size: var(--font-size-sm); }
+.points-hero .points-chip small { color: var(--text-muted); font-size: var(--font-size-xs); }
+.points-chip-bar { flex-basis: 100%; height: 4px; margin-top: 3px; border-radius: 2px; background: linear-gradient(var(--brand), var(--brand)) 0 0 / var(--p, 0%) 100% no-repeat, var(--line); }
+.points-hero-month { display: flex; flex-direction: column; gap: 4px; }
+.points-hero-month > div { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
+.points-hero-month b { font-size: var(--font-size-xl); }
+.points-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 14px 16px 16px; }
+.points-tile { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); }
+.points-tile:hover { border-color: var(--brand); background: var(--brand-soft); }
+.points-tile-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); }
+.points-tile-icon .icon { width: 18px; height: 18px; }
+.points-tile-text { min-width: 0; }
+.points-tile-text b, .points-tile-text small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.points-tile-text small { color: var(--text-muted); font-size: var(--font-size-xs); }
+.points-tile.is-primary { border-color: var(--brand); }
+.points-tile.is-primary small { color: var(--brand); font-weight: 600; }
+.points-tile.is-done .points-tile-icon { background: color-mix(in srgb, var(--success) 14%, transparent); color: var(--success); }
 .page-points .card { margin-bottom: 14px; }
 .page-points .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .page-points .card-head .tabs { margin: 0; }
 .points-amount { width: 90px; }
 b.up { color: var(--success); } b.down { color: var(--danger); }
 .points-log { list-style: none; margin: 0; padding: 0; }
-.points-log li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: var(--font-size-sm); }
+.points-log li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: var(--font-size-sm); }
 .points-log li:last-child { border: 0; }
-.points-log b { min-width: 36px; text-align: end; }
-.points-log b.up { color: var(--success); }
-.points-log b.down { color: var(--danger); }
-.points-log small { margin-inline-start: auto; color: var(--text-subtle); white-space: nowrap; }
+.points-log li.points-day { padding: 12px 0 4px; border: 0; color: var(--text-subtle); font-size: var(--font-size-xs); font-weight: 600; }
+.points-log li.points-day:first-child { padding-top: 0; }
+.points-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; }
+.points-icon .icon { width: 15px; height: 15px; }
+.points-icon.up { background: color-mix(in srgb, var(--success) 13%, transparent); color: var(--success); }
+.points-icon.down { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.points-what { flex: 1; min-width: 0; }
+.points-what a { color: var(--text); }
+.points-what a:hover { color: var(--brand); }
+.points-what small { display: block; overflow: hidden; color: var(--text-subtle); font-size: var(--font-size-xs); white-space: nowrap; text-overflow: ellipsis; }
+.points-log b { flex: none; min-width: 40px; text-align: end; font-variant-numeric: tabular-nums; }
 .settings-points { max-width: 640px; }
 
 /* ---------- footer ---------- */
@@ -684,16 +748,10 @@ body.adrawer-open { overflow: hidden; }
   .act[data-like] span { display: inline; }
   .post-actions { gap: 0; }
   .act { padding: 4px 5px; }
-  /* the opening post: Bookmark, Share and the other topic buttons become icons like the actions beside them, all on the same row */
-  .post-actions .topic-tools { gap: 0; flex-wrap: nowrap; }
-  .post-actions .topic-tools .btn { padding: 4px 5px; border-color: transparent; background: none; box-shadow: none; color: var(--text-subtle); }
-  .post-actions .topic-tools .btn.active { color: var(--brand); }
-  .post-actions .topic-tools .btn span { display: none; }
-  .profile-head { grid-template-columns: auto 1fr; gap: 4px 12px; padding: 14px; }
-  .profile-head .avatar { width: 56px; height: 56px; font-size: 22px; }
-  .profile-side { grid-column: 1 / -1; flex-wrap: wrap; margin-top: 6px; }
-  .profile-meta { gap: 6px 12px; }
-  .profile-meta span { white-space: nowrap; }
+  /* one line on a phone: the numbers give way (clipped) before the icons wrap under them */
+  .topic-bar { flex-wrap: nowrap; gap: 8px; }
+  .topic-bar .topic-meta { gap: 8px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+  .topic-bar .topic-tools .btn { width: 28px; }
   /* phones: the links first as a centred wrapped row, the copyright and "powered by" as one centred line below */
   .footer-inner { justify-content: center; text-align: center; gap: 8px 14px; padding-top: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
   .footer-links { order: -1; flex-basis: 100%; justify-content: center; gap: 6px 18px; margin-bottom: 4px; }
@@ -736,3 +794,39 @@ body.adrawer-open { overflow: hidden; }
 .theme-preview-bar { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; padding: 7px 12px; background: var(--text); color: var(--panel); font-size: var(--font-size-sm); }
 .theme-preview-bar .icon { width: 16px; height: 16px; }
 .theme-preview-bar form { margin: 0; }
+
+/* ---------- profile: wide screens and phones ---------- */
+@media (min-width: 993px) {
+  /* the profile card takes the place of the site menu; below this width the menu lives in the drawer as on every page */
+  body.page-profile .col-left { display: none; }
+  body.page-profile.no-right .page-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  /* the card becomes a compact header above the tabs: avatar, name and labels, icon buttons; then bio, details in a row, numbers in three columns */
+  .profile { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .profile-card, .profile-main, .profile-cards { grid-column: 1; grid-row: auto; }
+  .profile-card { gap: 12px; padding: 14px; }
+  .profile-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 12px; }
+  .profile-head .avatar { width: 60px; height: 60px; font-size: 24px; }
+  .profile-head .online-dot { width: 13px; height: 13px; top: 1px; left: 1px; border-width: 2px; }
+  .profile-name { font-size: var(--font-size-xl); }
+  .profile-labels { margin-top: 4px; }
+  .profile-bio { grid-column: 1 / -1; }
+  .profile-side { grid-column: 1 / -1; } /* the buttons keep their names, as a row under the name and bio */
+  .profile-meta { flex-direction: row; flex-wrap: wrap; gap: 4px 14px; padding-top: 0; border-top: 0; font-size: var(--font-size-xs); }
+  .profile-meta > span { white-space: pre; }
+  .profile-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding-top: 12px; }
+  .pstat { padding: 7px 9px; }
+  .pstat b { font-size: var(--font-size-md); }
+  .profile-card > .region { padding-top: 12px; }
+}
+
+/* ---------- points page on phones ---------- */
+@media (max-width: 640px) {
+  .points-hero { align-items: flex-start; padding: 16px; }
+  .points-hero-balance { font-size: 34px; }
+  .points-hero-month { flex-direction: row; gap: 16px; }
+  .points-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+  .points-tile { gap: 8px; padding: 8px; }
+  .points-tile-icon { width: 30px; height: 30px; }
+}

@@ -12,11 +12,10 @@ $has_right = $right !== false;
 $flash = flash_take();
 $nav = region_list('header.nav', [], []);
 $user_menu = $me ? region_list('header.user_menu', [
-    'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user'],
-    'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark'],
-    'points' => ['label' => t('Points') . ' · ' . human_number((int)$me['points']), 'url' => url('/points'), 'icon' => 'coin'],
-    'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings'],
-] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'weight' => 100]] : []), ['user' => $me]) : [];
+    'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user', 'weight' => 1],
+    'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark', 'weight' => 10],
+    'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings', 'group' => 'site', 'weight' => 90],
+] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me]) : []; // Points is in the numbers strip of the menu (user_menu.php)
 $footer_links = region_list('footer.links', [
     'categories' => ['label' => t('Categories'), 'url' => url('/categories')],
     'tags' => ['label' => t('Tags'), 'url' => url('/tags')],
