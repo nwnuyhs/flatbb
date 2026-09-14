@@ -239,6 +239,7 @@ return [
     'Horizontal rule' => 'Linha horizontal',
     'How to earn points' => 'Como ganhar pontos',
     'How to trigger' => 'Como acionar',
+    'ID' => 'ID',
     'ID / version' => 'ID / versão',
     'Icon' => 'Ícone',
     'If that email address belongs to an account, a reset link is on its way. Check your spam folder too.' => 'Se esse endereço de e-mail pertencer a uma conta, um link de redefinição está a caminho. Verifique também a pasta de spam.',

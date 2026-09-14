@@ -106,8 +106,9 @@ function md_list(array $lines, int &$i): string
         $baseIndent ??= $indent;
         $ordered ??= ctype_digit($m[2][0]);
         if ($indent > $baseIndent && $items !== []) {
-            $sub = md_list($lines, $i);
-            $items[count($items) - 1]['sub'] .= $sub;
+            $items[count($items) - 1]['sub'] .= md_list($lines, $i); // leaves $i on the last line the sub-list used
+            $i++; // step past it: reading that line again recursed on it forever and ran out of memory
+            if (trim($lines[$i - 1]) === '') break; // the blank line that ended the sub-list ends this list too
             continue;
         }
         if ($indent < $baseIndent) break;

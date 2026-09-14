@@ -153,13 +153,18 @@ function market_tab_browse(array $account): string
     $data = market_list(false, $q);
     $local = plugins();
     $owned = (array)($account['purchased'] ?? []);
-    $link = static fn(string $k): string => market_admin_url('browse', array_filter(['q' => $q, 'kind' => $k]));
+    $cat = get_str('cat', 30);
+    $link = static fn(string $k): string => market_admin_url('browse', array_filter(['q' => $q, 'kind' => $k, 'cat' => $cat]));
+    $cat_options = ['' => t('All categories')];
+    foreach ((array)($data['categories'] ?? []) as $c) if (is_array($c) && isset($c['slug'], $c['name']) && ((int)($c['count'] ?? 0) > 0 || (string)$c['slug'] === $cat)) $cat_options[(string)$c['slug']] = (string)$c['name'] . ' (' . (int)($c['count'] ?? 0) . ')';
+    $cat_form = count($cat_options) < 2 ? '' : '<form method="get" action="' . h(url('/admin/ext/market/market')) . '" class="market-cat-form">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . ($kind !== '' ? '<input type="hidden" name="kind" value="' . h($kind) . '">' : '') . ($q !== '' ? '<input type="hidden" name="q" value="' . h($q) . '">' : '')
+        . select('cat', $cat_options, $cat, ['data-market-submit' => '1', 'aria-label' => t('Category')]) . '<noscript><button class="btn btn-sm">' . t('Show') . '</button></noscript></form>';
     $html = '<div class="market-filter-row">' . tabs([
         'all' => ['label' => t('All'), 'url' => $link(''), 'active' => $kind === ''],
         'installed' => ['label' => t('Installed'), 'url' => $link('installed'), 'active' => $kind === 'installed'],
         'updates' => ['label' => t('Updates'), 'url' => $link('updates'), 'active' => $kind === 'updates'],
-    ], 'tabs tabs-sub')
-        . '<form method="get" action="' . h(url('/admin/ext/market/market')) . '" class="search-form market-search">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . ($kind !== '' ? '<input type="hidden" name="kind" value="' . h($kind) . '">' : '') . icon('search') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . h(t('Search')) . '"></form>'
+    ], 'tabs tabs-sub') . $cat_form
+        . '<form method="get" action="' . h(url('/admin/ext/market/market')) . '" class="search-form market-search">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/ext/market/market">') . ($kind !== '' ? '<input type="hidden" name="kind" value="' . h($kind) . '">' : '') . ($cat !== '' ? '<input type="hidden" name="cat" value="' . h($cat) . '">' : '') . icon('search') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . h(t('Search')) . '"></form>'
         . action_form(market_admin_url('browse'), '<button class="icon-btn" type="submit" title="' . h(t('Fetch the list again')) . '">' . icon('refresh') . '</button>', ['action' => 'refresh'], 'inline') . '</div>';
     if (!empty($data['error'])) $html .= '<div class="flash flash-error">' . t('Could not reach the marketplace: %s', (string)$data['error']) . '</div>';
     if (!empty($data['core']['version']) && version_compare((string)$data['core']['version'], FLATBB_VERSION, '>')) {
@@ -174,11 +179,12 @@ function market_tab_browse(array $account): string
         $remote_v = (string)($p['version'] ?? '0');
         $newer = $installed !== null && version_compare($remote_v, (string)$installed['version'], '>');
         if (($kind === 'installed' && $installed === null) || ($kind === 'updates' && !$newer)) continue;
+        if ($cat !== '' && (string)($p['category'] ?? '') !== $cat) continue;
         $shown++;
         $badge = market_item_badges($p, $account);
         $ops = market_item_ops($p, $installed, $account, market_admin_url('browse'), admin_url('plugins'));
         $cards .= '<div class="plugin-item"><div class="plugin-main"><h3>' . h((string)($p['name'] ?? $id)) . ' ' . $badge . '</h3>'
-            . '<div class="plugin-meta"><span>ID ' . h($id) . '</span><span>v' . h($remote_v) . '</span>' . (!empty($p['author']) ? '<span>' . t('by') . ' ' . h((string)$p['author']) . '</span>' : '') . (isset($p['downloads']) ? '<span>' . (int)$p['downloads'] . ' ' . t('installs') . '</span>' : '') . (!empty($p['url']) ? '<a href="' . h((string)$p['url']) . '" target="_blank" rel="noopener">' . t('Website') . '</a>' : '') . '</div>'
+            . '<div class="plugin-meta"><span>ID ' . h($id) . '</span><span>v' . h($remote_v) . '</span>' . (!empty($p['category_name']) ? '<span>' . h((string)$p['category_name']) . '</span>' : '') . (!empty($p['author']) ? '<span>' . t('by') . ' ' . h((string)$p['author']) . '</span>' : '') . (isset($p['downloads']) ? '<span>' . (int)$p['downloads'] . ' ' . t('installs') . '</span>' : '') . (!empty($p['url']) ? '<a href="' . h((string)$p['url']) . '" target="_blank" rel="noopener">' . t('Website') . '</a>' : '') . '</div>'
             . '<p class="muted">' . h((string)($p['description'] ?? '')) . '</p></div><div class="plugin-ops">' . $ops . '</div></div>';
     }
     if ($shown === 0) $html .= '<div class="empty">' . icon('puzzle') . '<p>' . ($kind === 'updates' ? t('Every installed plugin is up to date.') : t('No plugins found.')) . '</p></div>';
@@ -261,6 +267,12 @@ function market_admin_themes(string $page): never
             . '<div class="theme-ops">' . market_item_ops($p, $installed, $account, $back, admin_url('themes')) . '</div></div></div>';
     }
     $html .= $cards !== '' ? '<div class="theme-grid">' . $cards . '</div>' : '<div class="empty">' . icon('palette') . '<p>' . ($q !== '' ? t('No themes found.') : t('No themes on the marketplace yet.')) . '</p></div>';
+    $own = array_filter(themes(), static fn(array $t): bool => !in_array((string)$t['id'], market_reserved_ids(), true));
+    if ($own !== []) { // publishing starts from the theme's own folder on this forum: changelog and screenshots on the next page
+        $links = '';
+        foreach ($own as $tid => $t) $links .= '<a class="btn btn-sm" href="' . h(url('/admin/ext/market/publish', ['id' => (string)$tid])) . '">' . icon('upload') . h((string)$t['name']) . ' <span class="muted">v' . h((string)$t['version']) . '</span></a>';
+        $html .= '<div class="market-publish-themes"><h3>' . t('Publish a theme from this forum') . '</h3><p class="muted small">' . t('Pick a theme installed here: the next page asks for a changelog and at least one screenshot, then uploads it under your marketplace account.') . '</p><div class="market-publish-list">' . $links . '</div></div>';
+    }
     $html .= '<p class="muted small market-foot">' . t('Themes come from %s.', '<a href="' . h(market_site_url('/market?type=theme')) . '" target="_blank" rel="noopener">' . h((string)parse_url(market_endpoint(), PHP_URL_HOST)) . '</a>') . '</p>';
     admin_page(t('Themes'), $html, 'themes');
 }
@@ -311,7 +323,7 @@ function market_tab_account(array $account): string
 
 function market_css(): string
 {
-    return '.market-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}.market-filter-row .tabs{margin:0}.market-search{margin-inline-start:auto;width:200px;height:32px;padding:0 10px}.market-search input{font-size:var(--font-size-sm)}.market-filter-row .icon-btn{width:32px;height:32px}'
+    return '.market-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}.market-filter-row .tabs{margin:0}.market-search{margin-inline-start:auto;width:200px;height:32px;padding:0 10px}.market-search input{font-size:var(--font-size-sm)}.market-filter-row .icon-btn{width:32px;height:32px}.market-cat-form select{width:auto;max-width:220px;height:32px;padding:0 8px;font-size:var(--font-size-sm)}'
         . '@media(max-width:640px){.market-search{width:100%;margin-inline-start:0;order:2}.market-filter-row .icon-btn{order:3}}'
         . '.market-connect{padding:18px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);text-align:center}.market-connect p:first-child{max-width:520px;margin:0 auto 12px}.market-connect .btn-lg{margin:4px 0 8px}.market-token-fold{margin-top:14px}.market-token-fold summary{cursor:pointer}.market-token-fold .admin-form{margin-top:10px}'
         . '@media(max-width:640px){.plugin-item{flex-direction:column;gap:10px}.plugin-ops{justify-content:flex-start}.market-account-card .btn-row{margin-inline-start:0}.admin-toolbar form.inline{margin:0}}'
@@ -320,5 +332,6 @@ function market_css(): string
         . '.market-account{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;color:var(--text-muted);font-size:var(--font-size-sm);white-space:nowrap}.market-account svg{width:16px;height:16px}.market-account b{color:var(--text)}'
         . '.market-account-card{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2)}.market-account-card>svg{width:28px;height:28px;color:var(--brand);flex:none}.market-account-card>div:first-of-type{flex:1;min-width:200px}.market-account-card .btn-row{margin-inline-start:auto}'
         . '.plugin-ops small{display:block;text-align:right;margin-top:4px}.plugin-ops .btn[disabled]{opacity:.5;cursor:default}.market-foot{margin-top:14px}'
-        . '.market-theme-blank{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-subtle)}.market-theme-blank .icon{width:40px;height:40px}.market-theme-badges{margin:2px 0}.theme-ops small{display:block;width:100%}';
+        . '.market-theme-blank{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-subtle)}.market-theme-blank .icon{width:40px;height:40px}.market-theme-badges{margin:2px 0}.theme-ops small{display:block;width:100%}'
+        . '.market-publish-themes{margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2)}.market-publish-themes h3{margin:0 0 4px;font-size:var(--font-size-md)}.market-publish-themes p{margin:0}.market-publish-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.market-publish-list .muted{font-weight:400}';
 }

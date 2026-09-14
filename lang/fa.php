@@ -240,6 +240,7 @@ return [
     'Horizontal rule' => 'خط افقی',
     'How to earn points' => 'چطور امتیاز بگیریم',
     'How to trigger' => 'روش اجرا',
+    'ID' => 'شناسه',
     'ID / version' => 'شناسه / نسخه',
     'Icon' => 'آیکون',
     'If that email address belongs to an account, a reset link is on its way. Check your spam folder too.' => 'اگر این آدرس ایمیل به حسابی تعلق دارد، لینک بازنشانی در راه است. پوشه‌ی هرزنامه را هم بررسی کنید.',

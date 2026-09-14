@@ -239,6 +239,7 @@ return [
     'Horizontal rule' => 'Horizontale lijn',
     'How to earn points' => 'Zo verdien je punten',
     'How to trigger' => 'Hoe te activeren',
+    'ID' => 'ID',
     'ID / version' => 'ID / versie',
     'Icon' => 'Pictogram',
     'If that email address belongs to an account, a reset link is on its way. Check your spam folder too.' => 'Als dat e-mailadres bij een account hoort, is er een herstellink onderweg. Controleer ook je spammap.',

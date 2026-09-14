@@ -57,6 +57,7 @@ function admin_page_categories(): never
     foreach (categories() as $c) {
         $access = ((int)$c['is_hidden'] ? '<span class="flag flag-danger">' . t('hidden') . '</span> ' : '') . ($c['view_groups'] !== '' ? '<span class="flag">' . t('restricted view') . '</span> ' : '') . ($c['post_groups'] !== '' ? '<span class="flag">' . t('restricted posting') . '</span>' : '');
         $rows[] = [
+            '<span class="mono small muted">' . (int)$c['id'] . '</span>', // the number settings ask for (a plugin's "category id")
             ((int)$c['parent_id'] ? '<span class="muted">— </span>' : '') . '<b>' . h($c['name']) . '</b><br><small class="muted">' . h($c['description']) . '</small>',
             h($c['slug']), (int)$c['topic_count'], (int)$c['sort'], $access ?: '<span class="muted small">' . t('everyone') . '</span>',
             '<div class="row-actions">' . admin_drawer_link(admin_url('categories', ['edit' => $c['id']]), t('Edit')) . admin_row_menu([
@@ -65,7 +66,7 @@ function admin_page_categories(): never
             ]) . '</div>',
         ];
     }
-    $html = admin_table([t('Category'), t('Slug'), t('Topics'), t('Sort'), t('Access'), ''], $rows);
+    $html = admin_table([t('ID'), t('Category'), t('Slug'), t('Topics'), t('Sort'), t('Access'), ''], $rows);
     $drawer = null;
     if (($eid = get_int('edit', -1)) >= 0) {
         $edit = category_by_id($eid) ?? ['id' => 0, 'name' => '', 'slug' => '', 'description' => '', 'parent_id' => 0, 'icon' => '', 'sort' => 10, 'view_groups' => '', 'post_groups' => '', 'is_hidden' => 0];
