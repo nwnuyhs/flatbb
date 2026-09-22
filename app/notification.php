@@ -4,10 +4,19 @@
  * cached on fb_users.unread_notifications so the header badge costs no extra query.
  */
 
-/** Create a notification. Returns false when suppressed (self, duplicate, hook veto). */
+/** Whether the member wants this kind of notification (Settings → Preferences). Kinds without a preference are always sent. */
+function notify_wanted(int $to, string $kind): bool
+{
+    $key = ['reply' => 'notify_reply', 'mention' => 'notify_mention'][$kind] ?? '';
+    if ($key === '') return true;
+    $u = user_by_id($to); // request-cached: a page full of mentions reads each member once
+    return $u === null || (int)(json_decode_array((string)$u['prefs'])[$key] ?? 1) === 1;
+}
+
+/** Create a notification. Returns false when suppressed (self, duplicate, preference, hook veto). */
 function notify(int $to, int $from, string $kind, string $content = '', int $topic_id = 0, int $post_id = 0): bool
 {
-    if ($to <= 0 || $to === $from) return false;
+    if ($to <= 0 || $to === $from || !notify_wanted($to, $kind)) return false;
     $data = hook('notification.before_create', ['user_id' => $to, 'from_user_id' => $from, 'kind' => $kind, 'content' => cut($content, 500, ''), 'topic_id' => $topic_id, 'post_id' => $post_id], []);
     if (!is_array($data)) return false;
     if ($post_id > 0 && $kind !== 'like' && val('SELECT 1 FROM fb_notifications WHERE user_id=? AND post_id=? AND kind=?', [$to, $post_id, $kind])) return false;

@@ -34,15 +34,22 @@ function lang_installed(string $code): bool
 }
 
 /** Remember a visitor's language: cookie for a year, and the preference of a signed-in member. '' returns to the site default. */
-function lang_set(string $code): void
+/**
+ * Remember the language: a cookie for everyone, the preferences for a member.
+ * $prefs: the preferences the caller has just written. Settings → Preferences passes them so this does not save the row it read
+ * at the start of the request over the answers just given (theme, notifications, points would jump back). Without them the row is
+ * read again here, never from the request's cached copy.
+ */
+function lang_set(string $code, ?array $prefs = null): void
 {
     if ($code !== '' && !lang_installed($code)) return;
     app_cookie('fb_lang', $code, $code === '' ? now() - 3600 : now() + 86400 * 365);
     $me = me();
-    if ($me !== null) {
-        $prefs = json_decode_array((string)$me['prefs']);
+    if ($me !== null && $prefs === null) {
+        $prefs = json_decode_array((string)val('SELECT prefs FROM fb_users WHERE id=?', [(int)$me['id']]));
         $prefs['lang'] = $code;
         db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$me['id']]);
+        request_cache('me', null, true);
     }
     request_cache('lang_code', null, true);
     request_cache('lang', null, true);

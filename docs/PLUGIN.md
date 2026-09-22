@@ -298,7 +298,7 @@ Every plugin is free unless its author sets a number of points on the marketplac
 
 ## 16. Prompt to give an AI
 
-No command line is needed to build or ship a plugin: the AI writes `plugins/<id>/plugin.php`, you zip that folder and upload it under Admin → Plugins → Upload plugin (or publish it to everyone at https://www.flatbb.com/market/publish). The complete specification, hooks and API are hosted as one plain-text file at https://www.flatbb.com/dev/plugins.md, so the prompt can be as short as:
+No command line is needed to build or ship a plugin: the AI writes `plugins/<id>/plugin.php`, you zip that folder and upload it under Admin → Plugins → Upload plugin (or publish it to everyone at https://www.flatbb.com/market/publish). The complete specification, hooks and API are hosted as one plain-text file at https://www.flatbb.com/dev/plugins.md, so the prompt can be as short as this ([Build a plugin with AI](AI.md) walks through the whole process):
 
 ```
 Read https://www.flatbb.com/dev/plugins.md first. Then create a flatbb plugin plugins/<id>/plugin.php that: <what it does, where it shows up, its settings, who may use it>.

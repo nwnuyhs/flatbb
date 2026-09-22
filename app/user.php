@@ -151,7 +151,8 @@ function user_settings(string $tab = 'profile'): never
             $prefs = hook('user.prefs_save', $prefs, ['user' => $me]);
             db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$me['id']]);
             $me['prefs'] = json_encode_value($prefs);
-            lang_set((string)$prefs['lang']); // the header switcher and this select stay in step
+            request_cache('me', null, true); // the rest of the request reads the new answers, not the row loaded before the save
+            lang_set((string)$prefs['lang'], $prefs); // the header switcher and this select stay in step
             flash(t('Preferences saved.'));
         } else {
             fire('user.settings_post', ['user' => $me, 'tab' => $tab]);
