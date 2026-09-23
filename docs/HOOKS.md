@@ -69,6 +69,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.auth.register.extra` | html region | Inside the registration form | `app/views/register.php` |
 | `region.body.end` | html region | Before </body> (scripts) | `app/views/layout.php` |
 | `region.composer.extra` | html region | Extra fields inside the post/reply form | `app/views/topic.php`, `app/views/topic_form.php` |
+| `region.composer.modes` | list region | Editor mode tabs above the toolbar (list: label, icon, cmd, class): Write and Preview; a visual editor adds its own | `app/views/editor.php` |
 | `region.composer.toolbar` | list region | Editor toolbar buttons (list) | `app/views/editor.php` |
 | `region.footer.left` | html region | Footer, left | `app/views/layout.php` |
 | `region.footer.links` | list region | Footer links (list) | `app/views/layout.php` |
@@ -152,6 +153,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `user.avatar_after` | filter | HTML placed inside the avatar, over its lower corner (ctx: user, size in px); the wrapper is positioned, so use position:absolute. Runs inside lists: no database access. | `core/render.php` |
 | `user.before_save` | filter | Profile fields before saving. | `app/user.php` |
 | `user.can` | filter | Filter: whether the signed-in member may do something (bool; ctx: permission, user, group), after the group decided. Guests and admins never reach it. | `core/auth.php` |
+| `user.email_changed` | event | After a member changed their email address in Settings → Email, or restored the old one from the notice link (ctx: user_id, old, new, restored). | `app/user.php` |
 | `user.level` | filter | Filter: the level of a member as a number (ctx: user), read by user_level(). Answered by the plugin that keeps levels. Runs inside lists: no database access. | `core/auth.php` |
 | `user.link_after` | filter | HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access. | `core/render.php`, `app/views/card_newest.php`, `app/views/profile.php` |
 | `user.logout_everywhere` | event | After every session of a user was invalidated (ctx: user_id). | `core/auth.php` |

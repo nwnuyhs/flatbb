@@ -18,6 +18,33 @@ foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($
   <h2 class="settings-current"><?= h((string)($tabs[$tab]['label'] ?? '')) ?></h2>
   <?php if ($tab === 'points'): ?>
   <div class="settings-form settings-points"><?= raw($extra) ?></div>
+  <?php elseif ($tab === 'email'): $verify = register_verify_on(); $addr = (string)$user['email']; $verified = (int)$user['email_verified'] === 1; $open = get_int('change') === 1 || $addr === ''; ?>
+  <div class="settings-form settings-email">
+    <div class="email-now">
+      <span class="email-now-icon"><?= icon('mail') ?></span>
+      <div class="email-now-main"><span class="muted small"><?= t('Current email') ?></span><b><?= h($addr !== '' ? $addr : t('None yet')) ?></b></div>
+      <?php if ($verify && $addr !== ''): ?><span class="email-badge<?= $verified ? ' ok' : '' ?>"><?= icon($verified ? 'check' : 'info') ?><?= $verified ? t('Verified') : t('Not verified') ?></span><?php endif; ?>
+    </div>
+    <?php if ($verify && !$verified && $addr !== ''): ?>
+    <form method="post" action="<?= h(url('/settings/email')) ?>" class="email-step">
+      <?= csrf_field() ?><input type="hidden" name="action" value="verify"><input type="hidden" name="email" value="<?= h($addr) ?>">
+      <p class="email-step-lead"><?= t('Verify this address to secure your account: we send it a 6-digit code.') ?></p>
+      <div class="code-row"><?= input('code', '', ['inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'placeholder' => '123456', 'aria-label' => t('Verification code')]) ?><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="email"><?= t('Send code') ?></button></div>
+      <div class="form-actions"><button type="submit" class="btn btn-primary"><?= t('Verify') ?></button></div>
+    </form>
+    <?php endif; ?>
+    <details class="email-change"<?= $open ? ' open' : '' ?>>
+      <summary class="btn"><?= icon('edit') ?><?= $addr !== '' ? t('Change email') : t('Add an email') ?></summary>
+      <form method="post" action="<?= h(url('/settings/email')) ?>" class="email-step">
+        <?= csrf_field() ?><input type="hidden" name="action" value="change">
+        <?php if ((string)$user['password'] !== ''): ?><?= form_row(t('Current password'), input('password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])) ?><?php endif; ?>
+        <div class="form-row"><label for="fb-new-email"><?= t('New email') ?></label><div class="code-row"><?= input('new_email', '', ['id' => 'fb-new-email', 'type' => 'email', 'required' => true, 'autocomplete' => 'email', 'placeholder' => 'name@example.com']) ?><?php if ($verify): ?><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="new_email"><?= t('Send code') ?></button><?php endif; ?></div></div>
+        <?php if ($verify): ?><?= form_row(t('Verification code'), input('code', '', ['inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'required' => true, 'placeholder' => '123456']), t('Sent to the new address; valid for 10 minutes.')) ?><?php endif; ?>
+        <p class="form-help"><?= $addr !== '' ? t('Your current address stays until the change is confirmed. It then gets a notice with a link that undoes the change for 7 days.') : '' ?></p>
+        <div class="form-actions"><button type="submit" class="btn btn-primary"><?= $addr !== '' ? t('Change email') : t('Add email') ?></button></div>
+      </form>
+    </details>
+  </div>
   <?php else: ?>
   <form method="post" action="<?= h(url('/settings/' . $tab)) ?>" enctype="multipart/form-data" class="settings-form">
     <?= csrf_field() ?>
@@ -25,14 +52,7 @@ foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($
       <?php if (user_rename_allowed()): ?>
       <?= form_row(t('Username'), input('username', (string)$user['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), user_rename_next($user) > now() ? t('You can change your username again on %s.', date('Y-m-d', user_rename_next($user))) : t('Letters, numbers, dot, dash or underscore. Links to your old profile name keep working.')) ?>
       <?php endif; ?>
-      <?php if (register_verify_on()): $verified = (int)$user['email_verified'] === 1; ?>
-      <div class="form-row"><label><?= t('Email') ?></label>
-        <div class="code-row"><span class="field-check<?= $verified ? ' ok' : '' ?>"><input type="email" name="email" value="<?= h((string)$user['email']) ?>" autocomplete="email" data-verified-value="<?= h((string)$user['email']) ?>"><?php if ($verified): ?><i class="field-mark" title="<?= h(t('Verified')) ?>"><?= icon('check') ?></i><?php endif; ?></span><button type="button" class="btn" data-send-code="<?= h(url('/api/send_code')) ?>" data-email="email"><?= t('Send code') ?></button></div>
-        <div class="form-help"><?= $verified ? t('Verified.') : t('Not verified yet. Press "Send code", then enter the code below.') ?> <?= t('A code is also needed when you change the address.') ?></div></div>
-      <div class="form-row" data-code-row<?= $verified ? ' hidden' : '' ?>><label for="fb-code"><?= t('Verification code') ?></label><?= input('code', '', ['id' => 'fb-code', 'inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => 6, 'placeholder' => '123456']) ?></div>
-      <?php else: ?>
-      <?= form_row(t('Email'), input('email', (string)$user['email'], ['type' => 'email'])) ?>
-      <?php endif; ?>
+      <div class="form-row"><label><?= t('Email') ?></label><div class="email-line"><span><?= h((string)$user['email']) ?></span><a class="btn btn-sm" href="<?= h(url('/settings/email')) ?>"><?= t('Manage') ?></a></div></div>
       <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>
       <?= form_row(t('Location'), input('location', (string)$user['location'])) ?>

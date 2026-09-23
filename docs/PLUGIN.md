@@ -322,6 +322,7 @@ function checkin_claim(): never
 
 The composer is one component (`app/views/editor.php` + the editor block in `assets/app.js`). Stable contract for plugins:
 
+- **Modes**: the tabs above the toolbar are the list region `composer.modes` (`write`, `preview`); add a mode with `label`, `icon`, `cmd` (your command toggles it) and `class` (on `.editor` while it is on) — see the Visual Editor plugin.
 - **Buttons**: add to the `composer.toolbar` list region: `$buttons['myid_stamp'] = ['icon' => 'clock', 'title' => 'Timestamp', 'cmd' => 'myid_stamp', 'arg' => 'Y-m-d'];` (`arg` is passed to your handler; `['html' => …]` inserts raw markup).
 - **Commands (JS)**: `FB.editor.register('myid_stamp', function (api, arg, el) { api.insert(new Date().toISOString().slice(0, 10)); });` The `api` object: `value(v?)`, `selection()` → `[start, end, text]`, `replace(start, end, text, cursor?)`, `insert(text)`, `wrap(before, after?, placeholder?)`, `prefix(lineStart)`, `block(text)`, `upload(files)`, `preview(bool?)`, `fullscreen(bool?)`, `status(text)`, `run(cmd, arg)`, `clearDraft()`. Registering an existing command name (e.g. `link`) overrides the built-in one.
 - **Events**: `document` receives a cancelable `fb:editor` event before every command (`detail: {editor, api, cmd, arg}`; `preventDefault()` blocks it). `FB.editor.get(el)` returns the api of any `[data-editor]` element; `FB.editor.init(el)` initialises one you inserted dynamically.

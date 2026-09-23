@@ -296,6 +296,7 @@ function setting_defaults(): array
         'register_ip_limit' => '3',
         'password_min' => '8',
         'online_dot' => '1',
+        'right_follow' => '1',
         'username_min' => '2',
         'username_max' => '30',
         'allow_rename' => '0',

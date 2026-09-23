@@ -417,6 +417,25 @@ function user_menu_items(array $me): array
     ] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me])) ?? [];
 }
 
+/**
+ * Theme and language as two small round buttons plus the row of languages the second one opens: on phones they leave the
+ * header for the account menu (members) or the top of the drawer (visitors). Same controls as the header's: data-toggle="theme"
+ * and the POST /language form. Returns [buttons, languages row] ('' for the row when the site has one language).
+ */
+function quick_prefs_html(): array
+{
+    $buttons = '<button class="qp-btn theme-toggle" type="button" data-toggle="theme" aria-label="' . t('Toggle theme') . '" title="' . t('Toggle theme') . '">' . icon('sun', 'theme-sun') . icon('moon', 'theme-moon') . '</button>';
+    $row = '';
+    $langs = lang_available();
+    if (count($langs) > 1) {
+        $buttons .= '<button class="qp-btn" type="button" data-qp-langs aria-expanded="false" aria-label="' . t('Language') . '" title="' . t('Language') . '">' . icon('languages') . '</button>';
+        $pills = '';
+        foreach ($langs as $code => $name) $pills .= '<button type="submit" name="code" value="' . h((string)$code) . '"' . ($code === lang_code() ? ' class="active"' : '') . '>' . h((string)$name) . '</button>';
+        $row = '<form class="qp-langs" method="post" action="' . h(url('/language')) . '" hidden>' . csrf_field() . '<input type="hidden" name="back" value="' . h(current_path()) . '">' . $pills . '</form>';
+    }
+    return ['<span class="quick-prefs">' . $buttons . '</span>', $row];
+}
+
 function header_right_items(?array $me, int $unread, array $user_menu): array
 {
     $items = [];
@@ -426,7 +445,7 @@ function header_right_items(?array $me, int $unread, array $user_menu): array
         . '<a class="icon-btn search-toggle" href="' . h(url('/search')) . '" aria-label="' . t('Search') . '">' . icon('search') . '</a>'];
     $after = region('header.right.after_search', [], '', false);
     if (trim($after) !== '') $items['after_search'] = ['html' => '<div class="region region-header-right-after_search">' . $after . '</div>', 'label' => t('Plugins (right of search)'), 'weight' => -5];
-    if ($me !== null && can('post')) $items['new'] = ['label' => t('New Topic'), 'weight' => -10, 'html' => '<a class="icon-btn header-new-topic" href="' . h(url('/new-topic')) . '" aria-label="' . t('New Topic') . '" title="' . t('New Topic') . '">' . icon('plus') . '</a>'];
+    if ($me !== null && can('post')) $items['new'] = ['label' => t('New Topic'), 'weight' => -10, 'html' => '<a class="icon-btn header-new-topic" href="' . h(new_topic_url()) . '" aria-label="' . t('New Topic') . '" title="' . t('New Topic') . '">' . icon('plus') . '</a>'];
     $langs = lang_available();
     if (count($langs) > 1) {
         $menu = '';

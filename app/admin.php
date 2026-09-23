@@ -129,6 +129,7 @@ function admin_settings_fields(): array
             'site_tz' => ['select', t('Time zone'), t('Used where the browser cannot help: emails, feeds, the admin log and the time shown without JavaScript. Visitors see times in their own time zone.'), tz_options()],
             'footer_text' => ['text', t('Footer text')],
             'online_dot' => ['checkbox', t('Online dot on avatars'), t('A green dot on the avatar of every member seen in the last 15 minutes.')],
+            'right_follow' => ['checkbox', t('Right column stays in view'), t('On wide screens the right column scrolls with the page until its last card shows, then stays; scrolling back up brings its top back. Off: it scrolls away with the page.')],
         ]],
         'content' => [t('Content'), [
             'per_page' => ['number', t('Topics per page'), '', null, 5, 100],

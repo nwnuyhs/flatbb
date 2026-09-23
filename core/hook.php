@@ -98,6 +98,7 @@ function regions_known(): array
         'topic.replies_after' => 'After the post stream, before the reply box',
         'composer.extra' => 'Extra fields inside the post/reply form',
         'composer.toolbar' => 'Editor toolbar buttons (list)',
+        'composer.modes' => 'Editor mode tabs above the toolbar (list: label, icon, cmd, class): Write and Preview; a visual editor adds its own',
         'topic.sidebar.top' => 'Topic page right column, top',
         'topic.sidebar.cards' => 'Topic page right column cards (list)',
         'topic.sidebar.bottom' => 'Topic page right column, bottom',

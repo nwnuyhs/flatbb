@@ -75,6 +75,7 @@ function user_settings(string $tab = 'profile'): never
     $tabs = [
         'profile' => ['label' => t('Profile'), 'group' => 'account', 'weight' => 10],
         'avatar' => ['label' => t('Avatar'), 'group' => 'account', 'weight' => 20],
+        'email' => ['label' => t('Email'), 'group' => 'account', 'weight' => 25],
         'password' => ['label' => t('Password'), 'group' => 'account', 'weight' => 30],
         'preferences' => ['label' => t('Preferences'), 'group' => 'preferences', 'weight' => 40],
         'points' => ['label' => t('Points'), 'group' => 'community', 'weight' => 60],
@@ -89,19 +90,9 @@ function user_settings(string $tab = 'profile'): never
             $website = post_str('website', 200);
             if ($website !== '' && !preg_match('#^https?://#i', $website)) $website = 'https://' . $website;
             if ($website !== '' && !filter_var($website, FILTER_VALIDATE_URL)) fail(t('Please enter a valid website URL.'), $back);
-            $email = mb_strtolower(post_str('email', 120));
-            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) fail(t('Please enter a valid email address.'), $back);
-            if ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [$email, (int)$me['id']])) fail(t('That email is already registered.'), $back);
-            $email_changed = $email !== (string)$me['email'];
-            $code = post_str('code', 12);
-            // a code proves the address: it is asked for when the address changes, and accepted at any time for an address that is not verified yet
-            if ($email !== '' && register_verify_on() && ($email_changed || ($code !== '' && (int)$me['email_verified'] !== 1))) {
-                if (!email_code_check($email, $code)) fail(t('The verification code is wrong or expired. Ask for a new one.'), $back);
-                db_update('fb_users', ['email_verified' => 1], 'id=?', [(int)$me['id']]);
-            } elseif ($email_changed) {
-                db_update('fb_users', ['email_verified' => 0], 'id=?', [(int)$me['id']]);
-            }
-            $data = hook('user.before_save', ['email' => $email, 'bio' => post_str('bio', 1000), 'website' => $website, 'location' => post_str('location', 80)], ['user' => $me]);
+            // the email address has a page of its own (Settings → Email): changing it asks for the password and a code
+            $data = hook('user.before_save', ['bio' => post_str('bio', 1000), 'website' => $website, 'location' => post_str('location', 80)], ['user' => $me]);
+            unset($data['email']);
             db_update('fb_users', $data, 'id=?', [(int)$me['id']]);
             $renamed = false;
             $new_name = post_str('username', 30);
@@ -131,6 +122,8 @@ function user_settings(string $tab = 'profile'): never
             } else {
                 fail(t('Please choose an image.'), $back);
             }
+        } elseif ($tab === 'email') {
+            settings_email_post($me, $back);
         } elseif ($tab === 'password') {
             $old = post_secret('old_password');
             $new = post_secret('password');
@@ -176,4 +169,64 @@ function user_pref(string $key, mixed $default = null): mixed
     if ($me === null) return $default;
     $prefs = request_cache('my_prefs', static fn(): array => json_decode_array((string)$me['prefs'])) ?? [];
     return $prefs[$key] ?? $default;
+}
+
+/**
+ * POST /settings/email. action=verify: the code mailed to the current address marks it verified. Otherwise a change, the
+ * way the big services do it: the current password, then the new address and the code sent to it (when the site verifies
+ * addresses); nothing changes until both check out. The old address is told, with a link that undoes the change for a week.
+ */
+function settings_email_post(array $me, string $back): never
+{
+    $verify = register_verify_on();
+    if (post_str('action', 10) === 'verify') {
+        if (!$verify) fail(t('Email verification is off.'), $back);
+        if (!email_code_check((string)$me['email'], post_str('code', 12))) fail(t('The verification code is wrong or expired. Ask for a new one.'), $back);
+        db_update('fb_users', ['email_verified' => 1], 'id=?', [(int)$me['id']]);
+        flash(t('Your email address is verified.'));
+        redirect($back);
+    }
+    $retry = url('/settings/email', ['change' => 1]);
+    if ((string)$me['password'] !== '' && !password_verify(post_secret('password'), (string)$me['password'])) fail(t('Current password is incorrect.'), $retry); // '' = no password yet (social sign-up)
+    $new = mb_strtolower(post_str('new_email', 120));
+    $old = (string)$me['email'];
+    if (!filter_var($new, FILTER_VALIDATE_EMAIL)) fail(t('Please enter a valid email address.'), $retry);
+    if ($new === mb_strtolower($old)) fail(t('That is already your email address.'), $retry);
+    if (val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [$new, (int)$me['id']])) fail(t('That email is already registered.'), $retry);
+    if ($verify && !email_code_check($new, post_str('code', 12))) fail(t('The verification code is wrong or expired. Ask for a new one.'), $retry);
+    db_update('fb_users', ['email' => $new, 'email_verified' => $verify ? 1 : 0], 'id=?', [(int)$me['id']]);
+    if ($old !== '' && filter_var($old, FILTER_VALIDATE_EMAIL)) { // best effort: the change stands even when the mail cannot go out
+        mail_send($old, t('[%s] Your email address was changed', setting('site_name')), t("Hi %s,\n\nThe email address of your account on %s was changed to %s on %s.\n\nIf you made this change, there is nothing to do.\n\nIf you did not, open this link within 7 days: it puts this address back and signs your account out everywhere.\n%s", (string)$me['username'], setting('site_name'), email_mask($new), date('Y-m-d H:i'), email_restore_link((int)$me['id'], $old, $new)));
+    }
+    fire('user.email_changed', ['user_id' => (int)$me['id'], 'old' => $old, 'new' => $new]);
+    fire('user.after_save', ['user_id' => (int)$me['id']]);
+    flash($verify ? t('Your email address is now %s.', $new) : t('Your email address is now %s. Your previous address was told about the change.', $new));
+    redirect($back);
+}
+
+/** GET|POST /email/restore — the link from the "your email was changed" mail: confirm, then the old address is back and every session ends. */
+function user_email_restore(): never
+{
+    $uid = is_post() ? post_int('u') : get_int('u');
+    $old = is_post() ? post_str('o', 120) : get_str('o', 120);
+    $exp = is_post() ? post_int('x') : get_int('x');
+    $sig = is_post() ? post_str('s', 64) : get_str('s', 64);
+    $user = email_restore_user($uid, $old, $exp, $sig);
+    if ($user === null) error_page(t('This link has expired or was already used.'), 410, t('Link expired'));
+    if (is_post()) {
+        require_post();
+        if (val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [mb_strtolower($old), $uid])) error_page(t('That address now belongs to another account. Please contact the site team.'), 409, t('Address taken'));
+        db_update('fb_users', ['email' => mb_strtolower($old), 'email_verified' => 1], 'id=?', [$uid]);
+        user_logout_everywhere($uid);
+        if (uid() === $uid) logout_user();
+        fire('user.email_changed', ['user_id' => $uid, 'old' => (string)$user['email'], 'new' => mb_strtolower($old), 'restored' => true]);
+        flash(t('Your email address is %s again and your account was signed out everywhere. Sign in, then change your password.', $old));
+        redirect(url('/forgot'));
+    }
+    $body = '<div class="card auth-card"><div class="card-body"><h1>' . t('Undo the email change') . '</h1>'
+        . '<p>' . t('The address of %s was changed to %s. Put %s back and sign the account out on every device?', h((string)$user['username']), h(email_mask((string)$user['email'])), '<b>' . h($old) . '</b>') . '</p>'
+        . '<form method="post" action="' . h(url('/email/restore')) . '">' . csrf_field() . '<input type="hidden" name="u" value="' . $uid . '"><input type="hidden" name="o" value="' . h($old) . '"><input type="hidden" name="x" value="' . $exp . '"><input type="hidden" name="s" value="' . h($sig) . '">'
+        . '<button type="submit" class="btn btn-primary">' . t('Restore my old address') . '</button></form>'
+        . '<p class="muted small">' . t('Afterwards, reset your password from the sign-in page: the reset mail goes to the restored address.') . '</p></div></div>';
+    page(t('Undo the email change'), $body, ['class' => 'page-auth', 'left' => false, 'right' => false]);
 }

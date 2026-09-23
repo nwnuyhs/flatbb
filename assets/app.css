@@ -14,6 +14,8 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-size-xs: 11px; --font-size-sm: 12px; --font-size-md: 14px; --font-size-lg: 16px; --font-size-xl: 18px; --font-size-2xl: 22px; --font-size-3xl: 26px;
   --topbar-h: 56px; --left-w: 220px; --right-w: 280px; --gap: 24px; --container: 1280px;
+  --page-x: 20px; /* the page's side margin: 20px, 16px on tablets, 12px on phones. Everything lines up on it; a strip that runs
+                     edge to edge (the category bar, a notice bar) pulls out by exactly this much: margin-inline: calc(-1 * var(--page-x)) */
   color-scheme: light;
 }
 [data-theme="dark"] { --bg: #111418; --panel: #191d23; --panel-2: #1f242b; --line: #2a3038; --line-soft: #232930; --text: #e6e8eb; --text-muted: #9aa4b2; --text-subtle: #6b7482; --text-disabled: #4a525e; --brand-soft: rgba(231, 103, 46, .16); --success-soft: rgba(22, 163, 74, .18); --danger-soft: rgba(220, 38, 38, .18); --warning-soft: rgba(217, 119, 6, .18); --info-soft: rgba(37, 99, 235, .18); --shadow: 0 1px 2px rgba(0, 0, 0, .4); --shadow-md: 0 8px 24px rgba(0, 0, 0, .5); color-scheme: dark; }
@@ -41,7 +43,7 @@ small, .small { font-size: var(--font-size-sm); }
 .hidden { display: none !important; }
 .mono { font-family: var(--mono); }
 .icon { width: 1.15em; height: 1.15em; vertical-align: -.2em; flex: none; }
-.container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 20px; }
+.container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--page-x); }
 .code-row { display: flex; gap: 8px; } .code-row input { flex: 1; min-width: 0; } .code-row .btn { white-space: nowrap; }
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--brand); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: 1; }
 .flag { display: inline-block; padding: 1px 7px; border-radius: var(--flag-radius, 4px); background: var(--brand-soft); color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; vertical-align: middle; }
@@ -128,6 +130,39 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .lang-menu .dropdown-toggle { width: 36px; height: 36px; padding: 0; }
 .lang-menu .dropdown-menu { min-width: 150px; }
 .dropdown-menu button.active { color: var(--brand); font-weight: 600; }
+/* Settings → Email: the address and its state, then the steps (verify it; change it) */
+.email-now { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); }
+.email-now-icon { display: inline-grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 50%; background: var(--panel); color: var(--text-muted); }
+.email-now-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.email-now-main b { overflow-wrap: anywhere; font-size: var(--font-size-lg); }
+.email-badge { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--warning, #d97706) 14%, transparent); color: var(--warning, #b45309); font-size: var(--font-size-sm); font-weight: 600; }
+.email-badge.ok { background: color-mix(in srgb, var(--success) 14%, transparent); color: var(--success); }
+.email-badge .icon { width: 14px; height: 14px; }
+.email-step { margin-top: 14px; }
+.email-step-lead { margin: 0 0 10px; color: var(--text-muted); }
+.email-change { margin-top: 16px; }
+.email-change > summary { list-style: none; display: inline-flex; }
+.email-change > summary::-webkit-details-marker { display: none; }
+.email-change[open] > summary { display: none; }
+.email-change .email-step { margin-top: 0; padding-top: 4px; }
+.email-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.email-line span { overflow-wrap: anywhere; }
+/* theme and language on phones (quick_prefs_html): two round buttons beside the name in the account menu, or at the top of a
+   visitor's drawer; the second opens a row of languages under them. Hidden on wider screens, where the header has both */
+.um-top { display: flex; align-items: center; gap: 6px; }
+.um-top .um-head { flex: 1; min-width: 0; }
+.quick-prefs, .drawer-quick { display: none; }
+.quick-prefs { align-items: center; gap: 6px; flex: none; }
+.qp-btn, .dropdown-menu .qp-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-2); color: var(--text-muted); cursor: pointer; }
+.qp-btn:hover, .dropdown-menu .qp-btn:hover { background: var(--panel-2); color: var(--text); border-color: var(--text-subtle); }
+.qp-btn .icon { width: 17px; height: 17px; }
+.qp-btn[aria-expanded="true"] { border-color: var(--brand); color: var(--brand); }
+.qp-langs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 2px 8px 10px; }
+.qp-langs[hidden] { display: none; }
+.qp-langs button, .dropdown-menu .qp-langs button { width: auto; padding: 4px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--text); font-size: var(--font-size-sm); }
+.qp-langs button.active, .dropdown-menu .qp-langs button.active { border-color: transparent; background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.drawer-quick { align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 4px 12px; border-bottom: 1px solid var(--line-soft); }
+.col-left > .qp-langs { margin: -6px 0 12px; padding: 0 4px 12px; border-bottom: 1px solid var(--line-soft); }
 /* account menu: who is signed in, their numbers, then the menu in groups */
 .user-menu .dropdown-menu { min-width: 250px; }
 .dropdown-menu a.um-head { gap: 10px; padding: 8px; }
@@ -158,6 +193,9 @@ body.no-left .page-grid { grid-template-columns: minmax(0, 1fr) var(--right-w); 
 body.no-right .page-grid { grid-template-columns: var(--left-w) minmax(0, 1fr); }
 body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
 .col-left { position: sticky; top: calc(var(--topbar-h) + 20px); }
+/* the right column follows the page the way X does (app.js moves --right-top): it scrolls until its last card shows, then stays;
+   scrolling back up brings its top back. Shorter than the window, it simply stays under the top bar. Setting right_follow */
+@media (min-width: 1201px) { body.right-follow .col-right { position: sticky; top: var(--right-top, calc(var(--topbar-h) + 20px)); } }
 @media (min-width: 993px) { .page-admin .col-left { max-height: calc(100vh - var(--topbar-h) - 20px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 20px; } } /* a long admin menu scrolls on its own; app.js keeps its position between pages */
 .col-main { min-width: 0; }
 .region:empty { display: none; }
@@ -451,7 +489,15 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .editor { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); position: relative; }
 .editor:focus-within { border-color: var(--brand); }
 .editor.dragover { outline: 2px dashed var(--brand); }
-.editor-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px; border-bottom: 1px solid var(--line-soft); overflow-x: auto; scrollbar-width: none; }
+/* the mode tabs above the toolbar (composer.modes): Write / Visual / Preview, fullscreen at the end */
+.editor-tabs { display: flex; align-items: flex-end; gap: 2px; padding: 0 6px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.editor-tab { display: inline-flex; align-items: center; gap: 5px; margin-bottom: -1px; padding: 8px 12px 7px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-muted); font: inherit; font-size: var(--font-size-sm); cursor: pointer; white-space: nowrap; }
+.editor-tab .icon { width: 15px; height: 15px; }
+.editor-tab:hover { color: var(--text); }
+.editor-tab.active { color: var(--text); font-weight: 600; border-bottom-color: var(--brand); }
+.editor-tabs .editor-fs-btn { align-self: center; }
+/* the toolbar wraps onto a second row when the composer is narrow, so no button is ever cut off */
+.editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; row-gap: 2px; padding: 6px; border-bottom: 1px solid var(--line-soft); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
 .tb-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 7px; border: 0; border-radius: 4px; background: none; color: var(--text-muted); cursor: pointer; font: inherit; font-size: var(--font-size-sm); flex: none; }
 .tb-btn:hover, .tb-btn.active { background: var(--panel-2); color: var(--text); }
@@ -460,9 +506,7 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .tb-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; flex: none; }
 .tb-spacer { flex: 1; }
 .editor-body { display: grid; grid-template-columns: 1fr; }
-.editor.split .editor-body { grid-template-columns: 1fr 1fr; }
-.editor.split .editor-preview { border-inline-start: 1px solid var(--line-soft); }
-.editor.preview-only .editor-input { display: none; }
+.editor.preview-only .editor-body > :not([data-preview]), .editor.preview-only .editor-toolbar, .editor.preview-only .editor-emoji { display: none; } /* the rendered text alone, whatever editor was on */
 .editor-input { border: 0; border-radius: 0; min-height: 200px; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; resize: vertical; }
 .editor-input:focus { outline: 0; }
 .editor-preview { padding: 12px 14px; min-height: 200px; overflow: auto; }
@@ -757,14 +801,16 @@ body.adrawer-open { overflow: hidden; }
   .page-topic .card-stack { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 }
 @media (max-width: 992px) {
-  :root { --gap: 16px; }
-  html, body { overflow-x: hidden; }
+  :root { --gap: 16px; --page-x: 16px; }
+  /* clip, not hidden: overflow-x: hidden on both html and body turns body into a scroll box and the sticky top bar scrolled away */
+  html, body { overflow-x: clip; }
+  @supports not (overflow: clip) { html { overflow-x: hidden; } body { overflow-x: visible; } }
   .col-main, .col-right { min-width: 0; max-width: 100%; }
   .topic-title, .post-content, .row-meta, .list-head h1 { overflow-wrap: anywhere; }
   .post-content pre { max-width: 100%; }
   .page-grid, body.no-left .page-grid, body.no-right .page-grid { grid-template-columns: minmax(0, 1fr); padding-top: 14px; }
   .cat-bar-mobile { display: flex; }
-  .cat-bar { margin: -14px -20px 12px; padding: 0 12px; max-width: none; background: var(--panel); gap: 0; }
+  .cat-bar { margin: -14px calc(-1 * var(--page-x)) 12px; padding: 0 calc(var(--page-x) - 8px); max-width: none; background: var(--panel); gap: 0; }
   .cat-item { padding: 10px 9px; }
   .col-right, body.no-left .col-right { grid-column: 1; }
   .drawer-toggle { display: inline-flex; }
@@ -782,7 +828,7 @@ body.adrawer-open { overflow: hidden; }
   .cat-stats { flex-direction: row; gap: 12px; }
 }
 @media (max-width: 640px) {
-  .container { padding: 0 4px; }
+  :root { --page-x: 12px; }
   .search-form { display: none; }
   .search-toggle { display: inline-flex; }
   .admin-toolbar .search-form { display: flex; width: 100%; flex: 1 1 100%; }
@@ -796,26 +842,23 @@ body.adrawer-open { overflow: hidden; }
   .page-grid { padding-top: 12px; }
   .list-head { margin-bottom: 8px; gap: 8px; }
   .list-card > .list-head { padding: 6px 8px; }
-  .page-topic .col-main { padding-inline: 8px; }
-  /* the New Topic button is a round + on a phone, so the tabs keep the row to themselves */
-  .list-head .btn-primary span { display: none; }
-  .list-head .btn-primary { width: 38px; height: 38px; padding: 0; border-radius: 50%; justify-content: center; }
-  .list-head .btn-primary .icon { width: 20px; height: 20px; }
-  /* on the topic lists it floats in the lower corner, in view while the list scrolls: 56px (the usual floating button), 16px from
-     the side and 24px from the bottom, clear of the browser's toolbar and the home gesture, its centre in the thumb's easy reach.
-     The header's small + steps aside there, and the list and footer leave room under it */
-  .list-head .list-new-topic { position: fixed; z-index: 60; inset-inline-end: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); width: 56px; height: 56px; box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 40%, transparent); }
-  .list-head .list-new-topic .icon { width: 24px; height: 24px; }
-  body:has(.list-new-topic) .header-new-topic { display: none; }
-  body:has(.list-new-topic) .col-main { padding-bottom: 88px; }
-  body:has(.list-new-topic) .footer-inner { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
-  .cat-bar { margin: -12px -12px 10px; padding: 0 6px; }
-  .editor-toolbar { flex-wrap: wrap; overflow: visible; row-gap: 2px; } /* every button in view: the toolbar wraps instead of scrolling sideways */
+  /* New Topic on a phone is the header's +, first of the buttons on the right on a soft brand-coloured circle, on every page:
+     nothing floats over the list, so it never meets another plugin's floating button. The list's own button steps aside */
+  .list-head .list-new-topic { display: none; }
+  .topbar-right > .theme-toggle, .topbar-right > .lang-menu { display: none; } /* in the account menu or the drawer instead */
+  .quick-prefs { display: inline-flex; }
+  .drawer-quick { display: flex; }
+  /* the top bar stays at the top and steps out of the way while reading: it slides up as the page scrolls down and comes back
+     as soon as it scrolls up (app.js sets body.topbar-away) */
+  .topbar { transition: transform .25s ease; will-change: transform; }
+  body.topbar-away .topbar { transform: translateY(-100%); }
+  body.topbar-away .topbar:focus-within, body.drawer-open .topbar { transform: none; }
+  .header-new-topic { order: -1; width: 32px; height: 32px; margin-inline-end: 2px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); }
+  .header-new-topic:hover, .header-new-topic:active { background: color-mix(in srgb, var(--brand) 18%, var(--panel)); color: var(--brand); }
+  .header-new-topic .icon { width: 19px; height: 19px; stroke-width: 2.4; }
+  .cat-bar { margin: -12px calc(-1 * var(--page-x)) 10px; padding: 0 calc(var(--page-x) - 8px); }
   .editor-toolbar .tb-spacer { flex: 1 0 0; }
   .tab { padding: 4px 9px; font-size: var(--font-size-sm); }
-  .topic-rows { margin: 0 -4px; border-inline: 0; border-radius: 0; }
-  /* inside the list card the rows keep the card's own margin: pulling them out would push them past its frame */
-  .list-card > .topic-rows, .list-card > .post-rows, .list-card > .category-list { margin: 0; }
   .topic-row { gap: 8px; padding: 10px; }
   .row-avatar .avatar { width: 32px; height: 32px; font-size: 14px; }
   .row-title { font-size: 15px; margin-bottom: 5px; }

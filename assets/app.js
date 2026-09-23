@@ -162,6 +162,45 @@
     }
   });
 
+  /* ---------- the right column follows the page like X (assets/app.css, body.right-follow) ----------
+     Its sticky top moves with each scroll: down, it goes up with the page until its bottom shows, then stays; up, it comes
+     back down until its top sits under the top bar. A column shorter than the window just stays under the top bar. */
+  (function () {
+    var col = document.querySelector('body.right-follow .col-right');
+    if (!col) return;
+    var wide = window.matchMedia('(min-width: 1201px)');
+    var lastY = window.scrollY, top = null, ticking = false;
+    function head() { return (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 56) + 20; }
+    function place() {
+      ticking = false;
+      var y = window.scrollY, dy = y - lastY; lastY = y;
+      if (!wide.matches) { col.style.removeProperty('--right-top'); top = null; return; }
+      var max = head(), min = Math.min(max, window.innerHeight - col.offsetHeight - 20);
+      top = top === null ? max : Math.max(min, Math.min(max, top - dy));
+      col.style.setProperty('--right-top', Math.round(top) + 'px');
+    }
+    function queue() { if (!ticking) { ticking = true; requestAnimationFrame(place); } }
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    if (window.ResizeObserver) new ResizeObserver(queue).observe(col); // cards that load late or grow
+    place();
+  })();
+
+  /* ---------- phones: the top bar hides while the page scrolls down and returns on the way up (assets/app.css, body.topbar-away) ---------- */
+  (function () {
+    var narrow = window.matchMedia('(max-width: 640px)');
+    var lastY = window.scrollY, ticking = false;
+    function step() {
+      ticking = false;
+      var y = window.scrollY, dy = y - lastY;
+      if (Math.abs(dy) < 8 && y > 0) return; // ignore jitter; small moves add up until they count
+      lastY = y;
+      var away = narrow.matches && dy > 0 && y > 120 && !document.body.classList.contains('drawer-open') && !document.querySelector('.dropdown.open');
+      document.body.classList.toggle('topbar-away', away);
+    }
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(step); } }, { passive: true });
+  })();
+
   /* ---------- global click handling ---------- */
   document.addEventListener('click', function (e) {
     var pw = e.target.closest('[data-pw-toggle]');
@@ -189,6 +228,13 @@
     var qp = e.target.closest('[data-quote-post]');
     if (qp) { quotePost(qp.getAttribute('data-quote-post')); return; }
     if (e.target.closest('[data-clear-reply]')) { setReplyTarget('', ''); return; }
+    var ql = e.target.closest('[data-qp-langs]'); // theme and language on phones: the row of languages under the two round buttons
+    if (ql) {
+      var row = ql.closest('.um-top, .drawer-quick');
+      row = row && row.nextElementSibling;
+      if (row && row.classList.contains('qp-langs')) { row.hidden = !row.hidden; ql.setAttribute('aria-expanded', row.hidden ? 'false' : 'true'); }
+      return;
+    }
     var cp = e.target.closest('[data-copy]');
     if (cp && navigator.clipboard) {
       e.preventDefault();
@@ -210,12 +256,6 @@
       var left = 60, label = b.textContent;
       var tick = setInterval(function () { left--; b.textContent = label + ' (' + left + ')'; if (left <= 0) { clearInterval(tick); b.textContent = label; b.disabled = false; } }, 1000);
     });
-  });
-
-  /* the verification code box: hidden while the saved address is verified, back as soon as it is edited */
-  document.addEventListener('input', function (e) {
-    var f = e.target.closest('[data-verified-value]'); if (!f) return;
-    var row = document.querySelector('[data-code-row]'); if (row) row.hidden = f.value === f.getAttribute('data-verified-value');
   });
 
   /* ---------- "See N new or updated topics" on a Latest list ---------- */
@@ -433,12 +473,36 @@
     };
     function setPreview(on) {
       previewOn = on;
-      ed.classList.toggle('split', on && window.innerWidth >= 768);
-      ed.classList.toggle('preview-only', on && window.innerWidth < 768);
+      ed.classList.toggle('preview-only', on);
       preview.hidden = !on;
       var b = ed.querySelector('[data-cmd=preview]'); if (b) b.classList.toggle('active', on);
-      if (on) renderPreview(); else ta.focus();
+      if (on) renderPreview(); else if (!ed.classList.contains('wysiwyg')) ta.focus();
+      syncModes();
     }
+    /* the mode tabs (composer.modes): Write, Preview and plugin modes that switch themselves on and off with a command
+       and mark the editor with a class while they are on (a visual editor: cmd wysiwyg, class wysiwyg) */
+    var tabs = ed.querySelectorAll('[data-mode]');
+    function modeNow() {
+      if (previewOn) return 'preview';
+      for (var i = 0; i < tabs.length; i++) { var c = tabs[i].getAttribute('data-mode-class'); if (c && ed.classList.contains(c)) return tabs[i].getAttribute('data-mode'); }
+      return 'write';
+    }
+    function syncModes() {
+      var now = modeNow();
+      Array.prototype.forEach.call(tabs, function (t) { var on = t.getAttribute('data-mode') === now; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    }
+    function setMode(mode) {
+      if (mode === modeNow()) return;
+      if (mode === 'preview') { setPreview(true); return; }
+      if (previewOn) setPreview(false);
+      Array.prototype.forEach.call(tabs, function (t) { // leave the plugin mode that is on, enter the one asked for
+        var c = t.getAttribute('data-mode-class'), cmd = t.getAttribute('data-mode-cmd'), m = t.getAttribute('data-mode');
+        if (c && cmd && ed.classList.contains(c) !== (m === mode)) api.run(cmd);
+      });
+      syncModes();
+    }
+    api.mode = function (m) { if (m) setMode(m); return modeNow(); };
+    if (tabs.length && window.MutationObserver) new MutationObserver(syncModes).observe(ed, { attributes: true, attributeFilter: ['class'] }); // a plugin switching itself on at load
     function renderPreview() {
       var fd = new FormData(); fd.append('body', ta.value); fd.append('_token', FB.csrf);
       request(FB.api, { method: 'POST', body: fd }).then(function (r) { preview.innerHTML = r.ok ? (r.html || '<p class="muted">' + FB.i18n.nothing + '</p>') : '<p class="muted">' + (r.error || '') + '</p>'; });
@@ -471,6 +535,8 @@
     }
     /* events */
     ed.addEventListener('click', function (e) {
+      var tab = e.target.closest('[data-mode]');
+      if (tab) { setMode(tab.getAttribute('data-mode')); return; }
       var b = e.target.closest('[data-cmd]');
       if (b) { api.run(b.getAttribute('data-cmd'), b.getAttribute('data-arg')); return; }
       var em = e.target.closest('[data-emoji-char]');

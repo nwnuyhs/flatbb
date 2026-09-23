@@ -2,6 +2,15 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.1.95
+
+- **Editor mode tabs**: new list region `composer.modes` draws tabs above the toolbar. The core gives `write` (the Markdown textarea) and `preview`; a plugin adds a mode with `label`, `icon`, `cmd` (the editor command that switches it on and off) and `class` (set on `.editor` while it is on), and may relabel `write`. The core keeps the tabs in step, also when your mode switches itself on at load. Preview is a mode of its own now (the old side-by-side split is gone), fullscreen moved to the tab row, and the toolbar wraps instead of scrolling. JS: `api.mode()` reads the mode, `api.mode('preview')` switches. The Visual Editor (1.1.0) is the example.
+- **`--page-x`**: the page's side margin as a token (20px, 16px on tablets, 12px on phones). Line things up on it; a strip that runs edge to edge pulls out with `margin-inline: calc(-1 * var(--page-x))`. The phone gutter was 4px before.
+- **Phones**: the list's floating New Topic button is gone; New Topic is the header's `.header-new-topic`, first of the right-hand buttons. Theme and language left the phone header for two round buttons in the account menu (members) or at the top of the drawer (visitors): `quick_prefs_html()`. The top bar sticks again (`overflow-x: clip` instead of `hidden`) and slides away while scrolling down (`body.topbar-away`).
+- **Right column**: on wide screens it follows the page the way X does (setting `right_follow`, body class `right-follow`, CSS variable `--right-top`).
+- **Settings → Email**: the address has a tab of its own (`email`, account group). A change asks for the password, a code sent to the new address when verification is on, and mails the old address a link that undoes it for 7 days (`/email/restore`). New event `user.email_changed` (ctx `user_id`, `old`, `new`, `restored`); `user.before_save` no longer carries `email`. Helpers `email_mask()`, `email_restore_link()`.
+- Templates changed: `editor.php`, `settings.php`, `user_menu.php`, `layout.php`. A theme that overrides one of them should compare it with the new file (`php flatbb theme:check <id>`).
+
 ## 0.1.94
 
 - **Shared member regions**: `member.labels` (HTML), `member.stats` and `member.actions` (lists) run wherever the core shows a member: the sidebar member card (`place` `card`), the author card on topic pages (`author`), the account menu (`menu`: labels, stats and actions) and the profile card (`profile`). ctx: `user`, `self`, `place`. Hook once and check `place` instead of adding to `user.profile.labels`, `user.profile.stats`, `header.user_menu.labels` and `header.user_menu.stats`, which keep working.

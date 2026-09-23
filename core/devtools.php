@@ -216,6 +216,7 @@ function docs_hook_descriptions(): array
         'account.register_validate' => 'Add validation errors to registration.',
         'user.before_save' => 'Profile fields before saving.',
         'user.after_save' => 'After the profile was saved.',
+        'user.email_changed' => 'After a member changed their email address in Settings → Email, or restored the old one from the notice link (ctx: user_id, old, new, restored).',
         'user.prefs_save' => 'Preferences array before saving.',
         'user.profile_tab' => 'HTML for a custom profile tab (ctx: user, tab).',
         'user.settings_tab' => 'Extra HTML for a settings tab.',

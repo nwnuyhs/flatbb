@@ -2,7 +2,9 @@
 /**
  * Markdown editor. Variables: name, value, placeholder, scope (draft key such as "topic-new", "reply-12", "post-34"), ctx.
  * Extension points (see docs/PLUGIN.md "Editor"):
- *   editor.options (filter config)  composer.toolbar (list of buttons)  editor.emoji (list)  editor.help (rows)
+ *   editor.options (filter config)  composer.toolbar (list of buttons)  composer.modes (list of tabs)  editor.emoji (list)  editor.help (rows)
+ *   composer.modes: the tabs above the toolbar. Core: write (the Markdown textarea) and preview. A plugin adds a mode with
+ *   label, icon, cmd (the editor command that switches it on and off) and class (on .editor while it is on), e.g. a visual editor.
  *   JS: FB.editor.register('cmd', fn(api, arg)); event fb:editor (cancelable) before every command.
  */
 $cfg = hook('editor.options', [
@@ -25,8 +27,11 @@ foreach ($groups as $i => $g) { if ($i > 0) $buttons['sep' . $i] = ['html' => '<
 $buttons = region_list('composer.toolbar', $buttons, ['config' => $cfg]);
 $right = [];
 if ($cfg['emoji']) $right['emoji'] = ['icon' => 'smile', 'title' => t('Emoji'), 'cmd' => 'emoji'];
-if ($cfg['preview']) $right['preview'] = ['icon' => 'eye', 'title' => t('Preview'), 'cmd' => 'preview', 'label' => t('Preview')];
-if ($cfg['fullscreen']) $right['fullscreen'] = ['icon' => 'maximize', 'title' => t('Fullscreen'), 'cmd' => 'fullscreen'];
+// the ways to look at the text are tabs above the toolbar: Write, Preview, and what plugins add (a visual editor)
+$modes = ['write' => ['label' => t('Write'), 'icon' => 'hash', 'weight' => 10]];
+if ($cfg['preview']) $modes['preview'] = ['label' => t('Preview'), 'icon' => 'eye', 'weight' => 90];
+$modes = array_filter(region_list('composer.modes', $modes, ['config' => $cfg]), 'is_array');
+$fullscreen = $cfg['fullscreen'] ? '<button type="button" class="tb-btn editor-fs-btn" title="' . h(t('Fullscreen')) . '" data-cmd="fullscreen">' . icon('maximize') . '</button>' : '';
 $emoji = $cfg['emoji'] ? (array)hook('editor.emoji', ['😀', '😄', '😂', '🤣', '😊', '😍', '🤔', '😅', '😎', '🙂', '😉', '😢', '😭', '😡', '🙄', '😴', '🤯', '🥳', '🤝', '👍', '👎', '👏', '🙏', '💪', '👀', '❤️', '🔥', '✨', '🎉', '🚀', '💡', '⚡', '✅', '❌', '⚠️', '❓', '💬', '📌', '📎', '🔗', '📷', '🎯', '🏆', '🐛', '🔧', '💻', '📱', '☕', '🍕', '🌟'], []) : [];
 $help = $cfg['help'] ? (array)hook('editor.help', [
     ['**bold**  *italic*  ~~strike~~', t('Emphasis')], ['## Heading', t('Headings (## to ######)')], ['> quoted text', t('Quote')],
@@ -37,10 +42,16 @@ $btn = static fn(string $k, array $b): string => !empty($b['html']) ? $b['html']
 ?>
 <div class="editor" data-editor data-scope="<?= h((string)$cfg['scope']) ?>" data-draft-days="<?= (int)$cfg['draft_days'] ?>" data-preview="<?= $cfg['preview'] ? 1 : 0 ?>">
   <div class="editor-draft hidden" data-draft-banner><?= icon('clock') ?><span><?= t('You have an unsent draft.') ?></span><button type="button" class="link" data-draft-restore><?= t('Restore') ?></button><button type="button" class="link muted" data-draft-discard><?= t('Discard') ?></button></div>
+  <?php if (count($modes) > 1): ?>
+  <div class="editor-tabs" role="tablist" data-slot="composer.modes">
+    <?php $first = true; foreach ($modes as $k => $m): ?><button type="button" class="editor-tab<?= $first ? ' active' : '' ?>" role="tab" aria-selected="<?= $first ? 'true' : 'false' ?>" data-mode="<?= h((string)$k) ?>" data-mode-cmd="<?= h((string)($m['cmd'] ?? '')) ?>" data-mode-class="<?= h((string)($m['class'] ?? '')) ?>"><?= icon((string)($m['icon'] ?? 'edit')) ?><span><?= h((string)($m['label'] ?? $k)) ?></span></button><?php $first = false; endforeach; ?>
+    <span class="tb-spacer"></span><?= raw($fullscreen) ?>
+  </div>
+  <?php endif; ?>
   <div class="editor-toolbar" data-slot="composer.toolbar">
     <?php foreach ($buttons as $k => $b): ?><?= raw($btn((string)$k, $b)) ?><?php endforeach; ?>
     <span class="tb-spacer"></span>
-    <?php foreach ($right as $k => $b): ?><?= raw($btn((string)$k, $b)) ?><?php endforeach; ?>
+    <?php foreach ($right as $k => $b): ?><?= raw($btn((string)$k, $b)) ?><?php endforeach; ?><?= count($modes) > 1 ? '' : raw($fullscreen) ?>
   </div>
   <?php if ($emoji !== []): ?><div class="editor-emoji hidden" data-emoji><?php foreach ($emoji as $e): ?><button type="button" data-emoji-char="<?= h((string)$e) ?>"><?= h((string)$e) ?></button><?php endforeach; ?></div><?php endif; ?>
   <div class="editor-body">

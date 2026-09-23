@@ -17,7 +17,7 @@ function api_dispatch(string $action): never
             require_post();
             if (!register_verify_on()) json_error(t('Email verification is off.'));
             $email = mb_strtolower(post_str('email', 120));
-            if (uid() <= 0 && $email !== '' && val('SELECT 1 FROM fb_users WHERE email=?', [$email])) json_error(t('That email is already registered.'));
+            if ($email !== '' && val('SELECT 1 FROM fb_users WHERE email=? AND id<>?', [$email, uid()])) json_error(t('That email is already registered.')); // a visitor signing up, or a member moving to an address someone else has
             $err = email_code_send($email, client_ip());
             if ($err !== '') json_error($err);
             json_ok(['sent' => true, 'message' => t('Code sent. Check your inbox (and the spam folder).')]);

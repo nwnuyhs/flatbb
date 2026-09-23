@@ -89,7 +89,7 @@ Global variables, defined in `:root` of `assets/app.css` (light) and overridden 
 | Status | `--success`, `--danger`, `--warning`, `--info` and `*-soft` |
 | Shape | `--radius`, `--radius-sm`, `--radius-pill` |
 | Type | `--font`, `--mono`, `--font-size-xs` 11px, `-sm` 12px, `-md` 14px, `-lg` 16px, `-xl` 18px, `-2xl` 22px, `-3xl` 26px |
-| Layout | `--topbar-h`, `--left-w`, `--right-w`, `--gap`, `--container` |
+| Layout | `--topbar-h`, `--left-w`, `--right-w`, `--gap`, `--container`, `--page-x` (side margin of the page: 20px, 16px on tablets, 12px on phones; an edge-to-edge strip uses `margin-inline: calc(-1 * var(--page-x))`) |
 
 Component tokens are **not defined** anywhere: core rules read them with a fallback, `var(--card-bg, var(--panel))`, so an unset token means the default look. Set them to restyle a component without CSS:
 

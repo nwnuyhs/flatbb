@@ -63,6 +63,41 @@ function email_code_check(string $email, string $code): bool
     return true;
 }
 
+/** "n•••@qq.com": enough to recognise one's own address in a mail or a notice, not enough to read it off. */
+function email_mask(string $email): string
+{
+    [$name, $domain] = array_pad(explode('@', $email, 2), 2, '');
+    return mb_substr($name, 0, 1) . str_repeat('•', max(2, min(6, mb_strlen($name) - 1))) . '@' . $domain;
+}
+
+const EMAIL_RESTORE_TTL = 7 * 86400;
+
+/**
+ * The link mailed to the old address after an email change: for a week it puts that address back and signs the account out
+ * everywhere, so a change the owner did not make can be undone from the inbox that still belongs to them. It is signed with
+ * the site secret and bound to the user, both addresses and the expiry; once the address changes again it stops working.
+ */
+function email_restore_link(int $uid, string $old, string $new): string
+{
+    $exp = now() + EMAIL_RESTORE_TTL;
+    $params = ['u' => $uid, 'o' => $old, 'x' => $exp];
+    return absolute_url('/email/restore', $params + ['s' => email_restore_sig($uid, $old, $new, $exp)]);
+}
+
+function email_restore_sig(int $uid, string $old, string $new, int $exp): string
+{
+    return hash_hmac('sha256', 'email-restore.' . $uid . '.' . strtolower($old) . '.' . strtolower($new) . '.' . $exp, secret());
+}
+
+/** The user a restore link is good for right now, or null (bad signature, expired, or the address changed since). */
+function email_restore_user(int $uid, string $old, int $exp, string $sig): ?array
+{
+    if ($uid <= 0 || $exp < now() || !filter_var($old, FILTER_VALIDATE_EMAIL)) return null;
+    $user = one('SELECT * FROM fb_users WHERE id=?', [$uid]);
+    if ($user === null || !hash_equals(email_restore_sig($uid, $old, (string)$user['email'], $exp), $sig)) return null;
+    return $user;
+}
+
 /** Which plugin delivers mail (mail.send hook), or PHP's mail() when none does. Shown next to the setting. */
 function mail_transport_label(): string
 {

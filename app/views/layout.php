@@ -52,7 +52,7 @@ $unread = notifications_unread();
 <?= raw(str_replace('{nonce}', csp_nonce(), setting('head_code'))) ?>
 <?= raw($head) ?>
 </head>
-<body class="<?= h($class) ?><?= $has_left ? '' : ' no-left' ?><?= $has_right ? '' : ' no-right' ?>"<?= (int)setting('post_image_max', '0') > 0 ? ' style="--post-img-max:' . (int)setting('post_image_max') . 'px"' : '' ?>>
+<body class="<?= h($class) ?><?= $has_left ? '' : ' no-left' ?><?= $has_right ? (setting('right_follow', '1') === '1' ? ' right-follow' : '') : ' no-right' ?>"<?= (int)setting('post_image_max', '0') > 0 ? ' style="--post-img-max:' . (int)setting('post_image_max') . 'px"' : '' ?>>
 <header class="topbar" data-slot="header">
   <div class="container topbar-inner">
     <?php if ($has_left): ?><button class="icon-btn drawer-toggle" type="button" aria-label="<?= t('Menu') ?>" data-toggle="drawer"><?= icon('menu') ?></button><?php endif; ?>
@@ -70,6 +70,9 @@ $unread = notifications_unread();
 </header>
 <div class="container page-grid">
   <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left">
+    <?php if (me() === null): [$qp, $qp_langs] = quick_prefs_html(); // a visitor's theme and language on phones: the first row of the drawer ?>
+    <div class="drawer-quick"><?= raw(logo_mark(26)) ?><?= raw($qp) ?></div><?= raw($qp_langs) ?>
+    <?php endif; ?>
     <?php $drawer_nav = array_filter($nav, static fn($it): bool => is_array($it) && !in_array((string)($it['url'] ?? ''), request_cache('left_nav_urls') ?? [], true)); // the left menu below already has the others ?>
     <?php if ($drawer_nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($drawer_nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= icon_any((string)($item['icon'] ?? 'external')) ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
     <?= raw($left) ?>

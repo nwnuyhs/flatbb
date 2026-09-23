@@ -54,6 +54,7 @@ function routes_core(): array
         '/u/{name}/{tab}' => 'user_profile',
         '/settings' => 'user_settings',
         '/settings/{tab}' => 'user_settings',
+        '/email/restore' => 'user_email_restore',
         '/login' => 'account_login',
         '/register' => 'account_register',
         '/logout' => 'account_logout',
