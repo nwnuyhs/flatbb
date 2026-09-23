@@ -27,26 +27,22 @@ function admin_page_categories(): never
         }
         $name = post_str('name', 60);
         if ($name === '') fail(t('Name is required.'));
+        try { $icon = icon_from_post('icon', $id > 0 ? (string)(category_by_id($id)['icon'] ?? '') : ''); } catch (RuntimeException $e) { fail($e->getMessage()); }
         $slug = slugify(post_str('slug', 60) ?: $name);
         $parent = category_by_id(post_int('parent_id'));
         if ($parent !== null && ((int)$parent['parent_id'] > 0 || (int)$parent['id'] === $id)) $parent = null;
         $data = [
             'name' => $name, 'slug' => $slug, 'description' => post_str('description', 500), 'parent_id' => (int)($parent['id'] ?? 0),
-            'sort' => post_int('sort'), 'icon' => admin_category_icon_value($id, post_str('icon', 120)),
+            'sort' => post_int('sort'), 'icon' => $icon === 'none' ? '' : $icon,
             'view_groups' => implode(',', array_map('intval', post_list('view_groups'))),
             'post_groups' => implode(',', array_map('intval', post_list('post_groups'))),
             'is_hidden' => post_int('is_hidden') ? 1 : 0,
         ];
         $data = hook('admin.category_save', $data, ['id' => $id]);
         if (val('SELECT 1 FROM fb_categories WHERE slug=? AND id<>?', [$slug, $id])) fail(t('Slug already used.'));
-        $icon_file = upload_files_list('icon_file')[0] ?? null;
         if ($id > 0) db_update('fb_categories', $data, 'id=?', [$id]);
         else $id = db_insert('fb_categories', $data);
-        if ($icon_file !== null) {
-            try { db_update('fb_categories', ['icon' => upload_site_image('cat_' . $id, $icon_file, ['png', 'jpg', 'gif', 'webp', 'svg'], 524288)], 'id=?', [$id]); } catch (RuntimeException $e) { request_cache('categories', null, true); fail($e->getMessage()); }
-        } elseif (!str_contains((string)$data['icon'], '/')) {
-            admin_category_icon_unlink($id); // switched to a built-in icon or none: the uploaded image is not needed any more
-        }
+        if (!str_starts_with((string)$data['icon'], 'site/cat_' . $id . '.')) admin_category_icon_unlink($id); // its own older upload is not needed once it shows another icon
         request_cache('categories', null, true);
         fire('admin.category_after_save', ['id' => $id, 'data' => $data]); // plugins store their own per-category options (ctx: id, data)
         admin_log('category.save', '#' . $id . ' ' . (string)($data['name'] ?? ''));
@@ -81,7 +77,7 @@ function admin_page_categories(): never
         $body = '<form method="post" action="' . h($list_url) . '" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
             . form_row(t('Name'), input('name', (string)$edit['name'], ['required' => true]))
             . form_row(t('Description'), textarea('description', (string)$edit['description'], ['rows' => 2]))
-            . '<div class="form-grid">' . form_row(t('Slug'), input('slug', (string)$edit['slug']), t('URL: /c/slug')) . form_row(t('Parent'), select('parent_id', $parents, (string)$edit['parent_id'])) . '</div>' . form_row(t('Icon'), admin_icon_picker((string)($edit['icon'] ?? '')), t('Shown before the name in menus and the category bar. Pick a built-in icon, or upload a small image (png / svg / webp / gif / jpg, up to 512 KB): it is shown 14 px tall, so a simple mark works best.')) . '<div class="form-grid">' . form_row(t('Sort'), input('sort', (string)$edit['sort'], ['type' => 'number'])) . '</div>'
+            . '<div class="form-grid">' . form_row(t('Slug'), input('slug', (string)$edit['slug']), t('URL: /c/slug')) . form_row(t('Parent'), select('parent_id', $parents, (string)$edit['parent_id'])) . '</div>' . form_row(t('Icon'), icon_picker('icon', (string)($edit['icon'] ?? '')), t('Shown before the name in menus and the category bar. Pick a built-in icon, or upload a small image (png / svg / webp / gif / jpg, up to 512 KB): it is shown 14 px tall, so a simple mark works best.')) . '<div class="form-grid">' . form_row(t('Sort'), input('sort', (string)$edit['sort'], ['type' => 'number'])) . '</div>'
             . '<div class="form-row"><label>' . t('Who can view') . '</label>' . $vc . '<div class="form-help">' . t('Nothing checked = everyone including guests.') . '</div></div>'
             . '<div class="form-row"><label>' . t('Who can create topics') . '</label>' . $pc . '<div class="form-help">' . t('Nothing checked = any member with the "post" permission.') . '</div></div>'
             . '<div class="form-row">' . checkbox('is_hidden', (int)$edit['is_hidden'] === 1, t('Hidden (admins only)')) . '</div>'
@@ -100,28 +96,10 @@ function admin_page_categories(): never
     admin_page(t('Categories'), $html, 'categories', ['action' => admin_drawer_link(admin_url('categories', ['edit' => 0]), t('New category'), 'btn btn-primary', 'plus'), 'drawer' => $drawer]);
 }
 
-/** The icon value to store: a built-in icon name, or the category's own uploaded image when it is kept; anything else is none. */
-function admin_category_icon_value(int $id, string $posted): string
-{
-    if (isset(icon_paths()[$posted])) return $posted;
-    $current = $id > 0 ? (string)(category_by_id($id)['icon'] ?? '') : '';
-    return $posted !== '' && $posted === $current && str_contains($current, '/') ? $current : '';
-}
-
 /** Remove a category's uploaded icon file(s) (uploads/site/cat_<id>.*). */
 function admin_category_icon_unlink(int $id): void
 {
     foreach (glob(UPLOAD_DIR . '/site/cat_' . $id . '.*') ?: [] as $old) @unlink($old);
-}
-
-/** Built-in icons as real tiles plus the uploaded image (when any) and a file input; a click sets the hidden "icon" field (app.js). */
-function admin_icon_picker(string $value): string
-{
-    $tile = static fn(string $v, string $inner, string $title, string $class = ''): string => '<button type="button" class="icon-pick' . $class . ($v === $value ? ' active' : '') . '" data-icon-pick="' . h($v) . '" title="' . h($title) . '">' . $inner . '</button>';
-    $html = '<div class="icon-picker" data-icon-picker><input type="hidden" name="icon" value="' . h($value) . '">' . $tile('', t('None'), t('No icon'), ' icon-pick-none');
-    if (str_contains($value, '/')) $html .= $tile($value, '<img src="' . h(upload_url($value)) . '" alt="">', t('Uploaded image'));
-    foreach (array_keys(icon_paths()) as $n) $html .= $tile($n, icon($n), $n);
-    return $html . '</div><input type="file" name="icon_file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg">';
 }
 
 function admin_page_tags(): never

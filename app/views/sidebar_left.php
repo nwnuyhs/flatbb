@@ -1,5 +1,10 @@
 <?php
-/** Left column: main navigation, categories, tags. Regions: sidebar.left.top/nav/categories/bottom */
+/**
+ * Left column: main navigation and categories (the tags are a card of the right column). Regions: sidebar.left.top/nav/categories/bottom
+ * sidebar.left.nav items may carry group: none (the main links), "community", "tools", or an id of their own with group_label.
+ * The main links come first, then each group under a small heading. Past setting nav_visible links (8; 0 = no limit) the rest
+ * fold under More, where the active link is never hidden.
+ */
 $me = me();
 // Latest stays as the way home; Top and Unread live in the head of the list
 $nav = [
@@ -8,15 +13,36 @@ $nav = [
 $nav['categories'] = ['label' => t('Categories'), 'url' => url('/categories'), 'icon' => 'folder', 'active' => is_active_path('/categories')];
 $nav['tags'] = ['label' => t('Tags'), 'url' => url('/tags'), 'icon' => 'tag', 'active' => is_active_path('/tags')];
 $nav = region_list('sidebar.left.nav', $nav, []);
+$heads = ['community' => t('Community'), 'tools' => t('Tools')];
+$groups = [];
+foreach ($nav as $item) {
+    if (!is_array($item)) continue;
+    $g = (string)($item['group'] ?? '');
+    if ($g !== '' && !isset($heads[$g])) $heads[$g] = (string)($item['group_label'] ?? ucfirst($g));
+    $groups[$g][] = $item;
+}
+request_cache('left_nav_urls', static fn(): array => array_values(array_filter(array_map(static fn($it): string => is_array($it) ? (string)($it['url'] ?? '') : '', $nav))));
+$limit = max(0, (int)setting('nav_visible', '8'));
+$seen = 0;
+$shown = $more = '';
+foreach (array_unique(array_merge([''], array_keys($heads))) as $g) { // the main links, Community, Tools, then groups of plugins' own
+    $in = $out = '';
+    foreach ($groups[$g] ?? [] as $item) {
+        $a = '<a class="side-link' . (!empty($item['active']) ? ' active' : '') . '" href="' . h((string)$item['url']) . '">' . (!empty($item['icon']) ? icon_any((string)$item['icon']) : '')
+            . '<span>' . h((string)$item['label']) . '</span>' . (!empty($item['badge']) ? '<b class="badge">' . h((string)$item['badge']) . '</b>' : '') . '</a>';
+        if ($limit > 0 && ++$seen > $limit && empty($item['active'])) $out .= $a; else $in .= $a;
+    }
+    $head = $g !== '' ? '<h4 class="side-group">' . h($heads[$g]) . '</h4>' : '';
+    if ($in !== '') $shown .= $head . $in;
+    if ($out !== '') $more .= $head . $out;
+}
 $tree = category_tree();
-$top_tags = request_cache('top_tags', static fn(): array => all('SELECT name,slug,topic_count FROM fb_tags WHERE topic_count>0 ORDER BY topic_count DESC LIMIT 12')) ?? [];
 $cur = current_path();
 ?>
 <?= region('sidebar.left.top') ?>
 <nav class="side-nav" data-slot="sidebar.left.nav">
-  <?php foreach ($nav as $key => $item): ?>
-    <a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)$item['url']) ?>"><?= !empty($item['icon']) ? icon((string)$item['icon']) : '' ?><span><?= h((string)$item['label']) ?></span><?= !empty($item['badge']) ? '<b class="badge">' . h((string)$item['badge']) . '</b>' : '' ?></a>
-  <?php endforeach; ?>
+  <?= raw($shown) ?>
+  <?php if ($more !== ''): ?><details class="side-more"><summary class="side-link"><?= icon('more') ?><span><?= t('More') ?></span></summary><?= raw($more) ?></details><?php endif; ?>
 </nav>
 <?php if (!empty($tree[0])): ?>
 <div class="side-section" data-slot="sidebar.left.categories">
@@ -27,12 +53,6 @@ $cur = current_path();
       <a class="side-link cat-link cat-child<?= $cur === '/c/' . $child['slug'] ? ' active' : '' ?>" href="<?= h(category_url($child)) ?>"><?= raw(category_icon($child)) ?><span><?= h($child['name']) ?></span><small><?= human_number((int)$child['topic_count']) ?></small></a>
     <?php endforeach; ?>
   <?php endforeach; ?>
-</div>
-<?php endif; ?>
-<?php if ($top_tags !== []): ?>
-<div class="side-section side-tags" data-slot="sidebar.left.tags">
-  <h4><?= t('Tags') ?></h4>
-  <div class="tag-cloud"><?php foreach ($top_tags as $tg): ?><a class="tag-badge" href="<?= h(tag_url($tg)) ?>"><?= h($tg['name']) ?></a><?php endforeach; ?></div>
 </div>
 <?php endif; ?>
 <?= region('sidebar.left.bottom') ?>

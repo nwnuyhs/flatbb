@@ -1,14 +1,17 @@
-<?php /** Author card for topic pages and profiles. Variable: user (may be null) */ ?>
-<?php if ($user): $g = group_by_id((int)$user['group_id']); ?>
-<section class="card card-author">
-  <div class="card-body">
-    <div class="me-head"><?= avatar($user, 48) ?><div><strong><?= user_link($user) ?></strong><small><?= h($g['name'] ?? '') ?></small></div></div>
-    <div class="me-stats">
-      <a href="<?= h(user_url($user)) ?>"><b><?= (int)$user['topic_count'] ?></b><span><?= t('Topics') ?></span></a>
-      <a href="<?= h(user_url($user)) ?>/replies"><b><?= (int)$user['post_count'] ?></b><span><?= t('Replies') ?></span></a>
-      <span><b><?= (int)$user['like_count'] ?></b><span><?= t('Likes') ?></span></span>
-    </div>
-    <div class="muted small"><?= t('Joined %s', time_tag((int)$user['created_at'], 'month')) ?> · <?= t('Seen %s', time_tag((int)$user['last_seen'])) ?></div>
-  </div>
-</section>
+<?php
+/**
+ * Author card on topic pages: the member card (view member_card, place "author") with Topics, Replies and Likes, when they joined
+ * and were last seen, and the buttons plugins add (Message, Follow). Variable: user (may be null)
+ */
+?>
+<?php if ($user):
+$self = (int)$user['id'] === uid();
+$stats = [
+    'topics' => ['label' => t('Topics'), 'value' => human_number((int)$user['topic_count']), 'url' => user_url($user), 'weight' => 10],
+    'replies' => ['label' => t('Replies'), 'value' => human_number((int)$user['post_count']), 'url' => user_url($user) . '/replies', 'weight' => 20],
+    'likes' => ['label' => t('Likes'), 'value' => human_number((int)$user['like_count']), 'weight' => 30],
+];
+$foot = icon('clock') . t('Joined %s', time_tag((int)$user['created_at'], 'month')) . '<span class="me-dot">·</span>' . t('Seen %s', time_tag((int)$user['last_seen']));
+?>
+<?= view('member_card', ['user' => $user, 'place' => 'author', 'self' => $self, 'stats' => $stats, 'actions' => [], 'foot' => $foot, 'links' => []]) ?>
 <?php endif; ?>

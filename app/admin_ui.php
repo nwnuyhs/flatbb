@@ -21,7 +21,8 @@ function admin_menu_items(string $active): array
         'users' => ['label' => t('Users'), 'icon' => 'users', 'group' => t('Content')],
         'groups' => ['label' => t('Groups'), 'icon' => 'shield', 'group' => t('Content')],
         'themes' => ['label' => t('Themes'), 'icon' => 'palette', 'group' => t('Appearance')],
-        'layout' => ['label' => t('Layout'), 'icon' => 'layout', 'group' => t('Appearance')],
+        'menus' => ['label' => t('Menus'), 'icon' => 'menu', 'group' => t('Appearance')],
+        'widgets' => ['label' => t('Widgets'), 'icon' => 'layout', 'group' => t('Appearance')],
         'settings' => ['label' => t('Settings'), 'icon' => 'settings', 'group' => t('System')],
         'points' => ['label' => t('Points'), 'icon' => 'coin', 'group' => t('System')],
         'plugins' => ['label' => t('Plugins'), 'icon' => 'puzzle', 'group' => t('System')],
@@ -101,13 +102,17 @@ function admin_switch(string $url, array $hidden, bool $on, string $title = ''):
     return action_form($url, '<button type="submit" class="switch' . ($on ? ' on' : '') . '" role="switch" aria-checked="' . ($on ? 'true' : 'false') . '" title="' . h($title) . '"><span></span></button>', $hidden, 'inline');
 }
 
-function admin_table(array $head, array $rows, string $empty = ''): string
+/**
+ * $sort = ['region' => …, 'url' => …] makes the rows draggable: the row keys are the item ids, a drop posts action item_order with
+ * the ids in their new order to url (app.js), like the chips of Admin → Widgets.
+ */
+function admin_table(array $head, array $rows, string $empty = '', array $sort = []): string
 {
     if ($rows === [] && $empty !== '') return '<div class="empty">' . icon('folder') . '<p>' . h($empty) . '</p></div>';
-    $h = '<div class="table-wrap"><table class="admin"><thead><tr>';
+    $h = '<div class="table-wrap"><table class="admin' . ($sort !== [] ? ' sortable' : '') . '"><thead><tr>';
     foreach ($head as $c) $h .= '<th>' . $c . '</th>';
-    $h .= '</tr></thead><tbody>';
-    foreach ($rows as $r) $h .= '<tr>' . implode('', array_map(static fn(string $c): string => '<td>' . $c . '</td>', $r)) . '</tr>';
+    $h .= '</tr></thead><tbody' . ($sort !== [] ? ' data-sort-region="' . h((string)$sort['region']) . '" data-sort-url="' . h((string)$sort['url']) . '"' : '') . '>';
+    foreach ($rows as $id => $r) $h .= '<tr' . ($sort !== [] ? ' draggable="true" data-item="' . h((string)$id) . '"' : '') . '>' . implode('', array_map(static fn(string $c): string => '<td>' . $c . '</td>', $r)) . '</tr>';
     return $h . '</tbody></table></div>';
 }
 

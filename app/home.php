@@ -184,6 +184,13 @@ function category_bar(string $active): string
     return '<nav class="cat-bar' . ($mode === 'mobile' ? ' cat-bar-mobile' : '') . '" data-slot="main.categories">' . $html . '</nav>';
 }
 
+/** The New Topic address: inside a category list (set by list_tabs()) the composer opens on that category. */
+function new_topic_url(): string
+{
+    $cat = (int)(request_cache('list_category') ?? 0);
+    return url('/new-topic', $cat > 0 ? ['category' => $cat] : []);
+}
+
 /** Tabs above topic lists (region main.tabs). Inside a category the tabs and New Topic stay in that category. */
 function list_tabs(string $active, array $extra = [], ?array $category = null): string
 {
@@ -196,7 +203,8 @@ function list_tabs(string $active, array $extra = [], ?array $category = null): 
     $items += $extra;
     $ctx = ['active' => $active, 'category' => $category];
     $items = region_list('main.tabs', $items, $ctx);
-    $new = url('/new-topic', $category !== null ? ['category' => (int)$category['id']] : []);
-    $toolbar = region('main.toolbar', $ctx, uid() > 0 && can('post') ? '<a class="btn btn-primary" href="' . h($new) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
+    if ($category !== null) request_cache('list_category', static fn(): int => (int)$category['id']); // the member card's New Topic follows the category too
+    // wide screens hide this button when the member card beside the list has its own (assets/app.css, .list-new-topic)
+    $toolbar = region('main.toolbar', $ctx, uid() > 0 && can('post') ? '<a class="btn btn-primary list-new-topic" href="' . h(new_topic_url()) . '">' . icon('plus') . '<span>' . t('New Topic') . '</span></a>' : '');
     return '<div class="list-head" data-slot="main.tabs">' . tabs($items) . $toolbar . '</div>';
 }

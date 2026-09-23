@@ -53,7 +53,7 @@ docs/              文档（HOOKS.md 与 API.md 由命令生成）
 3. **只写可移植 SQL**（SQLite 与 MySQL 5.7 都能跑）：不用 JSON 列、CTE、窗口函数、方言函数。建表只用 `db_create_table()`/`db_ensure_columns()`/`db_create_index()` 和 `db_types()` 里的类型名。
 4. **禁止 N+1**：循环里不查库。先收集 ID，用 `rows_by_ids()`/`users_by_ids()`/`IN (...)` 一次查出，再在内存映射。标记为"loop, no DB"的 Hook（`topic_list.item.*`、`post.*`）完全不能碰数据库。
 5. **改状态必须 POST + CSRF**：处理器先调 `require_post()`；表单含 `csrf_field()`；权限用 `need_login()`、`need_admin()`、`can()` 判断。
-6. **文件保持小**：单文件不超过 30 KB，超了就按职责拆分。
+6. **文件保持易读**：单个 PHP 文件不超过 60 KB（样式表不算）。文件混了多种职责时再拆分，不要只为了压到某个数字而拆。
 7. **只用普通函数，不用类和全局变量**：请求内缓存走 `request_cache()`。
 8. **插件不改核心文件**。缺 Hook 就在核心加一行 Hook 并写进文档。
 9. **插件所有符号加前缀**：函数 `myplugin_*`、表 `plugin_myplugin_*`、CSS 类 `.myplugin-*`、JS 全局 `myplugin_*`。

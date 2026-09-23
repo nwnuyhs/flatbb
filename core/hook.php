@@ -53,7 +53,7 @@ function fire(string $name, array $ctx = []): void
 
 /* ---------------------------------------------------------------- regions */
 
-/** Every layout region the core renders, with a short description (used by Admin → Layout and docs). */
+/** Every layout region the core renders, with a short description (used by Admin → Widgets and docs). */
 function regions_known(): array
 {
     return (array)hook('regions.known', [
@@ -63,16 +63,16 @@ function regions_known(): array
         'header.right' => 'Header, right side: search, new topic, language, theme, notifications, account menu (list)',
         'header.right.before_search' => 'Header, left of the search box',
         'header.right.after_search' => 'Header, right of the search box',
-        'header.user_menu' => 'User dropdown menu items (list: label, url, icon, count, group "you" or "site", weight)',
+        'header.user_menu' => 'The account list: the header dropdown shows all of it, the sidebar member card the "you" items as shortcuts (list: label, url, icon, count, group "you" or "site", weight, card => false keeps one out of the card)',
         'header.user_menu.labels' => 'User dropdown, under the name next to the group label: short labels such as the level (ctx: user)',
         'header.user_menu.stats' => 'User dropdown numbers strip (list: label, value, url; ctx: user)',
         'sidebar.left.top' => 'Left column, top',
-        'sidebar.left.nav' => 'Left column navigation links (list)',
+        'sidebar.left.nav' => 'Left column navigation links, one per plugin (list: label, url, icon, badge, active, weight; group "community", "tools" or your own id with group_label; past setting nav_visible links the rest fold under More)',
         'sidebar.left.bottom' => 'Left column, bottom',
         'main.before' => 'Above the main content on every page',
         'main.categories' => 'Category bar above the list tabs: All + top-level categories (list)',
         'main.tabs' => 'Tabs above topic lists (list)',
-        'main.toolbar' => 'Right of the list tabs',
+        'main.toolbar' => 'Right of the list tabs; its New Topic button is hidden on wide screens where the member card shows its own',
         'topic_list.before' => 'Between the list tabs and the topic rows (announcements, notices)',
         'topic_list.item.title_suffix' => 'After each topic title (loop, no DB)',
         'topic_list.item.meta' => 'In each topic row meta line (loop, no DB)',
@@ -81,6 +81,10 @@ function regions_known(): array
         'main.after' => 'Below the main content on every page',
         'sidebar.right.top' => 'Right column, top',
         'sidebar.right.cards' => 'Right column card stack (list)',
+        'member.labels' => 'Short labels after the group label, wherever the core shows a member: the sidebar member card, the topic author card, the account menu and the profile (ctx: user, self, place card|author|menu|profile)',
+        'member.stats' => 'Numbers of a member, in the sidebar member card, the topic author card, the account menu strip and the profile card (list: label, value, url, sub, progress 0..1 draws a bar, weight; ctx: user, self, place card|author|menu|profile)',
+        'member.sections' => 'Sections beside the lists on a profile, one card each: badges, a calendar, a showcase (list: title, html, url, link, weight; ctx: user, self, place profile)',
+        'member.actions' => 'Buttons of a member: the sidebar member card (New Topic first), the topic author card, the profile card and the account menu, under its numbers (list: label, url, icon, primary, count, title, done, weight; post: the button POSTs to url with the CSRF token and back = the current path; ctx: user, self, place card|author|profile|menu)',
         'sidebar.right.bottom' => 'Right column, bottom',
         'topic.header' => 'Topic page, below the title block',
         'topic.no_access' => 'Topic page when a plugin refused the visitor, under the reason',
@@ -147,12 +151,13 @@ function region_visible(string $html): bool
  *  - weight  (int, default 0): lower comes first, equal weights keep insertion order
  *  - visible ('everyone' default | 'members' | 'admins'): filtered here, once, for every plugin
  *  - new_tab (bool): links open in a new tab where the template supports it
- * Admins can hide single items per region and put them in any order in Admin -> Layout (settings layout_hidden_items, layout_item_order).
+ * Admins can hide single items per region and put them in any order in Admin -> Widgets (settings layout_hidden_items, layout_item_order).
  */
 function region_list(string $name, array $items, array $ctx = []): array
 {
     $items = hook('region.' . $name, $items, $ctx);
     if (!is_array($items)) return [];
+    if (isset(menus_known()[$name])) $items = menu_apply($name, $items); // Admin → Appearance → Menus: new text, links, icons, links of the admin's own
     $hidden = layout_hidden_items($name);
     $shown = [];
     foreach ($items as $id => $item) {
@@ -167,7 +172,7 @@ function region_list(string $name, array $items, array $ctx = []): array
 }
 
 /**
- * Sort the items of a list region: the order an admin saved in Admin → Layout comes first (in that order),
+ * Sort the items of a list region: the order an admin saved in Admin → Widgets comes first (in that order),
  * then everything else by weight, then registration order. Plain HTML items count as weight 0.
  */
 function layout_order_items(string $region, array $items): array
@@ -192,15 +197,22 @@ function layout_item_order(string $region): array
     return array_values(array_map('strval', (array)($map[$region] ?? [])));
 }
 
-/** The items the core itself puts into a list region (label only), so Admin → Layout can order them next to plugin items. */
+/** The items the core itself puts into a list region (label only), so Admin → Widgets can order them next to plugin items. */
 function layout_core_items(string $region): array
 {
     return match ($region) {
         'header.right' => ['search' => ['label' => t('Search'), 'weight' => -20], 'new' => ['label' => t('New Topic'), 'weight' => -10], 'lang' => ['label' => t('Language'), 'weight' => 10], 'theme' => ['label' => t('Toggle theme'), 'weight' => 20], 'notifications' => ['label' => t('Notifications'), 'weight' => 30], 'user' => ['label' => t('Account menu'), 'weight' => 40]],
         'header.user_menu' => ['profile' => ['label' => t('Profile')], 'bookmarks' => ['label' => t('Bookmarks')], 'settings' => ['label' => t('Settings')], 'admin' => ['label' => t('Admin')]],
         'sidebar.left.nav' => ['latest' => ['label' => t('Latest'), 'weight' => -30], 'categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')]], // Latest first; Top and Unread live in the head of the list
-        'sidebar.right.cards' => ['user' => ['label' => t('Account'), 'weight' => -20], 'newest' => ['label' => t('Newest members')], 'stats' => ['label' => t('Statistics'), 'weight' => 100]], // the account card first, statistics last, plugin cards in between
+        'sidebar.right.cards' => ['user' => ['label' => t('Account'), 'weight' => -20], 'newest' => ['label' => t('Newest members')], 'tags' => ['label' => t('Tags'), 'weight' => 90], 'stats' => ['label' => t('Statistics'), 'weight' => 100]], // the account card first, then plugin cards, tags and statistics last
+        'member.stats' => ['topics' => ['label' => t('Topics'), 'weight' => 10], 'replies' => ['label' => t('Replies'), 'weight' => 20], 'likes' => ['label' => t('Likes'), 'weight' => 30], 'points' => ['label' => t('Points'), 'weight' => 40]],
+        'member.actions' => ['new' => ['label' => t('New Topic'), 'weight' => -10]],
         'topic.sidebar.cards' => ['author' => ['label' => t('Author')], 'related' => ['label' => t('Related topics')]],
+        'main.categories' => (static function (): array {
+            $items = ['all' => ['label' => t('All'), 'url' => url('/'), 'weight' => 0]];
+            foreach (function_exists('category_tree') ? (category_tree()[0] ?? []) : [] as $i => $c) $items['c' . (int)$c['id']] = ['label' => (string)$c['name'], 'url' => category_url($c), 'weight' => $i + 1];
+            return $items;
+        })(),
         'footer.links' => ['categories' => ['label' => t('Categories')], 'tags' => ['label' => t('Tags')], 'rss' => ['label' => 'RSS']],
         default => [],
     };
@@ -211,6 +223,67 @@ function layout_hidden_items(string $region): array
 {
     $map = request_cache('layout_hidden_items', static fn(): array => json_decode_array(setting('layout_hidden_items', '{}'))) ?? [];
     return (array)($map[$region] ?? []);
+}
+
+/* ---------------------------------------------------------------- menus (Admin → Appearance → Menus) */
+
+/**
+ * The list regions an admin edits as menus, region => name. Their items can get new text, a new link, an icon and a new tab, and
+ * the admin adds links of their own; hiding and order are the same settings Admin → Widgets writes. Plugins add a menu of their own
+ * through the filter menus.known.
+ */
+function menus_known(): array
+{
+    return request_cache('menus_known', static fn(): array => (array)hook('menus.known', [
+        'header.nav' => t('Top navigation'),
+        'sidebar.left.nav' => t('Left menu'),
+        'main.categories' => t('Category bar'),
+        'header.user_menu' => t('Account menu'),
+        'footer.links' => t('Footer links'),
+    ], [])) ?? [];
+}
+
+/** The admin's edits of one menu, item id => [label, url, icon, new_tab, group, custom, weight] (setting menu_items: {region: {id: {…}}}). */
+function menu_edits(string $region): array
+{
+    $map = request_cache('menu_items', static fn(): array => json_decode_array(setting('menu_items', '{}'))) ?? [];
+    return (array)($map[$region] ?? []);
+}
+
+/** A link an admin typed: a path on this site ("/growth?tab=x") goes through url(), a full http(s) address stays, anything else is ''. */
+function menu_href(string $url): string
+{
+    $url = trim($url);
+    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+        $p = parse_url($url) ?: [];
+        parse_str((string)($p['query'] ?? ''), $params);
+        return url((string)($p['path'] ?? '/'), $params) . (isset($p['fragment']) ? '#' . $p['fragment'] : '');
+    }
+    return preg_match('~^https?://[^\s"<>]+$~i', $url) ? $url : '';
+}
+
+/** A menu with the admin's edits applied: new text, link, icon or tab for any item (core, plugin or custom), and the custom links added. */
+function menu_apply(string $region, array $items): array
+{
+    foreach (menu_edits($region) as $id => $e) {
+        if (!is_array($e)) continue;
+        $id = (string)$id;
+        if (!empty($e['custom'])) {
+            $href = menu_href((string)($e['url'] ?? ''));
+            if ($href === '' || trim((string)($e['label'] ?? '')) === '') continue;
+            $path = str_starts_with((string)$e['url'], '/') ? (string)(parse_url((string)$e['url'], PHP_URL_PATH) ?: '/') : '';
+            $items[$id] = ['label' => (string)$e['label'], 'url' => $href, 'icon' => (string)($e['icon'] ?? ''), 'new_tab' => !empty($e['new_tab']), 'group' => (string)($e['group'] ?? ''),
+                'active' => $path !== '' && $path !== '/' && is_active_path($path), 'weight' => (int)($e['weight'] ?? 50), 'custom' => true];
+            continue;
+        }
+        if (!isset($items[$id]) || !is_array($items[$id])) continue;
+        if (trim((string)($e['label'] ?? '')) !== '') $items[$id]['label'] = (string)$e['label'];
+        if (($href = menu_href((string)($e['url'] ?? ''))) !== '') $items[$id]['url'] = $href;
+        if ((string)($e['icon'] ?? '') !== '') $items[$id]['icon'] = (string)$e['icon'];
+        if (array_key_exists('new_tab', $e)) $items[$id]['new_tab'] = !empty($e['new_tab']);
+        if (array_key_exists('group', $e)) $items[$id]['group'] = (string)$e['group'];
+    }
+    return $items;
 }
 
 /** Admin-managed HTML blocks stored in setting layout_blocks: [{id,region,title,html,enabled,sort}] */

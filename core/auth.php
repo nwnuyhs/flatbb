@@ -199,13 +199,17 @@ function is_mod(): bool
     return $g !== null && ((int)$g['is_admin'] === 1 || (int)$g['is_mod'] === 1);
 }
 
-/** can('post'), can('reply'), can('upload'), can('edit_own'), can('delete_own') */
+/**
+ * can('post'), can('reply'), can('upload'), can('edit_own'), can('delete_own'). The member's group decides, then plugins may
+ * change the answer through the filter user.can (ctx: permission, user, group): a trust level that allows links, a time-out that
+ * forbids replies. Guests have no permissions and admins always have every one; no plugin changes either.
+ */
 function can(string $permission): bool
 {
     $g = my_group();
     if ($g === null) return false;
     if ((int)$g['is_admin'] === 1) return true;
-    return in_array($permission, $g['permissions'], true);
+    return (bool)hook('user.can', in_array($permission, $g['permissions'], true), ['permission' => $permission, 'user' => me(), 'group' => $g]);
 }
 
 /** Group id list from a comma separated setting; empty means "everyone". */
@@ -250,6 +254,15 @@ function users_cache_put(array $users, string $bucket = 'users'): void
 function user_public_columns(): string
 {
     return 'id,username,avatar,group_id,post_count,topic_count,like_count,status,last_seen,created_at,points';
+}
+
+/**
+ * A member's level as a number, 0 when no plugin keeps levels. The plugin that does answers the filter user.level (ctx: user);
+ * others (badges, gated topics) read it here instead of calling that plugin. Runs inside lists: the answer must not query.
+ */
+function user_level(array $user): int
+{
+    return max(0, (int)hook('user.level', 0, ['user' => $user]));
 }
 
 /** Batch-load users (public columns) for a list of ids, keyed by id. Never call in a loop. */

@@ -11,11 +11,7 @@ $has_left = $left !== false;
 $has_right = $right !== false;
 $flash = flash_take();
 $nav = region_list('header.nav', [], []);
-$user_menu = $me ? region_list('header.user_menu', [
-    'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user', 'weight' => 1],
-    'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark', 'weight' => 10],
-    'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings', 'group' => 'site', 'weight' => 90],
-] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me]) : []; // Points is in the numbers strip of the menu (user_menu.php)
+$user_menu = $me ? user_menu_items($me) : []; // Points is in the numbers strip of the menu (user_menu.php)
 $footer_links = region_list('footer.links', [
     'categories' => ['label' => t('Categories'), 'url' => url('/categories')],
     'tags' => ['label' => t('Tags'), 'url' => url('/tags')],
@@ -65,7 +61,7 @@ $unread = notifications_unread();
     </a>
     <?= region('header.left') ?>
     <nav class="topnav" data-slot="header.nav">
-      <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($item['icon']) ? icon((string)$item['icon']) : '' ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?>
+      <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($item['icon']) ? icon_any((string)$item['icon']) : '' ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?>
     </nav>
     <div class="topbar-right" data-slot="header.right">
       <?php foreach (header_right_items($me, (int)$unread, $user_menu) as $item): ?><?= raw(is_array($item) ? (string)($item['html'] ?? '') : (string)$item) ?><?php endforeach; ?>
@@ -74,7 +70,8 @@ $unread = notifications_unread();
 </header>
 <div class="container page-grid">
   <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left">
-    <?php if ($nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= icon((string)($item['icon'] ?? 'external')) ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
+    <?php $drawer_nav = array_filter($nav, static fn($it): bool => is_array($it) && !in_array((string)($it['url'] ?? ''), request_cache('left_nav_urls') ?? [], true)); // the left menu below already has the others ?>
+    <?php if ($drawer_nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($drawer_nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= icon_any((string)($item['icon'] ?? 'external')) ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
     <?= raw($left) ?>
   </aside><?php endif; ?>
   <main class="col-main" data-slot="main">

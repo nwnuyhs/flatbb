@@ -95,6 +95,14 @@ function admin_page_plugins(): never
     $action = admin_drawer_link(admin_url('plugins', ['upload' => 1]), t('Upload plugin'), 'btn btn-primary', 'upload')
         . action_form($list_url, '<button class="btn" type="submit">' . icon('refresh') . t('Scan plugins folder') . '</button>', ['action' => 'sync'], 'inline')
         . (plugin_enabled('market') ? '' : ' <a class="btn" href="https://www.flatbb.com/market" target="_blank" rel="noopener">' . icon('external') . t('Marketplace') . '</a>'); // with the market plugin the Marketplace tab above is the way in
+    // core addresses a plugin serves instead (router.routes): the admin should know who answers "/" or any other core page
+    $taken = [];
+    foreach (routes_taken_over() as $path => $handler) {
+        $owner = '';
+        foreach (array_keys(plugins()) as $pid) if (str_starts_with($handler, $pid . '_') && strlen($pid) > strlen($owner)) $owner = $pid;
+        $taken[] = '<code>' . h($path) . '</code> → ' . h($owner !== '' ? (string)(plugins()[$owner]['name'] ?? $owner) : $handler);
+    }
+    if ($taken !== []) $html = '<div class="admin-note">' . icon('info') . '<div><b>' . t('Pages served by plugins') . '</b><br>' . t('These addresses of the forum are answered by a plugin instead of the core:') . ' ' . implode(', ', $taken) . '</div></div>' . $html;
     admin_page(t('Plugins'), $html, 'plugins', ['action' => '<div class="btn-row">' . $action . '</div>', 'drawer' => $drawer]);
 }
 
@@ -116,6 +124,7 @@ function admin_layout_items(string $region): array
         $pid = (string)$e['plugin'];
         if ($pid !== '' && !isset($items[$pid]) && array_keys($items) === $before) $items[$pid] = ['label' => (string)(plugins()[$pid]['name'] ?? $pid)];
     }
+    if (isset(menus_known()[$region])) $items = menu_apply($region, $items);
     $out = [];
     foreach ($items as $id => $it) {
         if (!is_array($it)) $it = ['html' => (string)$it];
@@ -128,9 +137,21 @@ function admin_layout_items(string $region): array
     return layout_order_items($region, $out);
 }
 
+/** GET /admin/layout: the page is Widgets now; old links and bookmarks land there. */
 function admin_page_layout(): never
 {
-    $list_url = admin_url('layout');
+    redirect(admin_url('widgets'), 301);
+}
+
+/**
+ * GET|POST /admin/widgets (Admin → Appearance → Widgets): what shows in each area of the page. The areas by where they are (header,
+ * left column, topic lists, right column, topic page, profile, footer): the plugins shown in each, switched off one by one, the
+ * cards of a card stack in their order, the HTML blocks. Navigation lists live under Menus; every position, list and component
+ * ones included, stays at hand under "All positions (advanced)".
+ */
+function admin_page_widgets(): never
+{
+    $list_url = admin_url('widgets');
     $blocks = json_decode_array(setting('layout_blocks', '[]'));
     if (is_post()) {
         check_csrf();
@@ -203,19 +224,7 @@ function admin_page_layout(): never
         flash(t('Block saved.'));
         redirect($list_url);
     }
-    /* HTML blocks */
-    $rows = [];
-    foreach ($blocks as $b) {
-        $rows[] = [
-            '<b>' . h((string)($b['title'] ?: t('Untitled'))) . '</b><br><small class="muted">' . h(cut(strip_tags((string)$b['html']), 60)) . '</small>',
-            '<code>' . h((string)$b['region']) . '</code>', (int)($b['sort'] ?? 0),
-            admin_switch($list_url, ['action' => !empty($b['enabled']) ? 'block_off' : 'block_on', 'id' => $b['id']], !empty($b['enabled']), t('Enabled')),
-            '<div class="row-actions">' . admin_drawer_link(admin_url('layout', ['block' => $b['id']]), t('Edit')) . admin_row_menu([admin_drawer_link(admin_url('layout', ['delete' => $b['id']]), t('Delete'), 'danger', 'trash')]) . '</div>',
-        ];
-    }
-    $html = '<h3 class="admin-sub">' . t('HTML blocks') . '</h3><p class="muted small">' . t('Ads, notices or widgets placed in any position without writing a plugin.') . '</p>'
-        . admin_table([t('Block'), t('Position'), t('Sort'), t('Enabled'), ''], $rows, t('No HTML blocks yet.'));
-    /* positions: plugins per region */
+    /* the areas of the page, by where they are; each row: the plugins shown there, the cards of a stack, the blocks, Add block */
     $by_hook = [];
     foreach (hook_registry() as $hook => $entries) {
         if (!str_starts_with($hook, 'region.')) continue;
@@ -223,39 +232,70 @@ function admin_page_layout(): never
     }
     $count = [];
     foreach ($blocks as $b) $count[(string)$b['region']] = ($count[(string)$b['region']] ?? 0) + 1;
-    $rows = [];
-    foreach (regions_known() as $name => $desc) {
+    $known = regions_known();
+    $row = static function (string $name, string $title) use ($by_hook, $count, $list_url, $known): array {
+        $desc = (string)($known[$name] ?? '');
         $chips = '';
-        foreach (array_keys($by_hook[$name] ?? []) as $pid) {
+        $list = str_contains($desc, '(list)');
+        // in a list position every item has its own switch below, so a switch per plugin would only say the same twice
+        foreach ($list ? [] : array_keys($by_hook[$name] ?? []) as $pid) {
             $on = layout_plugin_enabled('region.' . $name, $pid);
             $chips .= '<span class="chip">' . admin_switch($list_url, ['action' => $on ? 'plugin_off' : 'plugin_on', 'region' => $name, 'plugin' => $pid], $on, t('Show in this position')) . h(plugins()[$pid]['name'] ?? $pid) . '</span>';
         }
-        // single items of list regions (links, tabs, menu entries) can be hidden one by one and moved up or down; loop regions have no items outside a row
-        if (str_contains($desc, '(list)')) {
+        // single items of list regions (cards, links, tabs) can be hidden one by one and dragged into order; loop regions have no items outside a row
+        if ($list) {
             $hidden = layout_hidden_items($name);
             $items = admin_layout_items($name);
-            $n = count($items);
-            $k = 0;
             foreach ($items as $iid => $it) {
                 $on = !isset($hidden[(string)$iid]);
-                $label = (string)($it['label'] ?? $iid);
-                $arrows = $n < 2 ? '' : '<span class="order">'
-                    . ($k > 0 ? action_form($list_url, '<button type="submit" title="' . t('Move up') . '">' . icon('chevron-up') . '</button>', ['action' => 'item_up', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
-                    . ($k < $n - 1 ? action_form($list_url, '<button type="submit" title="' . t('Move down') . '">' . icon('chevron-down') . '</button>', ['action' => 'item_down', 'region' => $name, 'item' => (string)$iid], 'inline') : '')
-                    . '</span>';
-                $chips .= '<span class="chip chip-item" draggable="true" data-item="' . h((string)$iid) . '" title="' . h(t('Drag to reorder')) . '"><span class="grip" aria-hidden="true">⋮⋮</span>' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut($label, 24)) . $arrows . '</span>';
-                $k++;
+                $chips .= '<span class="chip chip-item" draggable="true" data-item="' . h((string)$iid) . '" title="' . h(t('Drag to reorder')) . '"><span class="grip" aria-hidden="true">⋮⋮</span>' . admin_switch($list_url, ['action' => $on ? 'item_off' : 'item_on', 'region' => $name, 'item' => (string)$iid], $on, t('Show this item')) . h(cut((string)($it['label'] ?? $iid), 24)) . '</span>';
             }
         }
-        $rows[] = [
-            '<code>' . h($name) . '</code><br><small class="muted">' . h($desc) . '</small>',
-            $chips !== '' ? '<div class="chips"' . (str_contains($desc, '(list)') ? ' data-sort-region="' . h($name) . '" data-sort-url="' . h($list_url) . '"' : '') . '>' . $chips . '</div>' : '<span class="muted small">—</span>',
+        return [
+            '<b>' . h($title) . '</b><br><code class="small muted">' . h($name) . '</code>',
+            $chips !== '' ? '<div class="chips"' . ($list ? ' data-sort-region="' . h($name) . '" data-sort-url="' . h($list_url) . '"' : '') . '>' . $chips . '</div>' : '<span class="muted small">—</span>',
             isset($count[$name]) ? (int)$count[$name] : '<span class="muted small">0</span>',
-            '<div class="row-actions">' . admin_drawer_link(admin_url('layout', ['block' => 'new', 'region' => $name]), t('Add block'), 'btn btn-sm', 'plus') . '</div>',
+            '<div class="row-actions">' . admin_drawer_link(admin_url('widgets', ['block' => 'new', 'region' => $name]), t('Add block'), 'btn btn-sm', 'plus') . '</div>',
+        ];
+    };
+    $areas = [
+        t('Every page') => ['main.before' => t('Above the content'), 'main.after' => t('Below the content'), 'head' => t('Inside <head> (meta tags, analytics)'), 'body.end' => t('Before </body> (scripts)')],
+        t('Header') => ['header.left' => t('Next to the logo'), 'header.right.before_search' => t('Before the search box'), 'header.right.after_search' => t('After the search box')],
+        t('Left column') => ['sidebar.left.top' => t('Above the menu'), 'sidebar.left.bottom' => t('At the bottom')],
+        t('Topic lists') => ['topic_list.before' => t('Above the topics'), 'topic_list.after' => t('Below the topics')],
+        t('Right column') => ['sidebar.right.top' => t('Above the cards'), 'sidebar.right.cards' => t('Cards'), 'sidebar.right.bottom' => t('Below the cards')],
+        t('Topic page') => ['topic.header' => t('Under the title'), 'topic.replies_after' => t('Before the reply box'), 'topic.sidebar.top' => t('Sidebar, above the cards'), 'topic.sidebar.cards' => t('Sidebar cards'), 'topic.sidebar.bottom' => t('Sidebar, below the cards')],
+        t('Profile') => ['user.profile.after' => t('Inside the profile card'), 'member.sections' => t('Sections beside the lists'), 'user.profile.cards' => t('Cards beside the lists')],
+        t('Footer') => ['footer.left' => t('Left'), 'footer.right' => t('Right')],
+    ];
+    $html = '<p class="muted small">' . t('What shows in each area of the page: the cards of a sidebar in their order, what each plugin puts there (switch one off to hide it in that place only), and HTML blocks of your own.')
+        . ' <a href="' . h(admin_url('menus')) . '">' . t('The links of the site are under Menus.') . '</a></p>';
+    foreach ($areas as $area => $positions) {
+        $rows = [];
+        foreach ($positions as $name => $title) if (isset($known[$name])) $rows[] = $row($name, $title);
+        if ($rows !== []) $html .= '<h3 class="admin-sub">' . h($area) . '</h3>' . admin_table([t('Position'), t('Shown here'), t('Blocks'), ''], $rows);
+    }
+    /* HTML blocks */
+    $rows = [];
+    foreach ($blocks as $b) {
+        $rows[] = [
+            '<b>' . h((string)($b['title'] ?: t('Untitled'))) . '</b><br><small class="muted">' . h(cut(strip_tags((string)$b['html']), 60)) . '</small>',
+            '<code>' . h((string)$b['region']) . '</code>', (int)($b['sort'] ?? 0),
+            admin_switch($list_url, ['action' => !empty($b['enabled']) ? 'block_off' : 'block_on', 'id' => $b['id']], !empty($b['enabled']), t('Enabled')),
+            '<div class="row-actions">' . admin_drawer_link(admin_url('widgets', ['block' => $b['id']]), t('Edit')) . admin_row_menu([admin_drawer_link(admin_url('widgets', ['delete' => $b['id']]), t('Delete'), 'danger', 'trash')]) . '</div>',
         ];
     }
-    $html .= '<h3 class="admin-sub">' . t('Positions') . '</h3><p class="muted small">' . t('Every position a plugin or an HTML block can occupy. Switch a plugin off to hide it in that position only. In a list position, drag the items into the order you want, or use the arrows.') . '</p>'
-        . admin_table([t('Position'), t('Plugins'), t('Blocks'), ''], $rows);
+    $html .= '<h3 class="admin-sub">' . t('HTML blocks') . '</h3><p class="muted small">' . t('Ads, notices or widgets placed in any position without writing a plugin.') . '</p>'
+        . admin_table([t('Block'), t('Position'), t('Sort'), t('Enabled'), ''], $rows, t('No HTML blocks yet.'));
+    /* every position, for plugin authors and for finding where something comes from */
+    $rows = [];
+    foreach ($known as $name => $desc) {
+        $r = $row($name, $name);
+        $r[0] = '<code>' . h($name) . '</code><br><small class="muted">' . h($desc) . '</small>';
+        $rows[] = $r;
+    }
+    $html .= '<details class="admin-advanced"><summary>' . t('All positions (advanced)') . '</summary><p class="muted small">' . t('Every position a plugin or an HTML block can occupy, the menus and the small ones inside topic rows and posts included. In a list position, drag the items into the order you want.') . '</p>'
+        . admin_table([t('Position'), t('Plugins'), t('Blocks'), ''], $rows) . '</details>';
     /* drawers */
     $drawer = null;
     $bid = get_str('block', 40);
@@ -278,7 +318,7 @@ function admin_page_layout(): never
             . '<div class="form-actions sticky"><button type="submit" class="btn btn-danger">' . icon('trash') . t('Delete block') . '</button><a class="btn btn-ghost" href="' . h($list_url) . '" data-drawer-close>' . t('Cancel') . '</a></div></form>';
         $drawer = ['title' => t('Delete block'), 'sub' => (string)($b['title'] ?? ''), 'body' => $body, 'back' => $list_url];
     }
-    admin_page(t('Layout'), $html, 'layout', ['action' => admin_drawer_link(admin_url('layout', ['block' => 'new']), t('Add HTML block'), 'btn btn-primary', 'plus'), 'drawer' => $drawer]);
+    admin_page(t('Widgets'), $html, 'widgets', ['action' => admin_drawer_link(admin_url('widgets', ['block' => 'new']), t('Add HTML block'), 'btn btn-primary', 'plus'), 'drawer' => $drawer]);
 }
 
 /* ---------------------------------------------------------------- cron */

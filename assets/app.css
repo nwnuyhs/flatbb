@@ -88,6 +88,8 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .hp { position: absolute; inset-inline-start: -9999px; }
 .flash { padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; background: var(--info-soft); color: var(--info); font-weight: 500; transition: opacity .4s; }
 .flash-success { background: var(--success-soft); color: var(--success); }
+.admin-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; margin-bottom: 16px; border-radius: var(--radius-sm); background: var(--info-soft); color: var(--text); font-size: var(--font-size-sm); }
+.admin-note > .icon { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--info); }
 .flash-error { background: var(--danger-soft); color: var(--danger); }
 .flash.fade { opacity: 0; }
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); padding: 10px 16px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); box-shadow: var(--shadow-md); opacity: 0; transition: all .25s; z-index: 200; }
@@ -133,6 +135,13 @@ input[type="color"] { width: 48px; height: 32px; padding: 2px; border: 1px solid
 .um-id b { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 .um-labels { display: flex; flex-wrap: wrap; gap: 4px; }
 .um-labels:empty { display: none; }
+.um-actions { display: flex; flex-direction: column; gap: 6px; margin: 2px 4px 6px; }
+.um-actions form { margin: 0; }
+.dropdown-menu .um-action { justify-content: center; gap: 6px; padding: 9px 10px; background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.dropdown-menu .um-action:hover { background: color-mix(in srgb, var(--brand) 18%, var(--panel)); }
+.dropdown-menu .um-action .icon { color: currentColor; }
+.dropdown-menu .um-action.is-done { background: var(--success-soft); color: var(--success); font-weight: 500; }
+.um-action .me-count { background: color-mix(in srgb, var(--brand) 16%, transparent); color: var(--brand); }
 .um-stats { display: flex; margin: 2px 4px 6px; border-radius: var(--radius-sm); background: var(--panel-2); }
 .dropdown-menu .um-stats a { flex: 1; flex-direction: column; gap: 0; min-width: 0; padding: 6px 4px; text-align: center; }
 .dropdown-menu .um-stats a:hover { background: var(--brand-soft); }
@@ -155,25 +164,58 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .side-nav, .side-section { margin-bottom: 18px; }
 .drawer-nav { display: none; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); } /* header.nav links, shown inside the mobile drawer only */
 .side-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--side-link-radius, var(--radius-sm)); color: var(--text-muted); font-weight: 500; transition: background .12s, color .12s; }
+.side-group { margin: 14px 10px 4px; color: var(--text-subtle); font-size: var(--font-size-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.side-more > summary { list-style: none; cursor: pointer; color: var(--text-muted); }
+.side-more > summary::-webkit-details-marker { display: none; }
+.side-more[open] > summary { display: none; }
 .side-link .icon { width: 18px; height: 18px; }
 .side-link:hover { background: var(--panel); color: var(--text); }
 .side-link.active { background: var(--side-link-active-bg, var(--brand-soft)); color: var(--side-link-active-text, var(--brand)); }
 .side-link small { margin-inline-start: auto; color: var(--text-subtle); font-size: var(--font-size-xs); }
 .side-section h4 { padding: 0 10px; margin-bottom: 6px; }
 .cat-child { padding-inline-start: 26px; }
-.side-tags .tag-cloud { padding: 0 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.card-tags .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
 .card-stack { display: flex; flex-direction: column; gap: 16px; }
 .card { background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, var(--shadow)); }
 .card-head { display: flex; align-items: center; justify-content: space-between; padding: var(--card-head-pad, 12px 16px); border-bottom: 1px solid var(--line-soft); }
 .card-head h3 { margin: 0; font-size: var(--font-size-md); }
 .card-body { padding: var(--card-pad, 16px); }
 .card-body > :last-child { margin-bottom: 0; }
-.me-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.me-head small { display: block; color: var(--text-muted); }
-.me-stats { display: flex; gap: 8px; margin-bottom: 12px; }
-.me-stats > * { flex: 1; text-align: center; background: var(--panel-2); border-radius: var(--radius-sm); padding: 8px 4px; color: var(--text); }
-.me-stats b { display: block; font-size: var(--font-size-lg); }
-.me-stats span { font-size: var(--font-size-xs); color: var(--text-muted); }
+/* the member card: head, number tiles (as many as fit a row), progress bars across the card, then the buttons (member.* regions) */
+.me-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.me-id { min-width: 0; }
+.me-id strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 1px; font-size: var(--font-size-sm); color: var(--text-muted); }
+.me-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 4px; margin-bottom: 10px; }
+.me-stats > * { min-width: 0; text-align: center; background: var(--panel-2); border-radius: var(--radius-sm); padding: 5px 2px; color: var(--text); }
+.me-stats a:hover { background: var(--brand-soft); text-decoration: none; }
+.me-stats b { display: block; font-size: var(--font-size-md); line-height: 1.3; }
+.me-stats span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-size-xs); color: var(--text-muted); }
+.me-bar { display: block; margin: -2px 0 10px; color: var(--text); }
+.me-bar:hover { text-decoration: none; }
+.me-bar-top { display: flex; align-items: baseline; gap: 6px; font-size: var(--font-size-sm); }
+.me-bar-top span { color: var(--text-muted); }
+.me-bar-top small { margin-inline-start: auto; color: var(--text-muted); font-size: var(--font-size-xs); white-space: nowrap; }
+.me-bar-track { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.me-bar-track i { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+.me-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: -2px 0 12px; color: var(--text-muted); font-size: var(--font-size-sm); }
+.me-foot .icon { width: 14px; height: 14px; }
+.card-body > .me-foot:last-child { margin-bottom: 0; }
+.me-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; margin: -4px 0 10px; }
+.me-links > a { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 5px 6px; border-radius: var(--radius-sm); color: var(--text); font-size: var(--font-size-sm); }
+.me-links > a:hover { background: var(--panel-2); text-decoration: none; }
+.me-links .icon { flex: none; width: 16px; height: 16px; color: var(--text-muted); }
+.me-links span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.me-links .me-count { margin-inline-start: auto; }
+.me-actions { display: flex; flex-direction: column; gap: 8px; }
+.menu-item-label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.menu-item-label .icon { width: 16px; height: 16px; color: var(--text-muted); }
+.me-more { display: flex; gap: 6px; }
+.me-more .btn { flex: 1 1 0; min-width: 0; justify-content: center; }
+.me-more .btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-count { min-width: 16px; padding: 0 4px; border-radius: var(--radius-pill); background: var(--brand); color: var(--brand-text); font-size: var(--font-size-xs); line-height: 16px; text-align: center; }
+/* wide screens: the member card beside the list carries New Topic, so the list head keeps the row for its tabs */
+@media (min-width: 1201px) { body:has(.col-right .card-me [data-action="new"]) .list-new-topic { display: none; } }
 .stat-list { list-style: none; margin: 0; padding: 0; }
 .stat-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
 .stat-list li:last-child { border: 0; }
@@ -226,6 +268,14 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .cat-badge .icon, .cat-link .icon { width: 14px; height: 14px; }
 .icon-img { object-fit: contain; border-radius: 3px; vertical-align: -2px; }
 .chip-item[draggable] { cursor: grab; }
+table.sortable tr[draggable] { cursor: grab; }
+.admin-advanced { margin-top: 24px; }
+.admin-advanced > summary { cursor: pointer; color: var(--text-muted); font-weight: 600; padding: 6px 0; }
+.admin-advanced[open] > summary { margin-bottom: 8px; }
+table.sortable tr.dragging { opacity: .4; }
+.drag-grip { display: inline-flex; color: var(--text-subtle); }
+.drag-grip .icon { width: 18px; height: 18px; }
+table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .chip-item.dragging { opacity: .4; }
 .chip-item .grip { color: var(--text-subtle); letter-spacing: -3px; margin-inline-end: 2px; user-select: none; }
 .cat-item:hover { color: var(--text); }
@@ -234,6 +284,26 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 .cat-bar-mobile { display: none; }
 .tabs-sub .tab { padding: 4px 10px; font-size: var(--font-size-sm); }
 .icon-picker { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+/* the icon field: the current icon as a button, a panel with search, the tiles, an emoji box and an upload */
+.icon-field { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+.icon-field > summary { display: flex; align-items: center; gap: 10px; padding: 7px 10px; cursor: pointer; list-style: none; }
+.icon-field > summary::-webkit-details-marker { display: none; }
+.icon-field-now { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--panel-2); }
+.icon-field-now .icon, .icon-field-now img { width: 18px; height: 18px; }
+.icon-field-empty { padding: 0 8px; color: var(--text-muted); font-size: var(--font-size-xs); white-space: nowrap; }
+.icon-field-label { margin-inline-start: auto; color: var(--brand); font-size: var(--font-size-sm); }
+.icon-field[open] > summary { border-bottom: 1px solid var(--line-soft); }
+.icon-field-panel { padding: 10px; }
+.icon-field-search { width: 100%; margin-bottom: 8px; }
+.icon-field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; max-height: 240px; overflow-y: auto; }
+.icon-field-grid .icon-pick { width: 100%; }
+.icon-field-grid .icon-pick[hidden] { display: none; } /* the search hides tiles: [hidden] must win over the tile's inline-flex */
+.icon-field-grid .icon-pick-text { grid-column: span 2; width: 100%; padding: 0 6px; font-size: var(--font-size-xs); }
+.icon-field-grid .icon-pick-mine { background: var(--panel-2); }
+.icon-field-extra { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--text-muted); font-size: var(--font-size-xs); }
+.icon-field-extra label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.icon-field-emoji { width: 80px; }
+.icon-emoji { display: inline-flex; align-items: center; justify-content: center; font-size: 1em; line-height: 1; font-style: normal; }
 .icon-pick { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); color: var(--text-muted); cursor: pointer; }
 .icon-pick:hover { color: var(--text); border-color: var(--text-muted); }
 .icon-pick.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
@@ -442,37 +512,45 @@ body.editor-fs { overflow: hidden; }
 .post-deleted > summary { display: inline-flex; cursor: pointer; font-size: var(--font-size-sm); color: var(--text-subtle); }
 .post-deleted > summary:hover { color: var(--text-muted); }
 .post-deleted .post-content { margin-top: 8px; opacity: .75; }
-/* profile: one centred card (avatar, name, labels, bio, details, buttons, numbers, plugin sections), the tabs and lists under it */
+/* profile, option A: a head card across the page (avatar | name, labels, bio, details | buttons; the number tiles in a row under
+   them), then the lists beside a column of sections (progress, badges, member.sections) */
 .profile { display: flex; flex-direction: column; gap: var(--gap); }
-.profile-card { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 20px; text-align: center; background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, none); }
-.profile-head { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 640px; }
+.profile-card { display: flex; flex-direction: column; gap: 16px; padding: 22px 24px; background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, var(--shadow)); }
+.profile-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 6px 20px; }
 .profile-head .avatar { width: 96px; height: 96px; font-size: 38px; }
 .profile-head .online-dot { width: 18px; height: 18px; top: 4px; left: 4px; border-width: 3px; } /* sized for the big avatar, not in proportion to it */
-.profile-id { min-width: 0; max-width: 100%; }
+.profile-id { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-top: 4px; }
 .profile-name { margin: 0; font-size: var(--font-size-2xl); line-height: 1.25; overflow-wrap: anywhere; }
-.profile-labels { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; margin-top: 6px; }
+.profile-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: -2px; }
 .profile-labels:empty { display: none; }
-.profile-bio { margin: 0; color: var(--text); overflow-wrap: anywhere; }
-.profile-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; color: var(--text-muted); font-size: var(--font-size-sm); }
+.profile-bio { margin: 0; max-width: 640px; color: var(--text); overflow-wrap: anywhere; }
+.profile-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--text-muted); font-size: var(--font-size-sm); }
 .profile-meta > span { display: inline-flex; align-items: center; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .profile-meta > [data-slot]:empty { display: none; }
 .profile-meta .icon { width: 15px; height: 15px; flex: none; margin-inline-end: 6px; }
-.profile-side { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.profile-side { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding-top: 4px; }
 .profile-side:empty { display: none; }
 .profile-side > .btn-primary { order: -1; } /* the main action on someone else's profile (Message) comes first */
-.profile-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; width: 100%; max-width: 760px; text-align: start; }
-.pstat { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 9px 11px; border-radius: var(--radius-sm); background: var(--panel-2); color: var(--text); }
+.profile-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.pstat { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 9px 12px; border-radius: var(--radius-sm); background: var(--panel-2); color: var(--text); }
 .pstat b { font-size: var(--font-size-lg); line-height: 1.2; }
 .pstat span, .pstat small { overflow: hidden; color: var(--text-muted); font-size: var(--font-size-xs); white-space: nowrap; text-overflow: ellipsis; }
-a.pstat:hover { background: var(--brand-soft); }
+a.pstat:hover { background: var(--brand-soft); text-decoration: none; }
 a.pstat:hover b { color: var(--brand); }
-/* a number with progress (the level) runs across the card with its bar */
-.pstat-wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; column-gap: 8px; }
+/* a number with progress (the level) runs across its card with its bar */
+.pstat-wide { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; column-gap: 8px; }
 .pstat-bar { grid-column: 1 / -1; display: block; height: 6px; margin-top: 7px; border-radius: 3px; background: linear-gradient(var(--brand), var(--brand)) 0 0 / var(--p, 0%) 100% no-repeat, var(--line); }
-.profile-card > .region { width: 100%; max-width: 760px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
-.profile-card > .region:empty { display: none; }
-/* the list tabs sit in the middle of the card head, as one segmented control */
-.page-profile .list-card > .list-head { justify-content: center; }
+.profile-progress .card-body { display: flex; flex-direction: column; gap: 8px; }
+.profile-progress .pstat { padding: 0; background: none; }
+.profile-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: var(--gap); }
+.profile-body-full { grid-template-columns: minmax(0, 1fr); }
+.profile-main { min-width: 0; }
+.profile-aside { min-width: 0; position: sticky; top: calc(var(--topbar-h) + 20px); } /* the sections stay in view beside a long list */
+.profile-section .card-head a { font-size: var(--font-size-sm); }
+.profile-section .badge-profile { margin: 0; }
+.profile-section .badge-profile-label { display: none; }
+/* the list tabs: one segmented control at the start of the list head */
+.page-profile .list-card > .list-head { justify-content: flex-start; }
 .page-profile .list-head .tabs { gap: 2px; padding: 3px; border-radius: var(--radius-sm); background: var(--panel-2); }
 .page-profile .list-head .tab.active { background: var(--card-bg, var(--panel)); }
 .post-rows { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
@@ -723,6 +801,14 @@ body.adrawer-open { overflow: hidden; }
   .list-head .btn-primary span { display: none; }
   .list-head .btn-primary { width: 38px; height: 38px; padding: 0; border-radius: 50%; justify-content: center; }
   .list-head .btn-primary .icon { width: 20px; height: 20px; }
+  /* on the topic lists it floats in the lower corner, in view while the list scrolls: 56px (the usual floating button), 16px from
+     the side and 24px from the bottom, clear of the browser's toolbar and the home gesture, its centre in the thumb's easy reach.
+     The header's small + steps aside there, and the list and footer leave room under it */
+  .list-head .list-new-topic { position: fixed; z-index: 60; inset-inline-end: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); width: 56px; height: 56px; box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 40%, transparent); }
+  .list-head .list-new-topic .icon { width: 24px; height: 24px; }
+  body:has(.list-new-topic) .header-new-topic { display: none; }
+  body:has(.list-new-topic) .col-main { padding-bottom: 88px; }
+  body:has(.list-new-topic) .footer-inner { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .cat-bar { margin: -12px -12px 10px; padding: 0 6px; }
   .editor-toolbar { flex-wrap: wrap; overflow: visible; row-gap: 2px; } /* every button in view: the toolbar wraps instead of scrolling sideways */
   .editor-toolbar .tb-spacer { flex: 1 0 0; }
@@ -799,26 +885,29 @@ body.adrawer-open { overflow: hidden; }
 .theme-preview-bar .icon { width: 16px; height: 16px; }
 .theme-preview-bar form { margin: 0; }
 
-/* ---------- profile: wide screens and phones ---------- */
+/* ---------- profile: narrower screens and phones ---------- */
+@media (max-width: 1100px) {
+  .profile-body { grid-template-columns: minmax(0, 1fr); }
+  .profile-aside { position: static; order: -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+}
 @media (max-width: 768px) {
-  /* the card becomes a compact header above the tabs: avatar, name and labels, icon buttons; then bio, details in a row, numbers in three columns */
-  /* the same centred card, tighter: a smaller avatar, the buttons side by side, three numbers to a row */
+  /* the head card: avatar beside name and labels, then bio, details, the buttons side by side, three numbers to a row */
   .profile { gap: 12px; }
-  .profile-card { gap: 10px; padding: 16px 14px; }
-  .profile-head { gap: 8px; }
+  .profile-card { gap: 12px; padding: 14px; }
+  .profile-head { grid-template-columns: auto minmax(0, 1fr); gap: 10px 14px; }
   .profile-head .avatar { width: 64px; height: 64px; font-size: 26px; }
   .profile-head .online-dot { width: 13px; height: 13px; top: 1px; left: 1px; border-width: 2px; }
+  .profile-id { gap: 6px; padding-top: 2px; }
   .profile-name { font-size: var(--font-size-xl); }
-  .profile-labels { margin-top: 4px; }
   .profile-bio { font-size: var(--font-size-sm); }
   .profile-meta { gap: 2px 12px; font-size: var(--font-size-xs); }
   .profile-meta > span { white-space: pre; }
-  .profile-side { width: 100%; flex-wrap: nowrap; }
+  .profile-side { grid-column: 1 / -1; flex-wrap: nowrap; justify-content: stretch; padding-top: 0; }
   .profile-side > .btn { flex: 1 1 0; justify-content: center; }
-  .profile-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .profile-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding-top: 12px; }
   .pstat { padding: 7px 9px; }
   .pstat b { font-size: var(--font-size-md); }
-  .profile-card > .region { padding-top: 12px; }
+  .profile-aside { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .page-profile .list-head .tabs { width: 100%; }
   .page-profile .list-head .tab { flex: 1 1 0; justify-content: center; }
 }

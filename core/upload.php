@@ -5,10 +5,14 @@
  * Never trust the client mime; we sniff with finfo and whitelist extensions.
  */
 
+/**
+ * The address of an uploaded file. The filter upload.url (ctx: path) lets a plugin serve files from a CDN or an object store it
+ * copies them to (upload.after_save). It runs for every avatar and attachment on a page: no database access.
+ */
 function upload_url(string $path): string
 {
     if (preg_match('#^https?://#i', $path)) return $path;
-    return base_path() . '/uploads/' . ltrim($path, '/');
+    return (string)hook('upload.url', base_path() . '/uploads/' . ltrim($path, '/'), ['path' => $path]);
 }
 
 /** Sniffed mime type. fileinfo is optional: without it, image files are identified by getimagesize() and everything else stays ''. */
@@ -86,6 +90,10 @@ function upload_store(array $user, string $tmp, string $original): array
     } elseif (str_contains($mime, 'php') || str_contains($mime, 'html')) {
         throw new RuntimeException(t('File type is not allowed.'));
     }
+    // a plugin may refuse the file (a message for the member) or change it in place (compress, watermark) before it is kept
+    $why = (string)hook('upload.before_save', '', ['kind' => 'attachment', 'user' => $user, 'tmp' => $tmp, 'name' => $original, 'ext' => $ext, 'mime' => $mime, 'size' => $size, 'is_image' => $is_image]);
+    if ($why !== '') throw new RuntimeException($why);
+    if ($is_image && ($info = @getimagesize($tmp)) !== false) [$w, $h] = $info;
     $rel = date('Y/m') . '/' . random_token(12) . '.' . $ext;
     $dest = UPLOAD_DIR . '/' . $rel;
     if (!is_dir(dirname($dest)) && !@mkdir(dirname($dest), 0755, true)) throw new RuntimeException(t('Upload directory is not writable.'));
@@ -96,6 +104,7 @@ function upload_store(array $user, string $tmp, string $original): array
         'size' => (int)filesize($dest), 'is_image' => $is_image ? 1 : 0, 'width' => (int)$w, 'height' => (int)$h,
         'hash' => (string)md5_file($dest), 'created_at' => now(),
     ]);
+    fire('upload.after_save', ['kind' => 'attachment', 'id' => $id, 'path' => $rel, 'file' => $dest, 'name' => $name, 'mime' => $mime, 'size' => (int)filesize($dest), 'is_image' => $is_image, 'user_id' => (int)$user['id']]);
     return ['id' => $id, 'path' => $rel, 'name' => $name, 'is_image' => $is_image, 'width' => $w, 'height' => $h];
 }
 
@@ -139,6 +148,7 @@ function avatar_store(int $uid, string $tmp): string
     $rel = 'avatars/' . $uid . '.jpg';
     imagejpeg($dst, UPLOAD_DIR . '/' . $rel, 88);
     imagedestroy($src); imagedestroy($dst);
+    fire('upload.after_save', ['kind' => 'avatar', 'id' => 0, 'path' => $rel, 'file' => UPLOAD_DIR . '/' . $rel, 'name' => basename($rel), 'mime' => 'image/jpeg', 'size' => (int)filesize(UPLOAD_DIR . '/' . $rel), 'is_image' => true, 'user_id' => $uid]);
     return $rel . '?v=' . now();
 }
 
@@ -164,9 +174,10 @@ function upload_site_image(string $key, array $file, array $exts, int $max_bytes
     if (!in_array($ext, $exts, true)) throw new RuntimeException(t('Allowed types: %s.', implode(', ', $exts)));
     $tmp = (string)$file['tmp_name'];
     $mime = upload_mime($tmp);
+    $clean = null;
     if ($ext === 'svg') {
-        $svg = (string)file_get_contents($tmp);
-        if (!str_contains($svg, '<svg') || preg_match('/<script|on[a-z]+\s*=|javascript:|<foreignObject/i', $svg)) throw new RuntimeException(t('The SVG file is invalid or contains scripts.'));
+        $clean = svg_sanitize((string)file_get_contents($tmp)); // rebuilt from an allowlist: what is kept is only drawing
+        if ($clean === null) throw new RuntimeException(t('The SVG file is invalid.'));
     } elseif ($ext === 'ico') {
         $head = (string)@file_get_contents($tmp, false, null, 0, 4);
         if ($head !== "   " && !in_array($mime, ['image/x-icon', 'image/vnd.microsoft.icon', 'image/ico', 'application/octet-stream'], true)) throw new RuntimeException(t('The image file is invalid.'));
@@ -177,8 +188,61 @@ function upload_site_image(string $key, array $file, array $exts, int $max_bytes
     if (!is_dir($dir) && !@mkdir($dir, 0755, true)) throw new RuntimeException(t('Upload directory is not writable.'));
     foreach (glob($dir . '/' . $key . '.*') ?: [] as $old) @unlink($old);
     $rel = 'site/' . preg_replace('/[^a-z0-9_]/', '', $key) . '.' . $ext;
-    if (!@move_uploaded_file($tmp, UPLOAD_DIR . '/' . $rel) && !@rename($tmp, UPLOAD_DIR . '/' . $rel)) throw new RuntimeException(t('Could not save the file.'));
+    if ($clean !== null) { if (@file_put_contents(UPLOAD_DIR . '/' . $rel, $clean) === false) throw new RuntimeException(t('Could not save the file.')); }
+    elseif (!@move_uploaded_file($tmp, UPLOAD_DIR . '/' . $rel) && !@rename($tmp, UPLOAD_DIR . '/' . $rel)) throw new RuntimeException(t('Could not save the file.'));
+    fire('upload.after_save', ['kind' => 'site', 'id' => 0, 'path' => $rel, 'file' => UPLOAD_DIR . '/' . $rel, 'name' => basename($rel), 'mime' => $ext === 'svg' ? 'image/svg+xml' : upload_mime(UPLOAD_DIR . '/' . $rel), 'size' => (int)filesize(UPLOAD_DIR . '/' . $rel), 'is_image' => true, 'user_id' => uid()]);
     return $rel . '?v=' . now();
+}
+
+/**
+ * An uploaded SVG made safe to serve from this site: parsed as XML with no DOCTYPE, no entities and no network, then rebuilt
+ * from an allowlist: drawing elements (shapes, paths, groups, gradients, masks, text) with their presentation attributes. Scripts,
+ * styles, event attributes, foreign content and links that leave the file (href or url() to anything but #id) are dropped.
+ * Returns the cleaned SVG, or null when the file is not an SVG drawing.
+ */
+function svg_sanitize(string $svg): ?string
+{
+    if (!class_exists('DOMDocument') || $svg === '' || strlen($svg) > 1048576 || preg_match('/<!(DOCTYPE|ENTITY)/i', $svg)) return null;
+    $in = new DOMDocument();
+    $prev = libxml_use_internal_errors(true);
+    $ok = $in->loadXML($svg, LIBXML_NONET);
+    libxml_clear_errors();
+    libxml_use_internal_errors($prev);
+    if (!$ok || $in->documentElement === null || strtolower((string)$in->documentElement->localName) !== 'svg') return null;
+    $els = array_flip(['svg', 'g', 'path', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'rect', 'defs', 'title', 'desc', 'text', 'tspan',
+        'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'symbol', 'use']);
+    $attrs = array_flip(['id', 'class', 'd', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'dx', 'dy', 'fx', 'fy', 'width', 'height', 'viewBox',
+        'points', 'transform', 'fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity',
+        'stroke-dasharray', 'stroke-dashoffset', 'stroke-miterlimit', 'opacity', 'clip-path', 'clip-rule', 'mask', 'offset', 'stop-color', 'stop-opacity',
+        'gradientUnits', 'gradientTransform', 'spreadMethod', 'preserveAspectRatio', 'href', 'font-size', 'font-family', 'font-weight', 'text-anchor',
+        'dominant-baseline', 'visibility', 'display', 'maskUnits', 'clipPathUnits']);
+    $ns = 'http://www.w3.org/2000/svg';
+    $out = new DOMDocument('1.0', 'UTF-8');
+    $keep = static function (DOMElement $from, DOMElement $to) use ($attrs): void {
+        foreach ($from->attributes as $a) {
+            $name = (string)$a->localName;
+            $value = trim((string)$a->value);
+            if (!isset($attrs[$name]) || preg_match('/javascript:|data:|expression\s*\(|url\s*\(\s*[^#\s)]/i', $value)) continue; // url() only to an #id of this file
+            if ($name === 'href' && !str_starts_with($value, '#')) continue;
+            $to->setAttribute($name, $value);
+        }
+    };
+    $copy = static function (DOMNode $from, DOMElement $to) use (&$copy, $out, $els, $keep, $ns): void {
+        foreach ($from->childNodes as $c) {
+            if ($c instanceof DOMText && !($c instanceof DOMCdataSection)) { $to->appendChild($out->createTextNode((string)$c->nodeValue)); continue; }
+            if (!$c instanceof DOMElement || !isset($els[(string)$c->localName]) || ($c->namespaceURI !== null && $c->namespaceURI !== $ns)) continue;
+            $e = $out->createElementNS($ns, (string)$c->localName);
+            $keep($c, $e);
+            $to->appendChild($e);
+            $copy($c, $e);
+        }
+    };
+    $root = $out->createElementNS($ns, 'svg');
+    $keep($in->documentElement, $root);
+    $out->appendChild($root);
+    $copy($in->documentElement, $root);
+    $xml = $out->saveXML($root);
+    return is_string($xml) && $xml !== '' ? $xml : null;
 }
 
 /**

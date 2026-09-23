@@ -179,7 +179,7 @@ Topic page: `topic.header`, `topic.actions` (list), `post.before` / `post.conten
 
 Breakpoints: < 1200px the right column moves under the main column; < 992px the left column becomes an off-canvas drawer (☰); < 640px compact rows and icon-only actions.
 
-Every position is listed in `regions_known()` and in Admin → Layout, where custom HTML blocks can be inserted without code.
+Every position is listed in `regions_known()` and in Admin → Widgets, where custom HTML blocks can be inserted without code.
 
 ## Right-to-left
 

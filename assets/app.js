@@ -103,10 +103,10 @@
     } catch (e) {}
   }
 
-  /* ---------- Admin → Layout: drag the items of a list position into a new order ---------- */
-  var dragChip = null;
+  /* ---------- Admin → Widgets chips and Admin → Menus rows: drag the items of a list into a new order ---------- */
+  var dragChip = null, SORTABLE = '.chip-item[draggable], tr[draggable][data-item]';
   document.addEventListener('dragstart', function (e) {
-    var c = e.target.closest && e.target.closest('.chip-item[draggable]');
+    var c = e.target.closest && e.target.closest(SORTABLE);
     if (!c) return;
     dragChip = c;
     c.classList.add('dragging');
@@ -115,11 +115,11 @@
   });
   document.addEventListener('dragover', function (e) {
     if (!dragChip) return;
-    var c = e.target.closest && e.target.closest('.chip-item[draggable]');
+    var c = e.target.closest && e.target.closest(SORTABLE);
     if (!c || c === dragChip || c.parentElement !== dragChip.parentElement) return;
     e.preventDefault();
-    var r = c.getBoundingClientRect();
-    c.parentElement.insertBefore(dragChip, e.clientX < r.left + r.width / 2 ? c : c.nextSibling);
+    var r = c.getBoundingClientRect(), before = c.tagName === 'TR' ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2; // rows stack, chips run in a line
+    c.parentElement.insertBefore(dragChip, before ? c : c.nextSibling);
   });
   document.addEventListener('drop', function (e) { if (dragChip) e.preventDefault(); });
   document.addEventListener('dragend', function () {
@@ -128,19 +128,38 @@
     dragChip.classList.remove('dragging');
     dragChip = null;
     if (!region) return;
-    var ids = $$('.chip-item[data-item]', box).map(function (c) { return c.getAttribute('data-item'); });
+    var ids = Array.prototype.filter.call(box.children, function (c) { return c.hasAttribute('data-item'); }).map(function (c) { return c.getAttribute('data-item'); });
     var fd = new FormData();
     fd.append('action', 'item_order'); fd.append('region', region); fd.append('ids', ids.join(',')); fd.append('_token', FB.csrf);
     request(box.getAttribute('data-sort-url'), { method: 'POST', body: fd }).then(function (r) { if (!r.ok) toast(r.error || FB.i18n.failed, 'error'); });
   });
 
-  /* ---------- icon picker: a tile sets the hidden input (Admin → Categories) ---------- */
+  /* ---------- icon field (icon_picker() in core/icons.php): a tile, an emoji or the search box sets the hidden value ---------- */
+  function iconSet(p, value, preview) {
+    p.querySelector('[data-icon-value]').value = value;
+    var now = p.querySelector('.icon-field-now');
+    if (now) now.innerHTML = preview;
+  }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-icon-pick]');
     if (!b) return;
     var p = b.closest('[data-icon-picker]');
-    p.querySelector('input[name=icon]').value = b.getAttribute('data-icon-pick');
+    iconSet(p, b.getAttribute('data-icon-pick'), b.classList.contains('icon-pick-text') ? '<span class="icon-field-empty">' + b.textContent + '</span>' : b.innerHTML);
     Array.prototype.forEach.call(p.querySelectorAll('.icon-pick'), function (x) { x.classList.toggle('active', x === b); });
+    var em = p.querySelector('[data-icon-emoji]'); if (em) em.value = '';
+    if (p.tagName === 'DETAILS') p.open = false;
+  });
+  document.addEventListener('input', function (e) {
+    var p = e.target.closest && e.target.closest('[data-icon-picker]');
+    if (!p) return;
+    if (e.target.hasAttribute('data-icon-search')) { // filter the tiles by name
+      var q = e.target.value.trim().toLowerCase();
+      Array.prototype.forEach.call(p.querySelectorAll('.icon-field-grid .icon-pick'), function (x) { x.hidden = q !== '' && (x.getAttribute('data-name') || '').indexOf(q) < 0; });
+    }
+    if (e.target.hasAttribute('data-icon-emoji')) {
+      var v = e.target.value.trim();
+      if (v !== '') { iconSet(p, 'emoji:' + v, '<span class="icon icon-emoji">' + v.replace(/[<>&"]/g, '') + '</span>'); Array.prototype.forEach.call(p.querySelectorAll('.icon-pick'), function (x) { x.classList.remove('active'); }); }
+    }
   });
 
   /* ---------- global click handling ---------- */

@@ -74,7 +74,7 @@ Plugin admin pages are `/admin/ext/<id>/<key>`; they are linked from the plugin'
 
 ## Adding a core feature (for maintainers)
 
-1. Add the route in `routes_core()` and the handler in the matching `app/*.php` (create a new file if the area is new; keep files under 30 KB).
+1. Add the route in `routes_core()` and the handler in the matching `app/*.php` (create a new file if the area is new; a PHP file stays under 60 KB).
 2. Add a view under `app/views/` if there is markup.
 3. Expose extension points: `region()` for layout, `hook()` for data, `fire()` for events. Add the region to `regions_known()` and a description to `docs_hook_descriptions()`.
 4. Run `php flatbb hooks:list > docs/HOOKS.md` and `php flatbb api:list > docs/API.md`.

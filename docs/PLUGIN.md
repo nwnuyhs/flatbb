@@ -88,8 +88,11 @@ Declare a schema; the admin page renders the form and validates input:
     'text'      => ['type' => 'text', 'label' => 'Title', 'default' => '', 'max' => 80, 'help' => 'Shown above the list'],
     'html'      => ['type' => 'html', 'label' => 'Custom HTML', 'rows' => 6],
     'color'     => ['type' => 'color', 'label' => 'Accent', 'default' => '#e7672e'],
+    'icon'      => ['type' => 'icon', 'label' => 'Icon', 'default' => 'star'],
 ],
 ```
+
+An `icon` setting shows the site's icon field (the same one Admin → Categories and Menus use): the built-in icons, an emoji, or one of the icons the admin uploaded. Draw the stored value with `icon_any($value)`; never store an icon of your own in another format. In a form of your own, use `icon_picker($name, $value)` and read it back with `icon_from_post($name)`.
 
 Read with `plugin_setting('myid', 'limit', 5)` or `plugin_settings('myid')`. Defaults come from the schema, so old installs missing a key still work.
 Write programmatically with `plugin_save_settings('myid', $array)`.
@@ -102,9 +105,9 @@ Signature for every hook: `function myid_x($value, array $ctx)`. Return the new 
 Events (fired with `fire()`) ignore the return value.
 
 - **HTML regions** (`region.header.left`, `region.sidebar.right.top`, `region.footer.right`, …): `$value` is HTML, append to it.
-- **List regions** (`region.header.nav`, `region.sidebar.left.nav`, `region.header.user_menu`, `region.post.actions`, `region.sidebar.right.cards`, …): `$value` is an array keyed by item id. Add `['label' => …, 'url' => …, 'icon' => …]` or `['html' => …]`. Insert your item with your plugin id as key (`myid` or `myid_<n>`). Optional keys the core honours for every list region: `weight` (int, lower first; equal weights keep insertion order; the marketplace links use 50 and 60), `visible` (`everyone` default, `members`, `admins`: filtered by the core, do not re-check in your callback), `new_tab` (bool, header links open in a new tab). Admins can hide any single item per region under Admin → Layout, so never hard-code your item as mandatory. Reference example: `plugins/nav_menu/plugin.php` (one table, one admin page, one list-region hook).
+- **List regions** (`region.header.nav`, `region.sidebar.left.nav`, `region.header.user_menu`, `region.post.actions`, `region.sidebar.right.cards`, …): `$value` is an array keyed by item id. Add `['label' => …, 'url' => …, 'icon' => …]` or `['html' => …]`. Insert your item with your plugin id as key (`myid` or `myid_<n>`). Optional keys the core honours for every list region: `weight` (int, lower first; equal weights keep insertion order; the marketplace links use 50 and 60), `visible` (`everyone` default, `members`, `admins`: filtered by the core, do not re-check in your callback), `new_tab` (bool, header links open in a new tab). Admins can hide any single item per region under Admin → Widgets, so never hard-code your item as mandatory. Reference example: `plugins/nav_menu/plugin.php` (one table, one admin page, one list-region hook).
 - **Inline regions inside loops** (`region.topic_list.item.*`, `region.post.*`): called once per row/post. **No database access.** Use data already present in `$ctx['topic']`/`$ctx['post']`, or attach data beforehand with the batch hooks `topic_list.rows` / `topic.posts` (called once per page with all rows).
-- **Admin control**: every region appears in Admin → Layout, where admins can switch your plugin off per region or add HTML blocks. Do not fight that with CSS.
+- **Admin control**: every region appears in Admin → Appearance → Widgets (the menus under Menus), where admins can switch your plugin off per region or add HTML blocks. Do not fight that with CSS.
 - **Front end**: every region element carries `data-slot="<region>"`; select with `[data-slot~="post.actions"]`. In-loop slots repeat; scope by `[data-post-id]` / `[data-topic-id]`.
 
 Frequently used hooks (full list in `docs/HOOKS.md`):
@@ -117,11 +120,75 @@ Frequently used hooks (full list in `docs/HOOKS.md`):
 | `topic.after_save` / `post.after_save` | React to new content (index, notify, award). |
 | `markdown.after` | Post-process rendered HTML (embeds, emoji). Called per post: no DB. |
 | `page.before_output` | Whole document: page-level placeholder replacement. |
-| `region.sidebar.right.cards` | Add a card: `$cards['myid'] = card('Title', $html)`. Key it by your plugin id: Admin → Layout lists the card under that id (drag to order, switch to hide) even on pages where your callback adds nothing. |
+| `region.sidebar.right.cards` | Add a card: `$cards['myid'] = card('Title', $html)`. Key it by your plugin id: Admin → Widgets lists the card under that id (drag to order, switch to hide) even on pages where your callback adds nothing. |
+| `region.member.labels` / `region.member.stats` / `region.member.actions` | Show something about a member. One hook reaches every place the core draws a member: the sidebar member card (`place` `card`), the topic author card (`author`), the account menu (`menu`) and the profile (`profile`); check `$ctx['place']` to pick. Stats are `label`, `value`, `url`, `sub`, and `progress` (0..1) for a bar; actions are `label`, `url`, `icon`, `primary`, `count`. Prefer these to the place-specific `user.profile.*` and `header.user_menu.*` regions. `region.member.sections` adds a whole card beside the lists on a profile (`title`, `html`, `url`, `link`). |
 | `region.composer.toolbar` | Add editor buttons. |
 | `api.<action>` | JSON endpoints at `/api/<action>`. |
 | `admin.settings_fields` | Add site settings groups. |
 | `cron.jobs` | Register jobs dynamically. |
+
+### Where an entry goes
+
+Decide what the entry is, then use the one place for it. Every place is a list the member or the admin already knows; do not add a card or a menu of your own to show links.
+
+| The entry is… | Put it in | Hook |
+| --- | --- | --- |
+| Something to do (post, check in) | Buttons of the member card, the account menu, the profile | `region.member.actions` (`post` => true for a POST button) |
+| Something of mine (messages, orders, drafts, invites) | The account menu, group `you`; the member card shows these as shortcuts on its own (`card` => false keeps one out) | `region.header.user_menu` |
+| A list of my content (topics, replies, favourites) | A tab of the profile | `region.user.profile.tabs` |
+| A setting of mine (privacy, notifications) | A tab of Settings, never the menus | `region.user.settings.tabs` |
+| A page inside a feature that already has a hub (a leaderboard in Growth) | A tab of that hub | the hub's own list, such as `region.growth.tabs` + `growth.tab_page` |
+| A place on the site to go to (a shop, a tag square) | One link in the left menu, in a group: `community`, `tools`, or your own with `group_label` | `region.sidebar.left.nav` |
+| Meta and utilities (RSS, downloads, the API) | The footer links | `region.footer.links` |
+| A site-wide switch (colour scheme, language) | The header, right side | `region.header.right` |
+
+Every item of these menus can be renamed, relinked, hidden or moved by the admin under Admin → Appearance → Menus, so give yours a stable key (your plugin id) and a plain label; never fight an admin's edit in your callback. A list region of your own becomes editable there when you add it to the filter `menus.known`.
+
+One plugin, one link in the left menu: a feature with several pages opens one page and shows the others as its tabs. `plugin:check` warns when a plugin adds more. Past a number of links (Admin setting `nav_visible`, 8) the left menu folds the rest under More, and an admin orders or hides any item under Admin → Widgets.
+
+### Permissions, uploads, hidden content and pages
+
+Four hooks cover what bigger plugins need (trust levels, object storage, reply-to-see, a portal). Use them instead of patching anything.
+
+**Change a permission for one member: `user.can`.** The group decides first; your filter gets its answer and returns the final one. Guests and admins never reach it.
+
+```php
+function myid_can(bool $ok, array $ctx): bool
+{
+    // members below level 2 may not post links or upload files yet
+    if (in_array($ctx['permission'], ['upload'], true) && user_level((array)$ctx['user']) < 2) return false;
+    return $ok;
+}
+// 'hooks' => ['user.can' => 'myid_can']
+```
+
+**Follow, refuse or move uploads: `upload.before_save`, `upload.after_save`, `upload.url`.** Return a message from `upload.before_save` to refuse a file (or change the file at `$ctx['tmp']` in place: compress, watermark). `upload.after_save` fires for attachments, avatars and site images (`$ctx['kind']`), with the saved path and file: copy it to object storage there. `upload.url` rewrites the address a file is served from; it runs for every avatar on a page, so it must not query.
+
+```php
+function myid_url(string $url, array $ctx): string
+{
+    return plugin_setting('myid', 'cdn', '') !== '' ? rtrim((string)plugin_setting('myid', 'cdn'), '/') . '/' . ltrim($ctx['path'], '/') : $url;
+}
+```
+
+**Content not every reader may see: `topic.posts` + `markdown.excerpt`.** Hide it when the page is drawn (`topic.posts` runs once per page with every post and the reader known), and strip it from the source in `markdown.excerpt`, which every excerpt goes through: the search index, page descriptions, notifications and feeds. Doing only the first leaks the content everywhere else.
+
+```php
+function myid_excerpt(string $md, array $ctx): string
+{
+    return preg_replace('~\[hide\].*?\[/hide\]~s', '', $md) ?? $md;
+}
+```
+
+**Serve a core page: `router.routes`.** Map a core path to your handler (a portal at `/`). Admin, sign-in, settings, setup and API addresses cannot be taken over, and Admin → Plugins tells the admin which pages a plugin serves.
+
+```php
+function myid_routes(array $routes, array $ctx): array
+{
+    $routes['/'] = 'myid_portal'; // the latest topics stay at /latest
+    return $routes;
+}
+```
 
 ### Batch pattern (the only acceptable way to add per-row data)
 
@@ -249,7 +316,7 @@ function checkin_claim(): never
 - `points_add($user_id, $delta, $reason, $ref_id = 0, $note = '')` — negative delta spends; `points_of()`, `points_log()`, `points_top()` read.
 - Always register your reason codes through `points.reasons` so the user's history shows a readable label; never write `fb_points_log` or `fb_users.points` directly.
 - `points.before_change` lets a plugin veto or cap changes (return `false`); `points.after_change` is the place for badges, notifications or a shop.
-- The history is private (Settings → Points, and admins). Show public totals through the `user.profile.stats` chip, which the core already renders when the user allows it.
+- The history is private (Settings → Points, and admins). Show public totals through a `member.stats` item (the profile's own Points tile is already rendered when the user allows it).
 
 ## 13. Editor extensions
 

@@ -144,6 +144,7 @@ function plugin_settings_from_post(string $id, array $post): array
             'checkbox', 'bool' => $raw ? 1 : 0,
             'number' => max((int)($def['min'] ?? PHP_INT_MIN), min((int)($def['max'] ?? PHP_INT_MAX), (int)$raw)),
             'select' => array_key_exists((string)$raw, (array)($def['options'] ?? [])) ? (string)$raw : (string)($def['default'] ?? ''),
+            'icon' => is_string($raw) && icon_value_ok(trim($raw)) ? trim($raw) : (string)($def['default'] ?? ''),
             'textarea', 'html', 'code' => is_string($raw) ? cut(str_replace("\r\n", "\n", $raw), (int)($def['max'] ?? 65535), '') : '',
             default => is_string($raw) ? cut(trim($raw), (int)($def['max'] ?? 255), '') : '',
         };
@@ -168,6 +169,7 @@ function plugin_settings_form(string $id): string
             'select' => '<select name="' . $name . '">' . implode('', array_map(static fn($k, $l): string => '<option value="' . h((string)$k) . '"' . ((string)$k === (string)$v ? ' selected' : '') . '>' . h((string)$l) . '</option>', array_keys((array)($def['options'] ?? [])), (array)($def['options'] ?? []))) . '</select>',
             'number' => '<input type="number" name="' . $name . '" value="' . h((string)$v) . '"' . (isset($def['min']) ? ' min="' . (int)$def['min'] . '"' : '') . (isset($def['max']) ? ' max="' . (int)$def['max'] . '"' : '') . '>',
             'color' => '<input type="color" name="' . $name . '" value="' . h((string)$v ?: '#000000') . '">',
+            'icon' => icon_picker('plugin_' . $key, (string)$v, ['upload' => false]), // built-in, emoji or one of Your icons (uploads go through Menus or Categories)
             default => '<input type="text" name="' . $name . '" value="' . h((string)$v) . '">',
         };
         $html .= in_array($type, ['checkbox', 'bool'], true)

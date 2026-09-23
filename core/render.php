@@ -57,8 +57,9 @@ function page(string $title, string $main, array $opts = []): never
 /** Default right-column cards; plugins add through region.sidebar.right.cards. */
 function sidebar_cards_default(): array
 {
-    $core = layout_core_items('sidebar.right.cards'); // the default weights: account first, statistics last; Admin → Layout overrides
-    $views = ['user' => view('card_user', ['me' => me()]), 'stats' => view('card_stats', ['stats' => site_stats()]), 'newest' => view('card_newest', ['users' => site_stats()['newest_users'] ?? []])];
+    $core = layout_core_items('sidebar.right.cards'); // the default weights: account first, statistics last; Admin → Widgets overrides
+    $tags = request_cache('top_tags', static fn(): array => all('SELECT name,slug,topic_count FROM fb_tags WHERE topic_count>0 ORDER BY topic_count DESC LIMIT 16')) ?? [];
+    $views = ['user' => view('card_user', ['me' => me()]), 'stats' => view('card_stats', ['stats' => site_stats()]), 'newest' => view('card_newest', ['users' => site_stats()['newest_users'] ?? []]), 'tags' => view('card_tags', ['tags' => $tags])];
     $cards = [];
     foreach ($views as $id => $html) $cards[$id] = ['html' => $html, 'weight' => (int)($core[$id]['weight'] ?? 0)];
     return region_list('sidebar.right.cards', $cards);
@@ -133,7 +134,7 @@ function asset_url(string $file): string
 
 function icon(string $name, string $class = ''): string
 {
-    $paths = request_cache('icon_paths', static fn(): array => hook('icon.paths', icon_paths(), [])) ?? [];
+    $paths = icon_set();
     $p = $paths[$name] ?? $paths['circle'];
     return '<svg class="icon icon-' . h($name) . ($class !== '' ? ' ' . h($class) : '') . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
 }
@@ -142,6 +143,7 @@ function icon_paths(): array
 {
     return [
         'circle' => '<circle cx="12" cy="12" r="9"/>',
+        'grip' => '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
         'home' => '<path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/>',
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
         'chevron-up' => '<path d="m6 15 6-6 6 6"/>',
@@ -211,7 +213,7 @@ function icon_paths(): array
         'minus' => '<path d="M5 12h14"/>',
         'maximize' => '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
         'smile' => '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
-    ];
+    ] + icon_paths_more(); // core/icons.php: the rest of the built-in set
 }
 
 /** Avatar image or letter fallback. $user needs id, username, avatar. */
@@ -274,9 +276,10 @@ function user_link(?array $user, string $class = 'user-link'): string
 /** A built-in icon by name, or an uploaded image (a path under uploads/, e.g. site/cat_3.png) as an icon-sized <img>; '' when neither. */
 function icon_any(string $name): string
 {
-    if ($name === '') return '';
+    if ($name === '' || $name === 'none') return '';
+    if (str_starts_with($name, 'emoji:')) return '<span class="icon icon-emoji" aria-hidden="true">' . h(substr($name, 6)) . '</span>';
     if (str_contains($name, '/')) return '<img class="icon icon-img" src="' . h(upload_url($name)) . '" alt="" loading="lazy">';
-    return isset(icon_paths()[$name]) ? icon($name) : '';
+    return isset(icon_set()[$name]) ? icon($name) : '';
 }
 
 /** The category's icon when the admin picked one or uploaded an image in Admin → Categories, else ''. */
@@ -316,12 +319,24 @@ function pagination(array $p, callable $url_fn): string
     return $html . '</nav>';
 }
 
+/**
+ * One member.actions button: a link, or with 'post' a form that POSTs to its url with the CSRF token and back (the page it is
+ * on). Keys: label, url, icon, count, title, post; $class carries the place's look (and is-done when the item says done).
+ */
+function member_action_html(string $id, array $a, string $class): string
+{
+    $inner = (!empty($a['icon']) ? icon((string)$a['icon']) : '') . '<span>' . h((string)($a['label'] ?? '')) . '</span>' . (!empty($a['count']) ? '<b class="me-count">' . h((string)$a['count']) . '</b>' : '');
+    $attrs = ' class="' . h($class . (!empty($a['done']) ? ' is-done' : '')) . '" data-action="' . h($id) . '"' . (!empty($a['title']) ? ' title="' . h((string)$a['title']) . '"' : '');
+    if (empty($a['post'])) return '<a' . $attrs . ' href="' . h((string)($a['url'] ?? '')) . '">' . $inner . '</a>';
+    return '<form method="post" action="' . h((string)($a['url'] ?? '')) . '" class="member-action-form">' . csrf_field() . '<input type="hidden" name="back" value="' . h(current_path()) . '"><button type="submit"' . $attrs . '>' . $inner . '</button></form>';
+}
+
 function tabs(array $items, string $class = 'tabs'): string
 {
     $html = '<nav class="' . h($class) . '">';
     foreach ($items as $key => $it) {
         if (!empty($it['html'])) { $html .= $it['html']; continue; }
-        $html .= '<a class="tab' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '" data-tab="' . h((string)$key) . '">' . (!empty($it['icon']) ? icon((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span>' . (!empty($it['badge']) ? '<b class="badge">' . h((string)$it['badge']) . '</b>' : '') . '</a>';
+        $html .= '<a class="tab' . (!empty($it['active']) ? ' active' : '') . '" href="' . h((string)$it['url']) . '" data-tab="' . h((string)$key) . '">' . (!empty($it['icon']) ? icon_any((string)$it['icon']) : '') . '<span>' . h((string)$it['label']) . '</span>' . (!empty($it['badge']) ? '<b class="badge">' . h((string)$it['badge']) . '</b>' : '') . '</a>';
     }
     return $html . '</nav>';
 }
@@ -337,7 +352,10 @@ function input(string $name, string $value = '', array $attr = []): string
 {
     $attr += ['type' => 'text'];
     $a = '';
-    foreach ($attr as $k => $v) $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
+    foreach ($attr as $k => $v) {
+        if ($v === false || $v === null) continue; // an attribute that is off is left out: required => false must not print required=""
+        $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
+    }
     return '<input name="' . h($name) . '" value="' . h($value) . '"' . $a . '>';
 }
 
@@ -345,14 +363,14 @@ function textarea(string $name, string $value = '', array $attr = []): string
 {
     $attr += ['rows' => 5];
     $a = '';
-    foreach ($attr as $k => $v) $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
+    foreach ($attr as $k => $v) if ($v !== false && $v !== null) $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
     return '<textarea name="' . h($name) . '"' . $a . '>' . h($value) . '</textarea>';
 }
 
 function select(string $name, array $options, string $value = '', array $attr = []): string
 {
     $a = '';
-    foreach ($attr as $k => $v) $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
+    foreach ($attr as $k => $v) if ($v !== false && $v !== null) $a .= $v === true ? ' ' . $k : ' ' . $k . '="' . h((string)$v) . '"';
     $html = '<select name="' . h($name) . '"' . $a . '>';
     foreach ($options as $k => $label) $html .= '<option value="' . h((string)$k) . '"' . ((string)$k === $value ? ' selected' : '') . '>' . h((string)$label) . '</option>';
     return $html . '</select>';
@@ -381,10 +399,24 @@ function editor(string $name, string $value = '', string $placeholder = '', arra
 /**
  * The right side of the header as the list region header.right: search, new topic, language, theme, notifications and
  * the account menu (sign in / sign up for guests). Plugins add items (['html' => …, 'label' => …, 'weight' => …]) and
- * Admin → Layout hides or reorders everything. Weights: search -20, new topic -10, plugin items 0 unless they say
+ * Admin → Widgets hides or reorders everything. Weights: search -20, new topic -10, plugin items 0 unless they say
  * otherwise (so a new icon lands right after the new-topic button), language 10, theme 20, notifications 30, account 40.
  * The two older HTML regions header.right.before_search / after_search still work and sit around the search box.
  */
+/**
+ * The account list (region header.user_menu), once per request: the header's account menu shows all of it, the member card the
+ * "you" items as a grid of shortcuts. Items: label, url, icon, count, group ("you" by default, or "site"), weight, and card => false
+ * to keep an item out of the card's grid (Profile: the card's own avatar and name already open it).
+ */
+function user_menu_items(array $me): array
+{
+    return request_cache('user_menu_items', static fn(): array => region_list('header.user_menu', [
+        'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user', 'weight' => 1, 'card' => false],
+        'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark', 'weight' => 10],
+        'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings', 'group' => 'site', 'weight' => 90],
+    ] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me])) ?? [];
+}
+
 function header_right_items(?array $me, int $unread, array $user_menu): array
 {
     $items = [];
@@ -394,7 +426,7 @@ function header_right_items(?array $me, int $unread, array $user_menu): array
         . '<a class="icon-btn search-toggle" href="' . h(url('/search')) . '" aria-label="' . t('Search') . '">' . icon('search') . '</a>'];
     $after = region('header.right.after_search', [], '', false);
     if (trim($after) !== '') $items['after_search'] = ['html' => '<div class="region region-header-right-after_search">' . $after . '</div>', 'label' => t('Plugins (right of search)'), 'weight' => -5];
-    if ($me !== null && can('post')) $items['new'] = ['label' => t('New Topic'), 'weight' => -10, 'html' => '<a class="icon-btn" href="' . h(url('/new-topic')) . '" aria-label="' . t('New Topic') . '" title="' . t('New Topic') . '">' . icon('plus') . '</a>'];
+    if ($me !== null && can('post')) $items['new'] = ['label' => t('New Topic'), 'weight' => -10, 'html' => '<a class="icon-btn header-new-topic" href="' . h(url('/new-topic')) . '" aria-label="' . t('New Topic') . '" title="' . t('New Topic') . '">' . icon('plus') . '</a>'];
     $langs = lang_available();
     if (count($langs) > 1) {
         $menu = '';

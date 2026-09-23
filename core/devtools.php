@@ -55,6 +55,12 @@ function plugin_check(string $id): array
     if (plugin_is_theme($m)) { [$te, $tw] = theme_check($id, $m); $errors = array_merge($errors, $te); $warnings = array_merge($warnings, $tw); } // core/theme_dev.php
     elseif (isset($m['type']) && $m['type'] !== 'plugin') $errors[] = 'type must be "theme" or left out (a plugin), got "' . (is_scalar($m['type']) ? (string)$m['type'] : '?') . '"';
     if (preg_match('/(foreach|for|while)\s*\([^)]*\)\s*\{[^}]*\b(q|one|val|all)\s*\(/s', $src)) $warnings[] = 'Possible database query inside a loop (N+1). Batch with rows_by_ids()/IN (...)';
+    // one link per plugin in the left menu: its other pages belong under tabs of that page (docs/PLUGIN.md, "Where an entry goes")
+    $nav = $m['hooks']['region.sidebar.left.nav'] ?? null;
+    if (is_string($nav) && function_exists($nav)) {
+        try { $added = count((array)$nav([], ['layout' => true])); } catch (Throwable) { $added = 0; }
+        if ($added > 1) $warnings[] = 'adds ' . $added . ' links to the left menu: keep one and put the other pages under tabs of that page (docs/PLUGIN.md, "Where an entry goes")';
+    }
     $installed = version_compare((string)FLATBB_VERSION, (string)($m['requires']['flatbb'] ?? '0'), '>=');
     if (!$installed) $warnings[] = 'requires flatbb ' . $m['requires']['flatbb'] . ' but this is ' . FLATBB_VERSION;
     return ['errors' => $errors, 'warnings' => $warnings, 'manifest' => $m];
@@ -185,7 +191,7 @@ function docs_hook_descriptions(): array
         'markdown.before' => 'Markdown source before rendering.',
         'markdown.after' => 'Rendered HTML of a post.',
         'icon.paths' => 'Add SVG icons: name => path markup.',
-        'regions.known' => 'Register extra regions for Admin → Layout.',
+        'regions.known' => 'Register extra regions for Admin → Widgets.',
         'topic.before_save' => 'New topic data (category_id, user_id, title, body, tags) before insert.',
         'topic_list.query' => 'Filter the conditions of every topic list (front page, category, tag, unread): value ["where" => conditions on alias t, "params"]; append to both. Ctx: where, join.',
         'topic.after_save' => 'After a topic was created or edited (ctx: topic_id, post_id, new).',
@@ -234,6 +240,14 @@ function docs_hook_descriptions(): array
         'security.csp' => 'Content Security Policy directives (name => list of sources): add the CDNs your plugin loads scripts, styles or fonts from.',
         'user.link_after' => 'HTML appended after every rendered username link (ctx: user, class; class is "profile-name" on the profile header). Runs inside lists: no database access.',
         'user.avatar_after' => 'HTML placed inside the avatar, over its lower corner (ctx: user, size in px); the wrapper is positioned, so use position:absolute. Runs inside lists: no database access.',
+        'menus.known' => 'Filter: the list regions an admin edits under Admin → Appearance → Menus (region => name). Add your plugin\'s own list region to make its items editable.',
+        'user.can' => 'Filter: whether the signed-in member may do something (bool; ctx: permission, user, group), after the group decided. Guests and admins never reach it.',
+        'upload.before_save' => 'Filter: return a message to refuse an uploaded attachment, or change the file at ctx tmp in place (ctx: kind, user, tmp, name, ext, mime, size, is_image).',
+        'upload.after_save' => 'Event: a file was saved under uploads/ (ctx: kind attachment|avatar|site, id, path, file, name, mime, size, is_image, user_id). Copy it to object storage here.',
+        'upload.url' => 'Filter: the address of an uploaded file (ctx: path), to serve it from a CDN or an object store. Runs for every avatar on a page: no database access.',
+        'markdown.excerpt' => 'Filter: the Markdown a plain excerpt is made from (ctx: max): search index, page descriptions, notifications, feeds. Strip content not every reader may see.',
+        'router.routes' => 'Filter: the route table (path => handler). Replace a core address (a portal at /); admin, sign-in, settings, setup and API addresses cannot be taken over. Admin → Plugins lists the takeovers.',
+        'user.level' => 'Filter: the level of a member as a number (ctx: user), read by user_level(). Answered by the plugin that keeps levels. Runs inside lists: no database access.',
         'user.after_rename' => 'After a username changed (ctx: user_id, old, new, by). Old profile URLs redirect automatically.',
         'admin.plugin_ops' => 'Extra buttons on a plugin row.',
         'admin.plugin_settings.before' => 'HTML at the top of a plugin settings drawer (ctx: id, manifest).',
@@ -336,7 +350,7 @@ function security_scan(array $files): array
     $root = str_replace('\\', '/', ROOT) . '/';
     $allow_globals = ['core/helpers.php', 'core/auth.php', 'core/security.php', 'core/router.php', 'core/upload.php'];
     $allow_exec = ['core/devtools.php'];
-    $safe = ['h', 't', 'raw', 'icon', 'region', 'slot', 'csrf_field', 'form_row', 'input', 'select', 'textarea', 'checkbox', 'avatar', 'user_link', 'human_time', 'time_tag', 'human_number', 'human_size', 'action_form', 'editor', 'category_badge', 'tag_badge', 'tabs', 'view', 'plugin_assets_tag', 'logo_mark', 'pagination', 'md', 'date', 'json_encode_value', 'uid', 'is_array', 'isset', 'extension_loaded', 'count', 'number_format', 'layout_blocks_html'];
+    $safe = ['h', 't', 'raw', 'icon', 'icon_any', 'icon_picker', 'region', 'slot', 'csrf_field', 'form_row', 'input', 'select', 'textarea', 'checkbox', 'avatar', 'user_link', 'human_time', 'time_tag', 'human_number', 'human_size', 'action_form', 'editor', 'category_badge', 'tag_badge', 'tabs', 'view', 'plugin_assets_tag', 'logo_mark', 'pagination', 'md', 'date', 'json_encode_value', 'uid', 'is_array', 'isset', 'extension_loaded', 'count', 'number_format', 'layout_blocks_html'];
     foreach ($files as $file) {
         $rel = str_starts_with($file, $root) ? substr($file, strlen($root)) : $file;
         $src = (string)file_get_contents($file);

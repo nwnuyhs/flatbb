@@ -214,9 +214,35 @@ function router_csrf_exempt(string $path, array $add = []): bool
     return $path !== '' && isset($list[$path]);
 }
 
+/**
+ * The routes with plugins' takeovers applied: the filter router.routes (path => handler) lets a plugin serve a core address, such as
+ * a portal at /. The admin, sign-in, settings, setup and API addresses always keep the core's handler. Once per request.
+ */
+function routes_final(): array
+{
+    return request_cache('routes_final', static function (): array {
+        $routes = routes();
+        $out = hook('router.routes', $routes, []);
+        if (!is_array($out)) return $routes;
+        foreach ($routes as $path => $handler) {
+            if (preg_match('#^/(admin|login|logout|register|settings|setup|upgrade|api|forgot|reset)(/|$)#', (string)$path)) $out[$path] = $handler; // never taken over
+        }
+        return $out;
+    }) ?? routes();
+}
+
+/** Core addresses a plugin serves instead of the core: path => handler (Admin → Plugins lists them). */
+function routes_taken_over(): array
+{
+    $core = routes_core();
+    $out = [];
+    foreach (routes_final() as $path => $handler) if (isset($core[$path]) && $core[$path] !== $handler) $out[$path] = (string)$handler;
+    return $out;
+}
+
 function route_match(string $path): array
 {
-    $routes = routes();
+    $routes = routes_final();
     if (isset($routes[$path]) && !str_starts_with($path, '~')) return [$routes[$path], []];
     foreach ($routes as $pattern => $handler) {
         if ($pattern[0] === '~') {

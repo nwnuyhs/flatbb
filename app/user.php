@@ -60,7 +60,7 @@ function user_profile(string $name, string $tab = 'topics'): never
         'likes' => ['label' => t('Likes'), 'value' => human_number((int)$user['like_count'])],
     ];
     if (points_public($user) && ((int)$user['points'] !== 0 || $self)) $base_stats['points'] = ['label' => t('Points'), 'value' => human_number((int)$user['points']), 'url' => $self ? url('/settings/points') : ''];
-    $stats = region_list('user.profile.stats', $base_stats, ['user' => $user]);
+    $stats = region_list('member.stats', region_list('user.profile.stats', $base_stats, ['user' => $user]), ['user' => $user, 'self' => $self, 'place' => 'profile']);
     $cards = region_list('user.profile.cards', [], ['user' => $user]);
     $main = view('profile', ['user' => $user, 'group' => group_by_id((int)$user['group_id']), 'self' => $self, 'tabs' => tabs($tabs), 'body' => $body, 'pagination' => pagination($pg, $url_fn), 'stats' => $stats, 'cards' => $cards]);
     // the profile card takes the place of both site columns: the right one is off, the left menu is hidden on wide screens by

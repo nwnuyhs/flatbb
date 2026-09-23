@@ -215,6 +215,9 @@ function md_mentions(string $text): array
 /** Plain-text excerpt of a markdown source. */
 function md_excerpt(string $text, int $max = 160): string
 {
+    // plugins strip what not every reader may see (a reply-to-see block, paid content) before the text becomes the search index,
+    // a page description, a notification or a feed item: they all go through here
+    $text = (string)hook('markdown.excerpt', $text, ['max' => $max]);
     $t = preg_replace('/```.*?```/s', '', $text) ?? $text;
     $t = preg_replace('/!\[[^\]]*\]\([^)]*\)/', '', $t) ?? $t;
     $t = preg_replace('/\[([^\]]+)\]\([^)]*\)/', '$1', $t) ?? $t;
