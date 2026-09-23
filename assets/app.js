@@ -1,6 +1,6 @@
 /* flatbb front-end. Vanilla JS, no build step. Everything hangs off data-* attributes so plugins
  * can reuse the same behaviours: data-ajax forms, data-dropdown, data-toggle, data-editor, data-confirm.
- * Plugins get window.FB (base, csrf, uid) and can listen for document events: fb:ajax, fb:editor.
+ * Plugins get window.FB (base, csrf, uid) and can listen for document events: fb:ajax, fb:editor, fb:content (rows added to a list).
  */
 (function () {
   'use strict';
@@ -656,8 +656,8 @@
   if ($('#drawer')) document.body.classList.add('adrawer-open');
 
   /* ---------- times in the visitor's own time zone: <time datetime data-fmt> (the server printed the site zone as a fallback) ---------- */
-  (function () {
-    var times = $$('time[datetime][data-fmt]'); if (!times.length || !window.Intl || !Intl.DateTimeFormat) return;
+  function localTimes(scope) {
+    var times = (scope || document).querySelectorAll('time[datetime][data-fmt]'); if (!times.length || !window.Intl || !Intl.DateTimeFormat) return;
     var loc = (root.getAttribute('lang') || 'en') + '-u-ca-gregory', now = Date.now(), day = 864e5;
     function fmt(d, o) { try { return new Intl.DateTimeFormat(loc, o).format(d); } catch (e) { return ''; } }
     times.forEach(function (el) {
@@ -671,6 +671,40 @@
       else if (age > 30 * day) text = fmt(d, age > 365 * day ? { year: 'numeric', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' });
       if (text) el.textContent = text;
     });
+  }
+  localTimes(document);
+
+  /* ---------- topic lists that load while scrolling (setting list_paging): the next page joins the list near its end ----------
+   * Follows the rel="next" link of the page numbers under the list and swaps them for the new page's, so they always say
+   * where the reader is. Five pages load by themselves, then the button asks (the footer stays reachable); a press resets it.
+   * New rows fire "fb:content" on document (detail: {root, nodes}) for plugins that set up rows one by one. */
+  (function () {
+    var more = $('[data-list-more]'), rows = $('.topic-rows'); if (!more || !rows) return;
+    var btn = more.querySelector('button'), label = btn.textContent, busy = false, auto = 0, io = null;
+    function nextUrl() { var a = $('.pagination a[rel=next]'); return a ? a.href : ''; }
+    function load(byHand) {
+      var url = nextUrl(); if (busy || !url) return;
+      if (byHand) auto = 0; else if (++auto > 5) return;
+      busy = true; btn.disabled = true; btn.textContent = more.getAttribute('data-loading');
+      fetch(url, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html'), got = doc.querySelector('.topic-rows'), seen = {}, added = [];
+        rows.querySelectorAll('[data-topic-id]').forEach(function (el) { seen[el.getAttribute('data-topic-id')] = 1; });
+        if (got) Array.prototype.slice.call(got.querySelectorAll('[data-topic-id]')).forEach(function (el) {
+          if (seen[el.getAttribute('data-topic-id')]) return; // a topic that moved up a page while reading is already here
+          var node = document.importNode(el, true); rows.appendChild(node); added.push(node);
+        });
+        var pag = $('.pagination'), fresh = doc.querySelector('.pagination');
+        if (pag && fresh) pag.replaceWith(document.importNode(fresh, true)); else if (pag) pag.remove();
+        try { history.replaceState(history.state, '', url); } catch (e) {}
+        added.forEach(localTimes);
+        document.dispatchEvent(new CustomEvent('fb:content', { detail: { root: rows, nodes: added } }));
+        btn.disabled = false; btn.textContent = label;
+        if (!nextUrl()) { btn.remove(); more.classList.add('is-end'); more.textContent = more.getAttribute('data-end'); if (io) io.disconnect(); }
+        else if (io) { io.unobserve(more); io.observe(more); } // still near the end (short rows, tall screen): observing again asks once more
+      }).catch(function () { btn.disabled = false; btn.textContent = more.getAttribute('data-retry'); auto = 5; }).then(function () { busy = false; });
+    }
+    btn.addEventListener('click', function () { load(true); });
+    if ('IntersectionObserver' in window) { io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) load(false); }, { rootMargin: '0px 0px 600px 0px' }); io.observe(more); }
   })();
 
   /* ---------- posting limits: the notice counts down and brings the form back by itself ---------- */

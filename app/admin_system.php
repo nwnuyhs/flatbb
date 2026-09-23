@@ -237,10 +237,13 @@ function admin_page_widgets(): never
         $desc = (string)($known[$name] ?? '');
         $chips = '';
         $list = str_contains($desc, '(list)');
-        // in a list position every item has its own switch below, so a switch per plugin would only say the same twice
-        foreach ($list ? [] : array_keys($by_hook[$name] ?? []) as $pid) {
+        // in a list position every item has its own switch below, so a switch per plugin would only say the same twice. The one
+        // exception: a plugin switched off for the whole position (the old Layout page could) hides all its items and none of their
+        // switches, so it keeps its own switch here until it is on again
+        foreach (array_keys($by_hook[$name] ?? []) as $pid) {
             $on = layout_plugin_enabled('region.' . $name, $pid);
-            $chips .= '<span class="chip">' . admin_switch($list_url, ['action' => $on ? 'plugin_off' : 'plugin_on', 'region' => $name, 'plugin' => $pid], $on, t('Show in this position')) . h(plugins()[$pid]['name'] ?? $pid) . '</span>';
+            if ($list && $on) continue;
+            $chips .= '<span class="chip' . ($list ? ' chip-off-note' : '') . '"' . ($list ? ' title="' . h(t('Everything this plugin adds here is switched off. Switch it on to show its items again.')) . '"' : '') . '>' . admin_switch($list_url, ['action' => $on ? 'plugin_off' : 'plugin_on', 'region' => $name, 'plugin' => $pid], $on, t('Show in this position')) . h(plugins()[$pid]['name'] ?? $pid) . ($list ? ' <small class="muted">' . t('switched off here') . '</small>' : '') . '</span>';
         }
         // single items of list regions (cards, links, tabs) can be hidden one by one and dragged into order; loop regions have no items outside a row
         if ($list) {

@@ -49,6 +49,10 @@ small, .small { font-size: var(--font-size-sm); }
 .flag { display: inline-block; padding: 1px 7px; border-radius: var(--flag-radius, 4px); background: var(--brand-soft); color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; vertical-align: middle; }
 .flag-danger { background: var(--danger-soft); color: var(--danger); }
 .flag-success { background: var(--success-soft); color: var(--success); }
+.flag-warning { background: var(--warning-soft); color: var(--warning); }
+.flag-muted { background: var(--panel-2); color: var(--text-muted); font-weight: 500; }
+.admin-ai-conn { margin-bottom: 14px; }
+.admin-ai-conn .card-head .flag { max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty { text-align: center; padding: 56px 16px; color: var(--text-subtle); background: var(--panel); border: 1px dashed var(--line); border-radius: var(--radius); }
 .empty .icon { width: 40px; height: 40px; opacity: .45; margin-bottom: 6px; }
 mark { background: var(--warning-soft); color: inherit; border-radius: 2px; padding: 0 2px; }
@@ -381,6 +385,9 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .tag-badge { display: inline-block; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--panel-2); border: 1px solid var(--line); color: var(--text-muted); font-size: var(--font-size-xs); font-weight: 500; }
 .tag-badge:hover { border-color: var(--brand); color: var(--brand); }
 .stat { display: inline-flex; align-items: center; gap: 4px; }
+.list-more { display: flex; justify-content: center; margin: 16px 0 0; }
+.list-more.is-end { color: var(--text-subtle); font-size: var(--font-size-sm); padding: 8px 0; }
+.list-more + .pagination { margin-top: 12px; }
 .pagination { display: flex; gap: 4px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
 .pagination a, .pagination span { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--panel); color: var(--text); }
 .pagination a:hover { border-color: var(--brand); color: var(--brand); }

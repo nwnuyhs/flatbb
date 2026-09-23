@@ -18,10 +18,12 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `admin.plugin_ops` | filter | Extra buttons on a plugin row. | `app/admin_system.php` |
 | `admin.plugin_settings.before` | filter | HTML at the top of a plugin settings drawer (ctx: id, manifest). | `app/admin_system.php` |
 | `admin.settings_fields` | filter | Add a settings section: $value['myid'] = ['Label', ['key' => [type, label, help, options, min, max]]]. Each section is a tab in Admin → Settings. | `app/admin.php` |
-| `admin.settings_save` | filter | Filter settings before they are saved. | `app/admin.php` |
+| `admin.settings_save` | filter | Filter settings before they are saved. | `app/admin.php`, `app/admin_ai.php` |
 | `admin.tool` | event | Handle a custom tool action. | `app/admin_system.php` |
 | `admin.tools` | filter | Add rows to Admin → Tools. | `app/admin_system.php` |
 | `admin.user_saved` | event | After an admin edited a user. | `app/admin.php` |
+| `ai.request` | filter | Filter: a request to the shared AI connection before it is sent (value: system, user, opts; ctx: purpose = the calling plugin). Change it, or return an array with an error key to refuse it (quotas, redaction). | `core/ai.php` |
+| `ai.response` | event | Event: after each attempt on an AI connection (ctx: purpose, connection = 1 for the main one, 2 and 3 for the backups, model, usage [in, out] tokens, ok). A request that falls back fires it once per connection tried. For plugins that count or log usage. | `core/ai.php` |
 | `api.<action>` | filter | Handle /api/<action>; return an array to respond as JSON. | `app/api.php` |
 | `app.boot` | event | Every request after plugins are loaded. Preload data here. | `core/boot.php` |
 | `auth.login.after` | filter | HTML below the sign-in form. | `app/views/login.php` |
@@ -139,6 +141,8 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `topic.after_save` | event | After a topic was created or edited (ctx: topic_id, post_id, new). | `app/topic.php` |
 | `topic.before_save` | filter | New topic data (category_id, user_id, title, body, tags) before insert. | `app/topic.php` |
 | `topic.can_reply` | filter |  | `app/topic.php` |
+| `topic.category_auto` | filter | Filter: whether a plugin will pick the category of a new topic (bool). True makes the category optional in the composer; return true only when topic.category_missing can actually answer (configured, within limits). | `app/topic.php` |
+| `topic.category_missing` | filter | Filter: a new topic arrived without a category (value 0; ctx: title, body, user). Return a category id to file it there (an AI pick, say); the writer must be allowed to post in it. Runs before the default category. | `app/topic.php` |
 | `topic.posts` | filter | Filter the posts of the current page (batch-loaded, attach extra data here). | `app/topic.php` |
 | `topic.title` | filter | Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB. | `app/views/topic.php`, `app/views/topic_rows.php` |
 | `topic.view` | filter | Filter the topic row shown on the topic page (ctx: posts). | `app/topic.php` |

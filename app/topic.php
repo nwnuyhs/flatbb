@@ -276,6 +276,7 @@ function topic_new(): never
         $tags = tags_parse(post_str('tags', 200));
         if (!topic_title_valid($title)) fail(t('Title must be between 3 and 200 characters.'));
         if (!post_body_valid($body)) fail(t('Post body is too short.'));
+        if ($cat === null) $cat = topic_category_fallback($title, $body, $me);
         if ($cat === null || !category_can_post($cat)) fail(t('Please choose a category.'));
         if (($hold = post_hold($me)) !== []) fail((string)$hold['message']);
         $tid = topic_create((int)$cat['id'], (int)$me['id'], $title, $body, $tags);
@@ -287,6 +288,31 @@ function topic_new(): never
     $pre = category_by_id(get_int('category', 0));
     $vals = (array)hook('composer.values', ['title' => '', 'body' => '', 'category_id' => (int)($pre['id'] ?? 0), 'tags' => ''], ['mode' => 'new']); // a drafts plugin fills these
     page(t('New Topic'), view('topic_form', ['topic' => null, 'post' => null, 'categories' => $cats, 'category_id' => (int)$vals['category_id'], 'tags' => (string)$vals['tags'], 'title' => (string)$vals['title'], 'body' => (string)$vals['body'], 'action' => url('/new-topic')]), ['class' => 'page-compose', 'right' => false]);
+}
+
+/**
+ * A new topic without a category: a plugin may pick one (filter topic.category_missing, ctx title, body, user; return a
+ * category id, e.g. what an AI chose), then the default category when the site does not require one. null: ask the writer.
+ */
+function topic_category_fallback(string $title, string $body, array $me): ?array
+{
+    $picked = category_by_id((int)hook('topic.category_missing', 0, ['title' => $title, 'body' => $body, 'user' => $me]));
+    if ($picked !== null && category_can_post($picked)) return $picked;
+    if (setting('category_required', '1') === '1') return null;
+    $default = category_by_id((int)setting('default_category', '0'));
+    return $default !== null && category_can_post($default) ? $default : null;
+}
+
+/** Whether a plugin will pick the category of a topic sent without one (filter topic.category_auto: true when it can right now). */
+function topic_category_auto(): bool
+{
+    return (bool)hook('topic.category_auto', false, []);
+}
+
+/** Whether the composer may leave the category empty: not required, or a plugin that picks one is ready. */
+function topic_category_optional(): bool
+{
+    return setting('category_required', '1') !== '1' || topic_category_auto();
 }
 
 /** POST /t/{id}/reply */

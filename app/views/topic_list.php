@@ -10,4 +10,5 @@
   <?= view('topic_rows', ['topics' => $topics, 'empty' => $empty]) ?>
 </div>
 <?= region('topic_list.after', ['topics' => $topics]) ?>
+<?= raw(list_more_html($pagination)) ?>
 <?= raw($pagination) ?>

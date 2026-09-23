@@ -6,8 +6,9 @@
     <div class="form-row"><input type="text" name="title" class="input-lg" dir="auto" placeholder="<?= t('Title') ?>" value="<?= h($topic['title'] ?? $title ?? '') ?>" maxlength="200" required autofocus></div>
     <div class="form-grid">
       <div class="form-row"><label><?= t('Category') ?></label>
-        <select name="category_id" required>
-          <option value=""><?= t('Choose a category') ?></option>
+        <?php $optional = !$topic && topic_category_optional(); $default = category_by_id((int)setting('default_category', '0')); ?>
+        <select name="category_id"<?= $optional ? '' : ' required' ?>>
+          <option value=""><?= !$optional ? t('Choose a category') : (topic_category_auto() ? t('Choose a category, or let it be picked for you') : t('No category (goes to %s)', h((string)($default['name'] ?? t('the default category'))))) ?></option>
           <?php foreach ($categories as $c): ?><option value="<?= (int)$c['id'] ?>"<?= (int)$c['id'] === $category_id ? ' selected' : '' ?>><?= (int)$c['parent_id'] ? '— ' : '' ?><?= h($c['name']) ?></option><?php endforeach; ?>
         </select></div>
       <div class="form-row"><label><?= t('Tags') ?></label><input type="text" name="tags" value="<?= h($tags) ?>" placeholder="<?= t('comma, separated, up to 5') ?>"></div>

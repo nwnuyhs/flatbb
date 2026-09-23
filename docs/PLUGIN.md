@@ -329,6 +329,25 @@ The composer is one component (`app/views/editor.php` + the editor block in `ass
 - **Options** (PHP): hook `editor.options` filters `['preview','emoji','fullscreen','draft_days','upload','accept','scope']` per composer (ctx carries `name` and the topic/post being edited). `editor.emoji` filters the emoji list, `editor.help` the formatting-help rows.
 - **Markup**: the stable selectors are `[data-editor]`, `textarea[name=body]`, `.editor-toolbar`, `[data-preview]`. Everything else may change.
 
+## 13a. AI
+
+The site has one AI connection, set up under Admin → Settings → AI (provider, address, model, key). A plugin that needs a model calls it instead of shipping its own client or asking for its own key:
+
+```php
+if (!ai_ready()) return;                       // not set up: stay quiet, or tell the admin in your settings page
+$r = ai_chat('You file forum posts. Answer with JSON: {"tags": [...]}', $title . "\n\n" . $body,
+    ['purpose' => 'myid', 'max_tokens' => 200, 'json' => true]);
+if (!$r['ok']) return;                          // $r['error'] says why
+$data = ai_json($r['text']);                    // the first JSON object in the answer, or null
+```
+
+- Two protocols cover nearly every service: `openai` (Chat Completions: OpenAI, DeepSeek, Qwen, Moonshot, OpenRouter, a local Ollama…) and `anthropic` (Claude). Your plugin never sees the key or the difference.
+- The admin may add up to two backup connections: when the main one fails, `ai_chat()` asks the next by itself, so a plugin handles one failure path only (every connection failed). `$r['connection']` says which one answered.
+- `ai_chat()` is one HTTPS request that can take seconds: call it on a user action or in a cron job, never in a loop, a list, a region or a transaction. Rate-limit it per member and cache answers for the same text.
+- Treat the answer as untrusted input: check every value against what you allow (a category the writer may post in, a tag that passes `tags_parse()`), and `h()` it like anything else.
+- `purpose` is your plugin id. Filter `ai.request` sees it and may change or refuse a request (quotas, redaction); event `ai.response` reports model and token usage.
+- **Picking a category**: filter `topic.category_missing` (ctx `title`, `body`, `user`) runs when a new topic arrives without one; return a category id. Filter `topic.category_auto` returns true while your plugin can answer, which makes the category optional in the composer. The AI Classify plugin is the example.
+
 ## 14. Translations
 
 Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`. The language is chosen per visitor (preference, cookie, then the site default), so never cache translated HTML across requests. Print timestamps with `time_tag($ts)`: the browser re-renders them in the visitor's own time zone.

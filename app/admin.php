@@ -133,7 +133,10 @@ function admin_settings_fields(): array
         ]],
         'content' => [t('Content'), [
             'per_page' => ['number', t('Topics per page'), '', null, 5, 100],
+            'list_paging' => ['select', t('Topic list paging'), t('Load while scrolling: the next page joins the list as the reader nears its end. The page numbers stay under the list for jumping, for search engines and without JavaScript.'), ['pages' => t('Page numbers'), 'scroll' => t('Load while scrolling')]],
             'category_bar' => ['select', t('Category bar above topic lists'), t('A row of top-level categories above Latest / Top. On phones the left column is hidden, so this is the quickest way into a category.'), ['mobile' => t('Phones only'), 'always' => t('Always'), 'off' => t('Off')]],
+            'category_required' => ['checkbox', t('A topic needs a category'), t('Off: a topic posted without a category goes to the default category below. A plugin (an AI, say) may pick one first either way.')],
+            'default_category' => ['select', t('Default category'), t('Where topics posted without a category go when a category is not required. The writer must be allowed to post there.'), ['0' => t('— none —')] + array_map(static fn(array $c): string => (string)$c['name'], array_column(categories(), null, 'id'))],
             'posts_per_page' => ['number', t('Posts per page'), '', null, 5, 100],
             'post_image_max' => ['number', t('Max image width in posts (px)'), t('0 = as wide as the post. Writers can size a single image with ![alt|300](url).'), null, 0, 4000],
             'post_interval' => ['number', t('Seconds between posts'), '', null, 0, 3600],
@@ -160,6 +163,7 @@ function admin_settings_fields(): array
         'email' => [t('Email'), [
             'mail_from' => ['text', t('Sender address'), t('Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.')],
         ]],
+        'ai' => [t('AI'), []], // its own page: app/admin_ai.php
         'uploads' => [t('Uploads'), [
             'upload_max_mb' => ['decimal', t('Max upload size (MB)'), t('Fractions are allowed: 0.3 keeps uploads under about 300 KB.'), null, 0.1, 100],
             'upload_types' => ['text', t('Allowed extensions'), t('Comma separated.')],
@@ -185,6 +189,7 @@ function admin_page_settings(): never
     $key = get_str('section', 30) ?: (string)post_str('section', 30) ?: array_key_first($sections);
     if (!isset($sections[$key])) not_found();
     [$label, $fields] = $sections[$key];
+    if ($key === 'ai') admin_ai_settings($sections);
     if (is_post()) {
         check_csrf();
         $save = [];
@@ -197,6 +202,12 @@ function admin_page_settings(): never
                     try { $save[$name] = upload_site_image($name, $f, (array)($def[3] ?? ['png', 'jpg'])); }
                     catch (RuntimeException $e) { fail($def[1] . ': ' . $e->getMessage(), admin_url('settings', ['section' => $key])); }
                 }
+                continue;
+            }
+            if ($def[0] === 'secret') { // never shown again: empty keeps the saved value, the box under it clears it
+                $secret = trim(post_secret($name, 500));
+                if ($secret !== '') $save[$name] = $secret;
+                elseif (post_int($name . '_clear') === 1) $save[$name] = '';
                 continue;
             }
             $save[$name] = match ($def[0]) {
@@ -229,6 +240,7 @@ function admin_page_settings(): never
             'number' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000]),
             'decimal' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000, 'step' => 'any']), // any: 0.3 and 0.25 are both fine, the browser refuses nothing
             'color' => input($name, $v ?: '#e7672e', ['type' => 'color']),
+            'secret' => input($name, '', ['type' => 'password', 'autocomplete' => 'new-password', 'placeholder' => $v !== '' ? t('Saved; leave empty to keep it') : '']) . ($v !== '' ? '<div class="form-row" style="margin:6px 0 0">' . checkbox($name . '_clear', false, t('Remove the saved key')) . '</div>' : ''),
             'image' => ($v !== '' ? '<div class="image-current"><img src="' . h(upload_url($v)) . '" alt=""> ' . checkbox($name . '_remove', false, t('Remove')) . '</div>' : '') . input($name, '', ['type' => 'file', 'accept' => implode(',', array_map(static fn(string $e): string => '.' . $e, (array)($def[3] ?? [])))]),
             default => input($name, $v),
         };

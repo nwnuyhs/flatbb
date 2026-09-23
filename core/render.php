@@ -320,6 +320,18 @@ function pagination(array $p, callable $url_fn): string
 }
 
 /**
+ * Under a topic list whose site loads more while scrolling (setting list_paging = scroll): the Load more button that
+ * assets/app.js presses by itself near the end of the page. It follows the rel="next" link of $pagination, which stays
+ * under it (updated as pages come in), so crawlers, visitors without JS and anyone who wants to jump still have pages.
+ */
+function list_more_html(string $pagination): string
+{
+    if (setting('list_paging', 'pages') !== 'scroll' || !str_contains($pagination, 'rel="next"')) return '';
+    return '<div class="list-more" data-list-more data-loading="' . h(t('Loading…')) . '" data-retry="' . h(t('Could not load more. Try again')) . '" data-end="' . h(t('You have seen every topic in this list.')) . '">'
+        . '<button type="button" class="btn">' . t('Load more') . '</button></div>';
+}
+
+/**
  * One member.actions button: a link, or with 'post' a form that POSTs to its url with the CSRF token and back (the page it is
  * on). Keys: label, url, icon, count, title, post; $class carries the place's look (and is-done when the item says done).
  */
