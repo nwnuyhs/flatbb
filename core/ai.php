@@ -86,7 +86,8 @@ function ai_order(array $conns): array
 
 /**
  * One question to the model. $opts: purpose (the plugin id, for ai.request / ai.response), max_tokens (the longest answer
- * you expect, default 800), temperature (default 0.2), json (true asks for a JSON object where the API supports it),
+ * you expect, default 800), temperature (default 0.2; OpenAI-compatible services only, current Claude models take none),
+ * json (true asks for a JSON object where the API supports it),
  * connection (ask only that one, e.g. to test it). Returns ['ok' => true, 'text' => …, 'model' => …, 'connection' => n,
  * 'usage' => ['in' => n, 'out' => n]] or ['ok' => false, 'error' => …] after every connection failed.
  * Never call it from a loop or inside a transaction: it is an HTTPS request that may take seconds (more when it falls back).
@@ -125,7 +126,8 @@ function ai_call(array $c, string $system, string $user, array $opts, int $timeo
     if ($c['provider'] === 'anthropic') {
         $url = $c['base_url'] . '/v1/messages';
         $headers = ['Content-Type: application/json', 'anthropic-version: 2023-06-01', 'x-api-key: ' . $c['key']];
-        $body = ['model' => $c['model'], 'max_tokens' => $max, 'temperature' => $temp, 'system' => $system, 'messages' => [['role' => 'user', 'content' => $user]]];
+        // current Claude models think before they answer and count it in max_tokens, and reject sampling parameters (temperature)
+        $body = ['model' => $c['model'], 'max_tokens' => max($max, 2048), 'system' => $system, 'messages' => [['role' => 'user', 'content' => $user]]];
     } else {
         $url = $c['base_url'] . '/chat/completions';
         $headers = ['Content-Type: application/json'];
@@ -145,7 +147,10 @@ function ai_call(array $c, string $system, string $user, array $opts, int $timeo
     $thought = false;
     if ($c['provider'] === 'anthropic') {
         $text = '';
+        $stop = (string)($data['stop_reason'] ?? '');
+        if ($stop === 'refusal') return ['ok' => false, 'error' => t('The request was refused.'), 'status' => $status, 'rest' => false]; // the request, not the connection: the next one may answer
         foreach ((array)($data['content'] ?? []) as $part) if (($part['type'] ?? '') === 'text') $text .= (string)$part['text'];
+        $thought = $stop === 'max_tokens' && trim($text) === '';
         $usage = ['in' => (int)($data['usage']['input_tokens'] ?? 0), 'out' => (int)($data['usage']['output_tokens'] ?? 0)];
     } else {
         $text = (string)($data['choices'][0]['message']['content'] ?? '');

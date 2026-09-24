@@ -28,6 +28,8 @@ PHP 8.1+ with `pdo_sqlite` or `pdo_mysql`, `mbstring`; `gd` for avatars and imag
 4. Open the site in a browser and follow the installer (choose SQLite or MySQL, name the site, create the admin).
 5. Set up the scheduler: call `https://your-site/cron?key=<key shown in Admin → Scheduled jobs>` every minute, or run `php flatbb cron` from crontab.
 
+Docker (optional): inside the unzipped folder run `docker compose up -d` and open http://localhost:8080. The scheduler runs by itself; MySQL, upgrades and backups are in [docs/DOCKER.md](docs/DOCKER.md).
+
 BaoTa / aaPanel note: paste `nginx.conf.example` into the site's "rewrite" box and comment out the panel's `error_page 404 /404.html;` line in the site config so flatbb can show its own 404 page.
 
 ## Command line

@@ -1,0 +1,17 @@
+# the image carries the code only: a site's data, uploads and extra plugins live in the volume
+.git
+.github
+.claude
+.idea
+.vscode
+data/*
+!data/.gitkeep
+uploads/*
+!uploads/.gitkeep
+dist
+plugins/*
+!plugins/hello
+!plugins/market
+!plugins/nav_menu
+docs/PLAN.md
+*.zip

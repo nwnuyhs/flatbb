@@ -1,0 +1,45 @@
+# FlatBB with Docker: `docker compose up -d`, then open http://localhost:8080 and follow the installer (SQLite needs nothing more).
+# With MySQL: `docker compose --profile mysql up -d` and in the installer use host "mysql" and the MYSQL_* values below
+# (set your own in a .env file next to this one). Details, upgrades and backups: docs/DOCKER.md.
+name: flatbb # volumes are flatbb_flatbb and flatbb_mysql, wherever this folder is
+
+services:
+  flatbb:
+    build: .
+    image: flatbb:latest
+    ports:
+      - "${FLATBB_PORT:-8080}:80"
+    volumes:
+      - flatbb:/var/www/html
+    restart: unless-stopped
+
+  # the scheduled jobs (digests, clean-ups, update checks): once a minute, as the web server's user
+  cron:
+    image: flatbb:latest
+    depends_on:
+      - flatbb
+    volumes:
+      - flatbb:/var/www/html
+    user: www-data
+    entrypoint: []
+    healthcheck:
+      disable: true # the web check belongs to the flatbb service
+    command: ["sh", "-c", "while :; do [ -e /var/www/html/data/config.php ] && php /var/www/html/flatbb cron > /dev/null; sleep 60; done"]
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    profiles: ["mysql"]
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flatbb}
+      MYSQL_USER: ${MYSQL_USER:-flatbb}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-this-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-this-root-password}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  flatbb:
+  mysql:

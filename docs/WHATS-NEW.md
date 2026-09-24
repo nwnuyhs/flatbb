@@ -2,6 +2,12 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.1.97
+
+- **Fix: installing a fresh copy failed** (a 500 error instead of the installer) since 0.1.89: the theme lookup read the plugin table before it existed. `plugins()` is empty until the site is installed.
+- **Docker** (optional): `Dockerfile` and `docker-compose.yml` run FlatBB on Apache + PHP 8.3 with a scheduler container and an optional MySQL service; see [Running FlatBB with Docker](DOCKER.md). The installer now also recognises clean URLs behind a port mapping.
+- `ai_chat()` on a Claude connection no longer sends `temperature` (current Claude models reject it), leaves room for thinking in `max_tokens`, and treats a refused request as a failure the next connection may answer.
+
 ## 0.1.96
 
 - **One AI connection for the site, with backups**: Admin → Settings → AI holds a main connection and up to two backups, each with its provider (`openai`-compatible or `anthropic`), address, model and key and its own test. When the main one fails (unreachable, key refused, out of credit, rate limited, server error) the backups are asked in order at once; a connection that failed rests for 5 minutes, and a writer never waits more than twice the timeout. The state lives in `data/cache/ai.json`. Plugins call `ai_chat($system, $user, $opts)` and `ai_json($text)` instead of their own client and key (`ai_ready()` says whether it is set up). New filter `ai.request` (change or refuse a request, ctx `purpose`) and event `ai.response` (once per connection tried: `connection`, model, token usage); `ai_chat()` answers with the `connection` that replied and takes `connection` to ask only one. See "AI" in the plugin guide. Reasoning models (deepseek-v4-pro and the like) get room to think before they answer, and on a Windows PHP without a CA bundle the certificate is checked against the system store.

@@ -28,6 +28,7 @@ function plugin_url(string $id, string $file): string
 function plugins(bool $refresh = false): array
 {
     if ($refresh) foreach (['plugins', 'themes', 'theme_preview'] as $key) request_cache($key, null, true);
+    if (!is_installed()) return []; // the installer draws its page (through the theme lookup) before any table exists
     return request_cache('plugins', static function (): array {
         $out = [];
         foreach (all('SELECT * FROM fb_plugins ORDER BY sort,id') as $row) {

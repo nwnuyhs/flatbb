@@ -31,6 +31,13 @@ core/              the kernel — small files, one concern each, all plain funct
   render.php       view(), page(), icon(), avatar(), pagination(), form helpers, editor()
   markdown.php     md() safe markdown renderer, md_excerpt(), md_mentions()
   upload.php       attachments, avatars, image resizing
+  ai.php           the site's AI connections (main + backups): ai_chat(), ai_json(), ai_ready(); plugins never ship their own client or key
+  icons.php        icon values (built-in, emoji, uploaded), icon_any(), icon_picker(), the shared icon library
+  lang.php         t(), language packs, the visitor's language
+  manifest.php     static manifest reader (a plugin.php read with the tokenizer, never executed)
+  points.php       points ledger and earning rules (Admin → Points): points_add(), points_award()
+  security.php     security headers + nonce CSP, trusted proxies for the client IP, admin action log, confirm mode (need_sudo())
+  verify.php       email verification codes (hashed, expiring, throttled)
   search.php       FTS5 / MySQL FULLTEXT / LIKE search index
   cron.php         scheduled jobs (cron_run), core jobs
   router.php       routes table, dispatch(), url(), topic_url(), current_path()
@@ -38,8 +45,8 @@ core/              the kernel — small files, one concern each, all plain funct
   migrate.php      migrate_import_sqlite(): SQLite → current database (MySQL) data migration
   upgrade.php      upgrade_check()/upgrade_apply(): in-place core updates; upgrade_build_release()
 app/               request handlers: one file per area, functions named <area>_<action>()
-  home.php category.php tag.php topic.php user.php account.php notification.php search.php api.php setup.php
-  admin.php admin_content.php admin_system.php admin_theme.php
+  home.php category.php tag.php topic.php user.php account.php notification.php search.php api.php setup.php points.php
+  admin.php admin_ui.php admin_content.php admin_system.php admin_theme.php admin_menus.php admin_points.php admin_ai.php
 app/views/         PHP templates rendered by view('name', $vars). layout.php is the page shell.
 assets/            app.css (CSS variables, three-column grid), app.js (vanilla, data-* driven), favicon.svg
 plugins/<id>/      plugins. plugin.php returns the manifest. hello/ is the minimal example, nav_menu/ the typical one (table + admin page + list region).

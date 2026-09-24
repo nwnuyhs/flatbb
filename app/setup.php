@@ -90,5 +90,13 @@ function setup_rewrite_works(): bool
         $ctx = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => true, 'user_agent' => 'flatbb-installer']]);
         $r = @file_get_contents($url, false, $ctx);
     }
+    // behind a port mapping (Docker) or a NAT the public address does not lead back to this server: ask it on this machine,
+    // on the port the request names and on the standard one (Apache reports the port of the Host header, not its own)
+    foreach (array_unique([(int)($_SERVER['SERVER_PORT'] ?? 0), 80]) as $port) {
+        if ((is_string($r) && trim($r) === 'ok') || $port <= 0 || !function_exists('curl_init')) break;
+        $ch = curl_init('http://127.0.0.1:' . $port . base_path() . '/__rewrite_check');
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 4, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'flatbb-installer', CURLOPT_HTTPHEADER => ['Host: ' . (string)($_SERVER['HTTP_HOST'] ?? 'localhost')]]);
+        $r = curl_exec($ch);
+    }
     return is_string($r) && trim($r) === 'ok';
 }
