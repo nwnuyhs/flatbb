@@ -50,6 +50,8 @@ function routes_core(): array
         '/post/{id}/like' => 'post_like',
         '/post/{id}/delete' => 'post_delete',
         '/post/{id}/raw' => 'post_raw',
+        '/review' => 'review_page',
+        '/review/act' => 'review_act',
         '/u/{name}' => 'user_profile',
         '/u/{name}/{tab}' => 'user_profile',
         '/settings' => 'user_settings',

@@ -48,6 +48,8 @@ small, .small { font-size: var(--font-size-sm); }
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--brand); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: 1; }
 .flag { display: inline-block; padding: 1px 7px; border-radius: var(--flag-radius, 4px); background: var(--brand-soft); color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; vertical-align: middle; }
 .flag-danger { background: var(--danger-soft); color: var(--danger); }
+.flag-pending { display: inline-flex; align-items: center; gap: 3px; background: var(--warning-soft); color: var(--warning); }
+.flag-pending .icon { width: 12px; height: 12px; }
 .flag-success { background: var(--success-soft); color: var(--success); }
 .flag-warning { background: var(--warning-soft); color: var(--warning); }
 .flag-muted { background: var(--panel-2); color: var(--text-muted); font-weight: 500; }
@@ -528,6 +530,28 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .post { display: block; padding: var(--post-pad, 16px); background: var(--card-bg, var(--panel)); border: 1px solid var(--card-line, var(--line)); border-radius: var(--card-radius, var(--radius)); box-shadow: var(--card-shadow, var(--shadow)); scroll-margin-top: calc(var(--topbar-h) + 12px); }
 
 .post.deleted { opacity: .7; border-style: dashed; }
+.post.post-pending { border: 1px dashed var(--warning); }
+
+/* review queue (/review, app/views/review.php) */
+.review-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding: 14px 16px 6px; }
+.review-head h1 { margin: 0; font-size: var(--font-size-xl); }
+.review-item { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-top: 1px solid var(--line-soft); transition: opacity .3s; }
+.review-item.is-done { opacity: 0; }
+.review-main { flex: 1; min-width: 0; }
+.review-who .user-link { font-weight: 600; }
+.review-where { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0; }
+.review-chip { padding: 1px 7px; border-radius: 6px; background: var(--panel-2); color: var(--text-muted); font-size: var(--font-size-xs); }
+.review-reason { padding: 1px 7px; border-radius: 6px; background: var(--warning-soft); color: var(--warning); font-size: var(--font-size-xs); }
+.review-title { display: block; color: var(--text); font-weight: 600; }
+.review-text { margin-top: 2px; color: var(--text-muted); font-size: var(--font-size-sm); overflow-wrap: anywhere; }
+.review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.review-actions .review-danger { color: var(--danger); }
+.review-note { display: inline-flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.review-note[hidden] { display: none; }
+.review-note input { flex: 1; min-width: 180px; max-width: 420px; }
+.review-decided { margin-top: 6px; }
+.review-time { white-space: nowrap; }
+@media (max-width: 640px) { .review-item { padding: 12px; } .review-time { display: none; } }
 .post.highlight { animation: highlight 2.5s ease-out; }
 .post[id^="post-"], .posts-new-line { scroll-margin-top: calc(var(--topbar-h) + 12px); } /* a linked post is not hidden under the sticky top bar */
 .posts-new-line { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; color: var(--brand); font-size: var(--font-size-xs); font-weight: 600; }

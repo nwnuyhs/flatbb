@@ -343,6 +343,8 @@ function setting_defaults(): array
         'allow_rename' => '0',
         'rename_days' => '30',
         'display_names' => '0',
+        'review_first_posts' => '0',
+        'review_notify' => '1',
         'display_name_days' => '30',
         'post_interval' => '15',
         'new_user_limit_hours' => '24',

@@ -695,6 +695,33 @@
   document.addEventListener('error', function (e) { var t = e.target; if (t && t.tagName === 'IMG' && t.closest && t.closest('.link-card-img')) dropCardPicture(t); }, true);
   $$('.link-card-img img').forEach(function (img) { if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) dropCardPicture(img); });
 
+  /* ---------- review queue (/review): a decision goes out without a reload, the item fades, the counts follow ---------- */
+  document.addEventListener('click', function (e) {
+    var r = e.target.closest ? e.target.closest('[data-review-reject]') : null;
+    if (!r) return;
+    var note = r.form.querySelector('.review-note');
+    note.hidden = false; r.hidden = true;
+    note.querySelector('input').focus();
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!f.matches || !f.matches('form[data-review]')) return;
+    e.preventDefault();
+    var b = e.submitter;
+    if (!b || !b.name) return;
+    if (b.hasAttribute('data-confirm') && !window.confirm(b.getAttribute('data-confirm'))) return;
+    var fd = new FormData(f); fd.append(b.name, b.value);
+    $$('button', f).forEach(function (x) { x.disabled = true; });
+    request(f.getAttribute('action'), { method: 'POST', body: fd }).then(function (res) {
+      if (!res.ok) { $$('button', f).forEach(function (x) { x.disabled = false; }); toast(res.error || FB.i18n.failed, 'error'); return; }
+      toast(res.message, res.done ? 'success' : 'error');
+      var item = f.closest('[data-review-item]');
+      if (res.done && item) { item.classList.add('is-done'); setTimeout(function () { item.remove(); }, 300); }
+      $$('[data-tab="waiting"] .badge, a[href$="/review"] .me-count').forEach(function (c) { c.textContent = res.count > 0 ? res.count : ''; });
+      if (b.value === 'trust' || b.value === 'ban') setTimeout(function () { window.location.reload(); }, 600); // other items of the same member changed too
+    });
+  });
+
   /* ---------- picture fields and saved keys (image_field(), secret_field()): a change is saved at once, a removal can be undone ---------- */
   (function () {
     function send(box, what, file) {

@@ -171,6 +171,10 @@ function admin_settings_fields(): array
             'display_names' => ['checkbox', t('Display names'), t('Members may set a display name in any language (up to 30 characters), shown instead of the username across the forum. Profile addresses, sign-in and @mentions keep the username, and a profile shows both.')],
             'display_name_days' => ['number', t('Days between display name changes'), t('Applies to members; 0 = any time. Administrators can change them on the Users page.'), null, 0, 3650],
         ]],
+        'moderation' => [t('Moderation'), [
+            'review_first_posts' => ['number', t("New members' first posts need approval"), t("A member's topics and replies wait in the review queue until this many of them are public; “Approve and trust” lets someone through earlier. 0 = off. Administrators and moderators never wait. Categories can hold every new topic too (Admin → Categories)."), null, 0, 100],
+            'review_notify' => ['checkbox', t('Tell moderators when something waits'), t('One notification until they have seen it, however many posts wait. The queue is at /review.')],
+        ]],
         'email' => [t('Email'), [
             'mail_from' => ['text', t('Sender address'), t('Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.')],
         ]],

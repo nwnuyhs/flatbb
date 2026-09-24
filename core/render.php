@@ -568,7 +568,8 @@ function user_menu_items(array $me): array
         'profile' => ['label' => t('Profile'), 'url' => user_url($me), 'icon' => 'user', 'weight' => 1, 'card' => false],
         'bookmarks' => ['label' => t('Bookmarks'), 'url' => user_url($me) . '/bookmarks', 'icon' => 'bookmark', 'weight' => 10],
         'settings' => ['label' => t('Settings'), 'url' => url('/settings'), 'icon' => 'settings', 'group' => 'site', 'weight' => 90],
-    ] + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me])) ?? [];
+    ] + (is_mod() ? ['review' => ['label' => t('Review queue'), 'url' => url('/review'), 'icon' => 'check', 'count' => review_count() ?: '', 'group' => 'site', 'weight' => 95]] : []) // moderators: what waits for them
+      + (is_admin() ? ['admin' => ['label' => t('Admin'), 'url' => admin_url(), 'icon' => 'shield', 'group' => 'site', 'weight' => 100]] : []), ['user' => $me])) ?? [];
 }
 
 /**

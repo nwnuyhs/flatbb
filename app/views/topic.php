@@ -25,7 +25,7 @@ ob_start(); ?>
       <?= category_badge($topic['category']) ?>
       <span class="stat" title="<?= t('Replies') ?>"><?= icon('reply') ?><?= (int)$topic['reply_count'] ?></span>
       <span class="stat" title="<?= t('Views') ?>"><?= icon('eye') ?><?= (int)$topic['view_count'] ?></span>
-      <?php if ((int)$topic['is_deleted']): ?><span class="flag flag-danger"><?= t('Deleted') ?></span><?php endif; ?>
+      <?php if ((int)$topic['is_deleted'] === 1): ?><span class="flag flag-danger"><?= t('Deleted') ?></span><?php elseif ((int)$topic['is_deleted'] === REVIEW_PENDING): ?><span class="flag flag-pending"><?= icon('clock') ?><?= t('Awaiting approval') ?></span><?php endif; ?>
 <?php $stats_html = (string)ob_get_clean(); ob_start(); ?>
     <div class="topic-tools" data-slot="topic.actions">
       <?php foreach ($actions as $a): ?><?= raw($a['html'] ?? '') ?><?php endforeach; ?>
@@ -39,9 +39,11 @@ ob_start(); ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('lock') . ((int)$topic['is_locked'] ? t('Unlock') : t('Lock')) . '</button>', ['action' => (int)$topic['is_locked'] ? 'unlock' : 'lock']) ?>
             <form method="post" action="<?= h(url('/t/' . $topic['id'] . '/action')) ?>" class="dropdown-form"><?= csrf_field() ?><input type="hidden" name="action" value="move"><select name="category_id" onchange="this.form.submit()"><option value=""><?= t('Move to…') ?></option><?php foreach (categories() as $c): if ((int)$c['id'] === (int)$topic['category_id']) continue; ?><option value="<?= (int)$c['id'] ?>"><?= h($c['name']) ?></option><?php endforeach; ?></select></form>
           <?php endif; ?>
-          <?php if ((int)$topic['is_deleted'] && is_mod()): ?>
+          <?php if ((int)$topic['is_deleted'] === REVIEW_PENDING && is_mod()): ?>
+            <a href="<?= h(url('/review')) ?>"><?= icon('shield') ?><?= t('Review queue') ?></a>
+          <?php elseif ((int)$topic['is_deleted'] === 1 && is_mod()): ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit">' . icon('refresh') . t('Restore') . '</button>', ['action' => 'restore']) ?>
-          <?php elseif (!(int)$topic['is_deleted']): ?>
+          <?php elseif ((int)$topic['is_deleted'] !== 1): ?>
             <?= action_form(url('/t/' . $topic['id'] . '/action'), '<button type="submit" class="danger">' . icon('trash') . t('Delete topic') . '</button>', ['action' => 'delete'], '', t('Delete this topic?')) ?>
           <?php endif; ?>
         </div>

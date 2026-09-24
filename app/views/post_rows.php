@@ -1,7 +1,7 @@
 <?php /** Reply list for profile pages. Variables: posts, topics, user, empty */ ?>
 <div class="post-rows">
 <?php if ($posts === []): ?><div class="empty"><?= icon('message') ?><p><?= h($empty) ?></p></div><?php endif; ?>
-<?php foreach ($posts as $p): $t = $topics[(int)$p['topic_id']] ?? null; if ($t === null || (int)$t['is_deleted'] === 1) continue; ?>
+<?php foreach ($posts as $p): $t = $topics[(int)$p['topic_id']] ?? null; if ($t === null || (int)$t['is_deleted'] !== 0) continue; ?>
   <article class="post-row">
     <h3 class="row-title"><a href="<?= h(url('/post/' . $p['id'])) ?>"><?= h($t['title']) ?></a></h3>
     <div class="post-excerpt"><?= h(md_excerpt((string)$p['body'], 220)) ?></div>

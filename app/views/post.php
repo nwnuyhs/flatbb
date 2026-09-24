@@ -5,9 +5,10 @@
  */
 $u = $post['user'];
 $deleted = (int)$post['is_deleted'] === 1;
+$pending = (int)$post['is_deleted'] === REVIEW_PENDING; // waiting for review: its author and the moderators see it, marked
 $ctx = ['post' => $post, 'topic' => $topic];
 $actions = [];
-if (uid() > 0 && !$deleted) {
+if (uid() > 0 && !$deleted && !$pending) {
     $actions['like'] = ['html' => action_form(url('/post/' . $post['id'] . '/like'), '<button type="submit" class="act' . ($post['liked'] ? ' active' : '') . '" data-like title="' . ($post['liked'] ? t('Unlike') : t('Like')) . '">' . icon('heart') . '<span data-count>' . ((int)$post['like_count'] ?: '') . '</span></button>', [], 'inline')];
     if (can('reply') && ((int)$topic['is_locked'] === 0 || is_mod())) {
         $actions['reply'] = ['html' => '<button type="button" class="act" data-reply-to-post="' . (int)$post['id'] . '" data-username="' . h($u['username'] ?? '') . '">' . icon('reply') . '<span>' . t('Reply') . '</span></button>'];
@@ -20,13 +21,17 @@ if (uid() > 0 && !$deleted) {
 } elseif ((int)$post['like_count'] > 0) {
     $actions['like'] = ['html' => '<span class="act">' . icon('heart') . '<span>' . (int)$post['like_count'] . '</span></span>'];
 }
+if ($pending && can_edit_post($post)) { // while it waits its author may still fix or withdraw it
+    $actions['edit'] = ['html' => '<a class="act" href="' . h((int)$post['floor'] === 0 ? url('/t/' . $topic['id'] . '/edit') : url('/post/' . $post['id'] . '/edit')) . '">' . icon('edit') . '<span>' . t('Edit') . '</span></a>'];
+    if ((int)$post['floor'] > 0) $actions['delete'] = ['html' => action_form(url('/post/' . $post['id'] . '/delete'), '<button type="submit" class="act danger">' . icon('trash') . '<span>' . t('Delete') . '</span></button>', [], 'inline', t('Delete this reply?'))];
+}
 if ($deleted && is_mod()) $actions['restore'] = ['html' => action_form(url('/post/' . $post['id'] . '/delete'), '<button type="submit" class="act">' . icon('refresh') . '<span>' . t('Restore') . '</span></button>', ['action' => 'restore'], 'inline')];
 $actions['link'] = ['html' => '<a class="act" href="' . h(url('/post/' . $post['id'])) . '" data-copy="' . h(absolute_url('/post/' . $post['id'])) . '" title="' . t('Copy link to this post') . '">' . icon('link') . '<span>' . t('Link') . '</span></a>'];
 $actions = region_list('post.actions', $actions, $ctx);
 $head = $head ?? null;
 ?>
 <?= slot('post.before', $ctx) ?>
-<article class="post<?= $deleted ? ' deleted' : '' ?><?= (int)$post['floor'] === 0 ? ' first' : '' ?>" id="post-<?= (int)$post['id'] ?>" data-post-id="<?= (int)$post['id'] ?>" data-floor="<?= (int)$post['floor'] ?>" data-slot="post">
+<article class="post<?= $deleted ? ' deleted' : '' ?><?= $pending ? ' post-pending' : '' ?><?= (int)$post['floor'] === 0 ? ' first' : '' ?>" id="post-<?= (int)$post['id'] ?>" data-post-id="<?= (int)$post['id'] ?>" data-floor="<?= (int)$post['floor'] ?>" data-slot="post">
   <?php if ($head): ?><header class="topic-head" data-slot="topic.header"><?= raw((string)$head['title']) ?><?= raw((string)$head['bar']) ?></header><?= raw((string)$head['region']) ?><?php endif; ?>
   <header class="post-head">
     <div class="post-avatar"><?= avatar($u, 40) ?></div>
@@ -35,6 +40,7 @@ $head = $head ?? null;
         <?= user_link($u) ?>
         <?php if ((int)$post['floor'] > 0 && (int)$post['user_id'] > 0 && (int)$post['user_id'] === (int)($topic['user_id'] ?? 0)): ?><span class="flag flag-op" title="<?= t('Topic author') ?>"><?= t('OP') ?></span><?php endif; ?>
         <?php $g = $u ? group_by_id((int)$u['group_id']) : null; if ($g && ((int)$g['is_admin'] || (int)$g['is_mod'])): ?><span class="flag" style="<?= !empty($g['color']) ? 'color:' . h($g['color']) : '' ?>"><?= h($g['name']) ?></span><?php endif; ?>
+        <?php if ($pending): ?><span class="flag flag-pending"><?= icon('clock') ?><?= t('Awaiting approval') ?></span><?php endif; ?>
         <?= slot('post.name', $ctx) ?>
       </div>
       <div class="post-meta">

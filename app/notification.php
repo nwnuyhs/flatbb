@@ -107,6 +107,8 @@ function notification_index(): never
         $n['from'] = $users[(int)$n['from_user_id']] ?? null;
         $n['topic'] = $topics[(int)$n['topic_id']] ?? null;
         $n['url'] = (int)$n['post_id'] > 0 ? url('/post/' . $n['post_id']) : ($n['topic'] ? topic_url($n['topic']) : '');
+        if ($n['kind'] === 'review_waiting') $n['url'] = url('/review');
+        if ($n['kind'] === 'review_rejected') $n['url'] = ''; // the post is gone
     }
     unset($n);
     $rows = hook('notifications.rows', $rows, []);

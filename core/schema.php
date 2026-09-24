@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 11; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 12; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -69,6 +69,7 @@ function schema_tables(): array
             'view_groups' => 'string',   // comma separated group ids, empty = everyone
             'post_groups' => 'string',   // comma separated group ids, empty = any member
             'is_hidden' => 'bool',
+            'review_topics' => 'bool', // new topics here wait in the review queue (app/review.php)
         ],
         'fb_tags' => [
             'id' => 'id',
@@ -125,6 +126,19 @@ function schema_tables(): array
             'post_id' => 'uint',
             'topic_id' => 'uint',
             'created_at' => 'uint',
+        ],
+        'fb_review' => [          // app/review.php: a topic or reply held for a moderator; the content itself has is_deleted = 2 while it waits
+            'id' => 'id',
+            'kind' => 'string',   // topic | reply
+            'topic_id' => 'uint',
+            'post_id' => 'uint',
+            'user_id' => 'uint',
+            'reason' => 'string', // why it was held (English source text, shown through t())
+            'status' => 'uint',   // 0 waiting, 1 approved, 2 rejected
+            'note' => 'string',   // the reason given to the author on a rejection
+            'created_at' => 'uint',
+            'decided_at' => 'uint',
+            'decided_by' => 'uint',
         ],
         'fb_link_previews' => [      // core/links.php: one row per linked page, status 0 queued, 1 ready, 2 failed
             'id' => 'id',
@@ -257,6 +271,9 @@ function schema_indexes(): array
         ['fb_likes', 'ux_likes', ['user_id', 'post_id'], true],
         ['fb_likes', 'ix_likes_post', ['post_id']],
         ['fb_bookmarks', 'ux_bookmarks', ['user_id', 'topic_id'], true],
+        ['fb_review', 'ix_review_status', ['status', 'id']],
+        ['fb_review', 'ix_review_post', ['post_id']],
+        ['fb_review', 'ix_review_user', ['user_id', 'status']],
         ['fb_link_previews', 'ux_link_previews_hash', ['url_hash'], true],
         ['fb_link_previews', 'ix_link_previews_status', ['status', 'fetched_at']],
         ['fb_topic_reads', 'ux_topic_reads', ['user_id', 'topic_id'], true],

@@ -3,7 +3,7 @@
   <h1><?= t('Notifications') ?></h1>
   <?php if ($rows === []): ?><div class="empty"><?= icon('bell') ?><p><?= t('No notifications yet.') ?></p></div><?php endif; ?>
   <div class="notif-list">
-  <?php $kinds = (array)hook('notification.kinds', ['reply' => ['reply', t('replied')], 'mention' => ['user', t('mentioned you')], 'like' => ['heart', t('liked your post')], 'system' => ['info', '']], []); ?>
+  <?php $kinds = (array)hook('notification.kinds', ['reply' => ['reply', t('replied')], 'mention' => ['user', t('mentioned you')], 'like' => ['heart', t('liked your post')], 'system' => ['info', ''], 'review_approved' => ['check', t('approved your post')], 'review_rejected' => ['x', t('did not approve your post')], 'review_waiting' => ['clock', t('posted something that waits for review')]], []); ?>
   <?php foreach ($rows as $n): [$ic, $verb] = $kinds[$n['kind']] ?? ['info', $n['kind']]; ?>
     <a class="notif<?= (int)$n['is_read'] ? '' : ' unread' ?>" href="<?= h($n['url'] ?: '#') ?>">
       <span class="notif-icon"><?= icon($ic) ?></span>

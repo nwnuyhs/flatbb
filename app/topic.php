@@ -26,61 +26,93 @@ function post_body_valid(string $body): bool
     return $len >= 2 && $len <= 65535;
 }
 
-/** Create a topic with its first post. Returns topic id. */
+/**
+ * Create a topic with its first post. Returns topic id. When review_hold_reason() holds it (app/review.php) both rows are
+ * stored with is_deleted = 2 and wait in the review queue: counts, search, @mentions, topic.after_save, points and link
+ * previews happen when a moderator approves it (topic_go_public()), so nobody hears of a post nobody may see yet.
+ */
 function topic_create(int $category_id, int $user_id, string $title, string $body, array $tags = [], bool $pinned = false): int
 {
     return tx(static function () use ($category_id, $user_id, $title, $body, $tags, $pinned): int {
         $data = hook('topic.before_save', ['category_id' => $category_id, 'user_id' => $user_id, 'title' => $title, 'body' => $body, 'tags' => $tags], []);
+        $held = review_hold_reason('topic', $user_id, (int)$data['category_id'], $data['title'] . "\n" . $data['body']);
         $tid = db_insert('fb_topics', [
             'category_id' => (int)$data['category_id'], 'user_id' => $user_id, 'title' => $data['title'], 'slug' => slugify($data['title']),
             'is_pinned' => $pinned ? 1 : 0, 'pinned_at' => $pinned ? now() : 0, 'created_at' => now(), 'updated_at' => now(), 'last_post_at' => now(), 'last_user_id' => $user_id, 'meta' => '{}',
+            'is_deleted' => $held !== '' ? REVIEW_PENDING : 0,
         ]);
         $pid = db_insert('fb_posts', [
             'topic_id' => $tid, 'user_id' => $user_id, 'floor' => 0, 'body' => $data['body'], 'body_html' => md($data['body']),
-            'created_at' => now(), 'created_ip' => client_ip(), 'meta' => '{}',
+            'created_at' => now(), 'created_ip' => client_ip(), 'meta' => '{}', 'is_deleted' => $held !== '' ? REVIEW_PENDING : 0,
         ]);
         db_update('fb_topics', ['first_post_id' => $pid, 'last_post_id' => $pid], 'id=?', [$tid]);
         topic_set_tags($tid, (array)$data['tags']);
-        db_increment('fb_users', 'topic_count', 1, 'id=?', [$user_id]);
-        db_update('fb_users', ['last_post_at' => now()], 'id=?', [$user_id]);
-        category_refresh_stats((int)$data['category_id']);
-        search_index_post($pid, $tid, $data['title'], $data['body']);
         attachments_link_to_post($pid, $user_id, $data['body']);
-        notify_mentions($tid, $pid, $data['body'], $user_id);
-        fire('topic.after_save', ['topic_id' => $tid, 'post_id' => $pid, 'new' => true]);
-        points_award($user_id, 'topic', $tid);
-        link_queue_post(md($data['body']));
+        if ($held !== '') review_hold('topic', $tid, $pid, $user_id, $held);
+        else topic_go_public($tid);
         return $tid;
     });
 }
 
-/** Add a reply. Returns post id. */
+/** What a topic sets off when it becomes public: at once for most, on approval for one that waited in the review queue. */
+function topic_go_public(int $tid): void
+{
+    request_cache('topic_' . $tid, null, true);
+    $t = topic_by_id($tid);
+    $post = $t !== null ? post_by_id((int)$t['first_post_id']) : null;
+    if ($t === null || $post === null) return;
+    $uid = (int)$t['user_id'];
+    db_increment('fb_users', 'topic_count', 1, 'id=?', [$uid]);
+    db_update('fb_users', ['last_post_at' => now()], 'id=?', [$uid]);
+    category_refresh_stats((int)$t['category_id']);
+    search_index_post((int)$post['id'], $tid, (string)$t['title'], (string)$post['body']);
+    notify_mentions($tid, (int)$post['id'], (string)$post['body'], $uid);
+    fire('topic.after_save', ['topic_id' => $tid, 'post_id' => (int)$post['id'], 'new' => true]);
+    points_award($uid, 'topic', $tid);
+    link_queue_post((string)$post['body_html']);
+}
+
+/** Add a reply. Returns post id. A held reply (review queue) waits with is_deleted = 2; post_go_public() runs on approval. */
 function post_create(array $topic, int $user_id, string $body, int $reply_to = 0): int
 {
     return tx(static function () use ($topic, $user_id, $body, $reply_to): int {
         $data = hook('post.before_save', ['body' => $body, 'reply_to_id' => $reply_to], ['topic' => $topic]);
+        $held = review_hold_reason('reply', $user_id, (int)$topic['category_id'], (string)$data['body']);
         $floor = (int)val('SELECT COALESCE(MAX(floor),0)+1 FROM fb_posts WHERE topic_id=?', [(int)$topic['id']]);
         $pid = db_insert('fb_posts', [
             'topic_id' => (int)$topic['id'], 'user_id' => $user_id, 'floor' => $floor, 'reply_to_id' => (int)$data['reply_to_id'],
             'body' => $data['body'], 'body_html' => md($data['body']), 'created_at' => now(), 'created_ip' => client_ip(), 'meta' => '{}',
+            'is_deleted' => $held !== '' ? REVIEW_PENDING : 0,
         ]);
-        db_update('fb_topics', ['last_post_id' => $pid, 'last_post_at' => now(), 'last_user_id' => $user_id, 'updated_at' => now()], 'id=?', [(int)$topic['id']]);
-        db_increment('fb_topics', 'reply_count', 1, 'id=?', [(int)$topic['id']]);
-        db_increment('fb_users', 'post_count', 1, 'id=?', [$user_id]);
-        db_update('fb_users', ['last_post_at' => now()], 'id=?', [$user_id]);
-        db_increment('fb_categories', 'post_count', 1, 'id=?', [(int)$topic['category_id']]);
-        db_update('fb_categories', ['last_topic_id' => (int)$topic['id']], 'id=?', [(int)$topic['category_id']]);
-        search_index_post($pid, (int)$topic['id'], (string)$topic['title'], $data['body']);
         attachments_link_to_post($pid, $user_id, $data['body']);
-        notify_reply($topic, $pid, $user_id, (int)$data['reply_to_id']);
-        notify_mentions((int)$topic['id'], $pid, $data['body'], $user_id);
         topic_mark_read((int)$topic['id'], $pid);
-        fire('post.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => $pid, 'new' => true]);
-        points_award($user_id, 'reply', $pid);
-        link_queue_post(md($data['body']));
-        request_cache('categories', null, true);
+        if ($held !== '') review_hold('reply', (int)$topic['id'], $pid, $user_id, $held);
+        else post_go_public($pid);
         return $pid;
     });
+}
+
+/** What a reply sets off when it becomes public: the topic's last reply and counts, search, notifications, post.after_save, points, link previews. */
+function post_go_public(int $pid): void
+{
+    $post = post_by_id($pid);
+    $topic = $post !== null ? topic_by_id((int)$post['topic_id']) : null;
+    if ($post === null || $topic === null) return;
+    $uid = (int)$post['user_id'];
+    db_update('fb_topics', ['last_post_id' => $pid, 'last_post_at' => now(), 'last_user_id' => $uid, 'updated_at' => now()], 'id=?', [(int)$topic['id']]);
+    db_increment('fb_topics', 'reply_count', 1, 'id=?', [(int)$topic['id']]);
+    db_increment('fb_users', 'post_count', 1, 'id=?', [$uid]);
+    db_update('fb_users', ['last_post_at' => now()], 'id=?', [$uid]);
+    db_increment('fb_categories', 'post_count', 1, 'id=?', [(int)$topic['category_id']]);
+    db_update('fb_categories', ['last_topic_id' => (int)$topic['id']], 'id=?', [(int)$topic['category_id']]);
+    request_cache('topic_' . (int)$topic['id'], null, true);
+    search_index_post($pid, (int)$topic['id'], (string)$topic['title'], (string)$post['body']);
+    notify_reply($topic, $pid, $uid, (int)$post['reply_to_id']);
+    notify_mentions((int)$topic['id'], $pid, (string)$post['body'], $uid);
+    fire('post.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => $pid, 'new' => true]);
+    points_award($uid, 'reply', $pid);
+    link_queue_post((string)$post['body_html']);
+    request_cache('categories', null, true);
 }
 
 function topic_stats_refresh(int $tid): void
@@ -109,11 +141,22 @@ function can_manage_topic(array $topic): bool
     return is_mod() || (uid() > 0 && (int)$topic['user_id'] === uid() && can('delete_own'));
 }
 
-/** The topic of a post when the current user may see it (topic not deleted unless mod, category viewable), else null. */
+/**
+ * Whether the current user may see this topic or post row by its is_deleted state: shown (0) to everyone, deleted (1) to
+ * moderators, waiting for review (2) to moderators and its author.
+ */
+function content_visible(array $row): bool
+{
+    $state = (int)($row['is_deleted'] ?? 0);
+    if ($state === 0 || is_mod()) return true;
+    return $state === REVIEW_PENDING && uid() > 0 && (int)($row['user_id'] ?? 0) === uid();
+}
+
+/** The topic of a post when the current user may see it (content_visible(), category viewable), else null. */
 function post_topic_visible(array $post): ?array
 {
     $topic = topic_by_id((int)$post['topic_id']);
-    if ($topic === null || ((int)$topic['is_deleted'] === 1 && !is_mod())) return null;
+    if ($topic === null || !content_visible($topic)) return null;
     $cat = category_by_id((int)$topic['category_id']);
     return $cat !== null && !category_can_view($cat) ? null : $topic;
 }
@@ -130,12 +173,12 @@ function can_edit_post(array $post): bool
 function topic_view(string $id): never
 {
     $topic = topic_by_id((int)$id);
-    if ($topic === null || ((int)$topic['is_deleted'] === 1 && !is_mod())) not_found();
+    if ($topic === null || !content_visible($topic)) not_found();
     $cat = category_by_id((int)$topic['category_id']);
     if ($cat !== null && !category_can_view($cat)) not_found();
     if (($why = topic_access_denied($topic)) !== '') topic_no_access($topic, $cat, $why);
     $per = max(5, min(100, (int)setting('posts_per_page', '20')));
-    $show_deleted = is_mod() ? '' : ' AND is_deleted=0';
+    $show_deleted = is_mod() ? '' : ' AND (is_deleted=0 OR (is_deleted=' . REVIEW_PENDING . ' AND user_id=' . uid() . '))'; // your own replies that wait for review show, marked
     $total = (int)val("SELECT COUNT(*) FROM fb_posts WHERE topic_id=?{$show_deleted}", [(int)$topic['id']]);
     $pg = paginate_calc($total, get_int('page', 1, 1, 100000), $per);
     $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} ORDER BY id LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [(int)$topic['id']]);
@@ -151,7 +194,7 @@ function topic_view(string $id): never
     $main = view('topic', [
         'topic' => $topic, 'posts' => $posts, 'page' => $pg, 'new_from' => topic_new_from($posts, $prev_read),
         'pagination' => pagination($pg, static fn(int $n): string => topic_url($topic, $n)),
-        'can_reply' => uid() > 0 && can('reply') && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '' && ($hold = post_hold(me() ?? [])) === [],
+        'can_reply' => uid() > 0 && can('reply') && (int)$topic['is_deleted'] === 0 && ((int)$topic['is_locked'] === 0 || is_mod()) && topic_reply_denied($topic) === '' && ($hold = post_hold(me() ?? [])) === [],
         'reply_denied' => uid() > 0 ? topic_reply_denied($topic) : '',
         'hold' => uid() > 0 ? ($hold ?? post_hold(me() ?? [])) : [],
     ]);
@@ -283,7 +326,9 @@ function topic_new(): never
         if ($cat === null || !category_can_post($cat)) fail(t('Please choose a category.'));
         if (($hold = post_hold($me)) !== []) fail((string)$hold['message']);
         $tid = topic_create((int)$cat['id'], (int)$me['id'], $title, $body, $tags);
-        redirect(topic_url(topic_by_id($tid)));
+        $new = topic_by_id($tid);
+        if ((int)($new['is_deleted'] ?? 0) === REVIEW_PENDING) flash(t('Posted. A moderator will review it before others can see it.'));
+        redirect(topic_url($new));
     }
     if (($hold = post_hold($me)) !== []) { // do not let them write a whole topic and lose it to a limit
         page(t('New Topic'), '<div class="list-head"><h1 style="margin:0">' . t('New Topic') . '</h1></div>' . post_hold_notice($hold), ['class' => 'page-compose', 'right' => false]);
@@ -324,7 +369,7 @@ function topic_reply(string $id): never
     $me = need_login();
     require_post();
     $topic = topic_by_id((int)$id);
-    if ($topic === null || (int)$topic['is_deleted'] === 1) not_found();
+    if ($topic === null || (int)$topic['is_deleted'] !== 0) not_found(); // deleted, or still waiting for review
     $cat = category_by_id((int)$topic['category_id']);
     if ($cat !== null && !category_can_view($cat)) not_found();
     if (!can('reply')) fail(t('Your group cannot reply.'));
@@ -337,8 +382,9 @@ function topic_reply(string $id): never
     $reply_to = post_int('reply_to');
     if ($reply_to > 0 && (int)(val('SELECT topic_id FROM fb_posts WHERE id=?', [$reply_to]) ?? 0) !== (int)$topic['id']) $reply_to = 0;
     $pid = post_create($topic, (int)$me['id'], $body, $reply_to);
-    $total = (int)val('SELECT COUNT(*) FROM fb_posts WHERE topic_id=? AND is_deleted=0', [(int)$topic['id']]);
+    $total = (int)val('SELECT COUNT(*) FROM fb_posts WHERE topic_id=? AND (is_deleted=0 OR (is_deleted=? AND user_id=?))', [(int)$topic['id'], REVIEW_PENDING, (int)$me['id']]);
     $last_page = max(1, (int)ceil($total / max(5, (int)setting('posts_per_page', '20'))));
+    if ((int)(val('SELECT is_deleted FROM fb_posts WHERE id=?', [$pid]) ?? 0) === REVIEW_PENDING) flash(t('Posted. A moderator will review it before others can see it.'));
     redirect(topic_url($topic, $last_page, $pid));
 }
 
@@ -365,7 +411,7 @@ function topic_edit(string $id): never
             topic_set_tags((int)$topic['id'], tags_parse(post_str('tags', 200)));
             search_update_title((int)$topic['id'], $title);
             if ($old_cat !== (int)$cat['id']) { category_refresh_stats($old_cat); category_refresh_stats((int)$cat['id']); }
-            fire('topic.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => (int)$post['id'], 'new' => false]);
+            if ((int)$topic['is_deleted'] !== REVIEW_PENDING) fire('topic.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => (int)$post['id'], 'new' => false]); // a waiting topic is news on approval
         });
         request_cache('topic_' . $topic['id'], null, true);
         redirect(topic_url(topic_by_id((int)$topic['id'])));
@@ -379,8 +425,9 @@ function post_update(array $post, string $body, int $editor_id): void
     $body = (string)hook('post.before_update', $body, ['post' => $post]);
     db_update('fb_posts', ['body' => $body, 'body_html' => md($body), 'edit_count' => (int)$post['edit_count'] + 1, 'edited_at' => now(), 'edited_by' => $editor_id], 'id=?', [(int)$post['id']]);
     $topic = topic_by_id((int)$post['topic_id']);
-    search_index_post((int)$post['id'], (int)$post['topic_id'], (string)($topic['title'] ?? ''), $body);
     attachments_link_to_post((int)$post['id'], (int)$post['user_id'], $body);
+    if ((int)$post['is_deleted'] === REVIEW_PENDING) return; // still waiting for review: it goes public (search, post.after_save) on approval
+    search_index_post((int)$post['id'], (int)$post['topic_id'], (string)($topic['title'] ?? ''), $body);
     fire('post.after_save', ['topic_id' => (int)$post['topic_id'], 'post_id' => (int)$post['id'], 'new' => false]);
     link_queue_post(md($body));
 }
@@ -408,6 +455,7 @@ function topic_action(string $id): never
             flash(t('Topic deleted.'));
             redirect(url('/'));
         case 'restore':
+            if ((int)$topic['is_deleted'] !== 1) fail(t('This topic waits in the review queue.'), url('/review'));
             db_update('fb_topics', ['is_deleted' => 0], 'id=?', [(int)$topic['id']]);
             category_refresh_stats((int)$topic['category_id']);
             foreach (all('SELECT id,body FROM fb_posts WHERE topic_id=? AND is_deleted=0', [(int)$topic['id']]) as $p) search_index_post((int)$p['id'], (int)$topic['id'], (string)$topic['title'], (string)$p['body']);
@@ -477,7 +525,7 @@ function post_like(string $id): never
     $me = need_login();
     require_post();
     $post = post_by_id((int)$id);
-    if ($post === null || (int)$post['is_deleted'] === 1 || post_topic_visible($post) === null) not_found();
+    if ($post === null || (int)$post['is_deleted'] !== 0 || post_topic_visible($post) === null) not_found();
     $liked = (bool)val('SELECT 1 FROM fb_likes WHERE user_id=? AND post_id=?', [(int)$me['id'], (int)$post['id']]);
     tx(static function () use ($liked, $me, $post): void {
         if ($liked) {
@@ -512,6 +560,7 @@ function post_delete(string $id): never
     if ((int)$post['floor'] === 0) fail(t('Delete the topic instead.'));
     $restore = post_str('action', 20) === 'restore';
     if ($restore ? !is_mod() : !can_edit_post($post)) forbidden();
+    if ($restore && (int)$post['is_deleted'] !== 1) fail(t('This reply waits in the review queue.'), url('/review'));
     db_update('fb_posts', ['is_deleted' => $restore ? 0 : 1], 'id=?', [(int)$post['id']]);
     if ($restore) search_index_post((int)$post['id'], (int)$topic['id'], (string)$topic['title'], (string)$post['body']);
     else search_delete_post((int)$post['id']);
@@ -525,7 +574,7 @@ function post_delete(string $id): never
 function post_raw(string $id): never
 {
     $post = post_by_id((int)$id);
-    if ($post === null || (int)$post['is_deleted'] === 1 || post_topic_visible($post) === null) json_error('not found', 404);
+    if ($post === null || (int)$post['is_deleted'] !== 0 || post_topic_visible($post) === null) json_error('not found', 404);
     $user = user_by_id((int)$post['user_id']);
     json_ok(['body' => $post['body'], 'username' => $user['username'] ?? '', 'floor' => (int)$post['floor']]);
 }

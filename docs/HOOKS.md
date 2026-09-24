@@ -60,7 +60,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `points.rules` | filter |  | `core/points.php` |
 | `post.after_delete` | event | After a reply was deleted or restored. | `app/topic.php` |
 | `post.after_like` | event | After a like toggle. | `app/topic.php` |
-| `post.after_save` | event | After a post was created or edited. | `app/topic.php` |
+| `post.after_save` | event | After a post was created or edited. A new reply that waits in the review queue fires it on approval. | `app/topic.php` |
 | `post.before_save` | filter | New reply data (body, reply_to_id) before insert. | `app/topic.php` |
 | `post.before_update` | filter | Reply body before an edit is saved. | `app/topic.php` |
 | `region.<action>` | filter |  | `core/hook.php`, `core/render.php` |
@@ -131,6 +131,9 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `region.user.profile.tabs` | list region | Profile page tabs (list) | `app/user.php` |
 | `region.user.settings.tabs` | list region | Settings page menu, a section list on phones (list): id => [label, group account|preferences|security|community|developer|more, weight] | `app/user.php` |
 | `regions.known` | filter | Register extra regions for Admin → Widgets. | `core/hook.php` |
+| `review.decided` | event | Event: a moderator approved (status 1) or rejected (status 2) an item of the review queue (ctx: id, status, by). On approval the usual topic.after_save / post.after_save fire as well. | `app/review.php` |
+| `review.held` | event | Event: a topic or reply was put in the review queue (ctx: id, kind, topic_id, post_id, user_id, reason). | `app/review.php` |
+| `review.hold` | filter | Filter: why a new topic or reply waits in the review queue (value: the reason so far, an English text shown through t(), or empty; ctx: kind topic|reply, user, category, text). Return a reason to hold it. Administrators and moderators are never held. | `app/review.php` |
 | `router.not_found` | filter | No route matched (ctx: path). Return a URL (301) or [url, code] to redirect instead of the 404 page; return nothing to let it 404. Also the place to record misses. | `core/router.php` |
 | `router.routes` | filter | Filter: the route table (path => handler). Replace a core address (a portal at /); admin, sign-in, settings, setup and API addresses cannot be taken over. Admin → Plugins lists the takeovers. | `core/router.php` |
 | `schema.install` | event | After core tables are created/upgraded. | `core/schema.php` |
@@ -140,7 +143,7 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `topic.access` | filter |  | `app/topic.php` |
 | `topic.after_action` | event | After pin/lock/move/restore (ctx: topic_id, action). | `app/topic.php` |
 | `topic.after_delete` | event | After a topic was soft-deleted. | `app/topic.php` |
-| `topic.after_save` | event | After a topic was created or edited (ctx: topic_id, post_id, new). | `app/topic.php` |
+| `topic.after_save` | event | After a topic was created or edited (ctx: topic_id, post_id, new). A new topic that waits in the review queue fires it when a moderator approves it, so the topic is public by then. | `app/topic.php` |
 | `topic.before_save` | filter | New topic data (category_id, user_id, title, body, tags) before insert. | `app/topic.php` |
 | `topic.can_reply` | filter |  | `app/topic.php` |
 | `topic.category_auto` | filter | Filter: whether a plugin will pick the category of a new topic (bool). True makes the category optional in the composer; return true only when topic.category_missing can actually answer (configured, within limits). | `app/topic.php` |

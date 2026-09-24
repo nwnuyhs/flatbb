@@ -19,7 +19,7 @@ function search_page(): never
         foreach ($post_ids as $pid) {
             $p = $posts[$pid] ?? null;
             $t = $p ? ($topics[(int)$p['topic_id']] ?? null) : null;
-            if ($p === null || $t === null || (int)$p['is_deleted'] === 1 || (int)$t['is_deleted'] === 1) continue;
+            if ($p === null || $t === null || (int)$p['is_deleted'] !== 0 || (int)$t['is_deleted'] !== 0) continue; // deleted, or waiting for review
             if ($visible !== null && !in_array((int)$t['category_id'], $visible, true)) continue;
             $results[] = ['post' => $p, 'topic' => $t, 'user' => $users[(int)$p['user_id']] ?? null, 'category' => category_by_id((int)$t['category_id']), 'snippet' => search_snippet((string)$p['body'], $q)];
         }

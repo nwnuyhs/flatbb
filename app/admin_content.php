@@ -37,6 +37,7 @@ function admin_page_categories(): never
             'view_groups' => implode(',', array_map('intval', post_list('view_groups'))),
             'post_groups' => implode(',', array_map('intval', post_list('post_groups'))),
             'is_hidden' => post_int('is_hidden') ? 1 : 0,
+            'review_topics' => post_int('review_topics') ? 1 : 0,
         ];
         $data = hook('admin.category_save', $data, ['id' => $id]);
         if (val('SELECT 1 FROM fb_categories WHERE slug=? AND id<>?', [$slug, $id])) fail(t('Slug already used.'));
@@ -65,7 +66,7 @@ function admin_page_categories(): never
     $html = admin_table([t('ID'), t('Category'), t('Slug'), t('Topics'), t('Sort'), t('Access'), ''], $rows);
     $drawer = null;
     if (($eid = get_int('edit', -1)) >= 0) {
-        $edit = category_by_id($eid) ?? ['id' => 0, 'name' => '', 'slug' => '', 'description' => '', 'parent_id' => 0, 'icon' => '', 'sort' => 10, 'view_groups' => '', 'post_groups' => '', 'is_hidden' => 0];
+        $edit = category_by_id($eid) ?? ['id' => 0, 'name' => '', 'slug' => '', 'description' => '', 'parent_id' => 0, 'icon' => '', 'sort' => 10, 'view_groups' => '', 'post_groups' => '', 'is_hidden' => 0, 'review_topics' => 0];
         $parents = ['0' => t('— none (top level)')];
         foreach (categories() as $c) if ((int)$c['parent_id'] === 0 && (int)$c['id'] !== (int)$edit['id']) $parents[(string)$c['id']] = $c['name'];
         $gv = explode(',', (string)$edit['view_groups']); $gp = explode(',', (string)$edit['post_groups']);
@@ -81,6 +82,7 @@ function admin_page_categories(): never
             . '<div class="form-row"><label>' . t('Who can view') . '</label>' . $vc . '<div class="form-help">' . t('Nothing checked = everyone including guests.') . '</div></div>'
             . '<div class="form-row"><label>' . t('Who can create topics') . '</label>' . $pc . '<div class="form-help">' . t('Nothing checked = any member with the "post" permission.') . '</div></div>'
             . '<div class="form-row">' . checkbox('is_hidden', (int)$edit['is_hidden'] === 1, t('Hidden (admins only)')) . '</div>'
+            . '<div class="form-row">' . checkbox('review_topics', (int)($edit['review_topics'] ?? 0) === 1, t('New topics here need approval')) . '<div class="form-help">' . t('They wait in the review queue until a moderator approves them; replies are not held. Administrators and moderators never wait.') . '</div></div>'
             . region('admin.category.fields', ['category' => $edit], '', false)
             . admin_form_actions(t('Save'), $list_url) . '</form>';
         $drawer = ['title' => (int)$edit['id'] ? (string)$edit['name'] : t('New category'), 'sub' => (int)$edit['id'] ? t('Edit category') : '', 'body' => $body, 'back' => $list_url];
