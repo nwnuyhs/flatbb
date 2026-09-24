@@ -23,7 +23,8 @@ COPY docker/php.ini /usr/local/etc/php/conf.d/flatbb.ini
 COPY docker/apache.conf /etc/apache2/conf-enabled/flatbb.conf
 COPY docker/entrypoint.sh /usr/local/bin/flatbb-entrypoint
 COPY . /usr/src/flatbb
-RUN chmod +x /usr/local/bin/flatbb-entrypoint
+# a Windows checkout may carry CRLF line endings, which a shell script cannot run with
+RUN sed -i 's/\r$//' /usr/local/bin/flatbb-entrypoint && chmod +x /usr/local/bin/flatbb-entrypoint
 
 VOLUME /var/www/html
 EXPOSE 80
