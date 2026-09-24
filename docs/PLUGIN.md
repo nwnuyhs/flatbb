@@ -57,6 +57,7 @@ Register it once with `php flatbb plugin:sync` or Admin → Plugins → "Scan pl
 | `csrf_exempt` | no | Paths from `routes` that authenticate with an API token instead of a browser session (e.g. `['/api/myid/webhook']`). Every other POST is rejected by the dispatcher without a valid CSRF token. |
 
 The manifest is **data**: strings, numbers, booleans, nested arrays and constants only, no calls, variables or expressions. It is read with PHP's tokenizer without executing the file (the admin lists disabled plugins that way, the marketplace validates uploads that way) and cached when the plugin is scanned; `plugin:check` refuses a manifest that cannot be read statically. `plugin:package` writes a `plugin.json` copy into the zip for tools that want the metadata without PHP; you never edit it.
+| `importer` | no | Makes the plugin an importer listed under Admin → Import: `['from' => 'flarum', 'label' => 'Flarum', 'page' => 'run', 'step' => 'myid_step', 'cli' => 'myid_cli']`. See §13b. |
 | `admin_pages` | no | `['key' => ['label' => 'Menu label', 'callback' => 'fn']]` → `/admin/ext/<id>/<key>`. Call `need_admin()` inside. |
 | `settings` | no | Declarative settings; the admin form is generated (see §5). |
 | `assets` | no | `['css' => [...], 'js' => [...]]`, each item a function name returning source, or a file path relative to the plugin dir. Bundled into one file for all plugins. |
@@ -347,6 +348,21 @@ $data = ai_json($r['text']);                    // the first JSON object in the 
 - Treat the answer as untrusted input: check every value against what you allow (a category the writer may post in, a tag that passes `tags_parse()`), and `h()` it like anything else.
 - `purpose` is your plugin id. Filter `ai.request` sees it and may change or refuse a request (quotas, redaction); event `ai.response` reports model and token usage.
 - **Picking a category**: filter `topic.category_missing` (ctx `title`, `body`, `user`) runs when a new topic arrives without one; return a category id. Filter `topic.category_auto` returns true while your plugin can answer, which makes the category optional in the composer. The AI Classify plugin is the example.
+
+## 13b. Importers
+
+An importer brings another forum into a **new, empty** FlatBB forum. The core owns the job, Admin → Import and `php flatbb import <from>`; your plugin reads the source and hands rows to the core's writers, the only code that fills `fb_*` tables with imported content. Name the plugin after its source: `phpbb_importer`, "phpBB Importer". The Flarum Importer is the example.
+
+```php
+'importer' => ['from' => 'phpbb', 'label' => 'phpBB', 'page' => 'run', 'step' => 'phpbb_importer_step', 'cli' => 'phpbb_importer_cli'],
+'admin_pages' => ['run' => ['label' => '', 'callback' => 'phpbb_importer_page']],   // your connect / check page, linked from Admin → Import
+```
+
+- **Start**: your page (or `cli($opts, $out)`) checks the source, then calls `import_start('myid', $phases, $data, $secret)`. `$phases` is the order of work with counts (`[['key' => 'users', 'label' => 'Members', 'total' => 3412], …]`); `$data` is your own state (connection without password, what the source has); `$secret` (a database password) is removed when the job ends. `import_ready()` says whether the forum may receive an import; `import_start()` removes the starter content first.
+- **Step**: `step(array $job): array` runs one batch of `$job['phases'][$job['phase']]` (a few hundred rows), adds to its `done`, keeps its place in `$job['cursor']`, and returns `import_phase_next($job)` when the phase has no rows left. The core runs steps for a few seconds per request from the page (closing it pauses the import) or to the end from the command line; each batch is one transaction with the saved job, so a failed batch is retried from where it stopped. The core adds the Counters and Search index phases at the end.
+- **Writers**: `import_user()` (keeps a bcrypt/argon hash, so members sign in with their old password; a member with the administrator's email becomes that account), `import_group()`, `import_category()`, `import_tag()`, `import_topic()` and `import_post()` (both may keep the source id; `REVIEW_PENDING` puts a post in the review queue), `import_like()`, `import_read()`, `import_copy_file()`. Posts are Markdown: convert the source format in your plugin. `import_note($text)` adds a line to the report.
+- Keep your own maps (old id → new id) in your plugin's tables; clear them on the event `import.reset`, which fires when an import starts. `router.not_found` is the place to redirect the source forum's old addresses. Event `import.done` fires at the end.
+- `import_steps_html($labels, $current)`, `import_stats_html($stats)` and `import_job_html($job, $back)` draw the steps, the numbers found and the progress, the same way for every importer.
 
 ## 14. Translations
 

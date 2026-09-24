@@ -245,7 +245,7 @@ function avatar_field_action(array $user): never
 /** The avatar as an image_field(): round, the letter avatar as its placeholder. */
 function avatar_field(array $user, string $action, int $size = 96): string
 {
-    return image_field('avatar', (string)$user['avatar'], ['action' => $action, 'label' => t('Avatar'), 'accept' => ['jpg', 'jpeg', 'png', 'webp', 'gif'], 'round' => true, 'empty' => avatar(['avatar' => ''] + $user, $size, false)]);
+    return image_field('avatar', (string)$user['avatar'], ['action' => $action, 'label' => t('Avatar'), 'accept' => ['jpg', 'jpeg', 'png', 'webp', 'gif'], 'round' => true, 'empty' => avatar(['avatar' => ''] + $user, $size, false, false)]);
 }
 
 /** Inline SVG icon (24x24, currentColor). Plugins can add icons via hook icon.paths. */
@@ -345,8 +345,11 @@ function icon_paths(): array
     ] + icon_paths_more(); // core/icons.php: the rest of the built-in set
 }
 
-/** Avatar image or letter fallback. $user needs id, username, avatar (and display_name for the letter and the tooltip). */
-function avatar(?array $user, int $size = 32, bool $link = true): string
+/**
+ * Avatar image or letter fallback. $user needs id, username, avatar (and display_name for the letter and the tooltip).
+ * $marks = false leaves out the online dot and the plugins' corner marks (a picture field's placeholder).
+ */
+function avatar(?array $user, int $size = 32, bool $link = true, bool $marks = true): string
 {
     $name = $user !== null ? user_name($user) : '?';
     $cls = 'avatar avatar-' . $size;
@@ -357,6 +360,7 @@ function avatar(?array $user, int $size = 32, bool $link = true): string
         $hue = $name === '?' ? 0 : crc32(mb_strtolower((string)($user['username'] ?? $name))) % 360; // the colour stays when the display name changes
         $img = '<span class="' . $cls . ' avatar-letter" style="' . $style . ';--hue:' . $hue . '">' . h(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>';
     }
+    if (!$marks) return $img;
     $online = $user !== null && user_online($user);
     if ($online) $img .= '<i class="online-dot" style="' . $style . '" title="' . h(t('Online')) . '"></i>';
     $mark = $user !== null ? (string)hook('user.avatar_after', '', ['user' => $user, 'size' => $size]) : ''; // a plugin's corner mark (a verified badge)

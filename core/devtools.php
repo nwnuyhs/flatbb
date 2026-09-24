@@ -96,7 +96,7 @@ function plugin_package(string $id): string
         $zip->addFile($f->getPathname(), $id . '/' . $rel);
     }
     // by-product for tools and services that read metadata without PHP; plugin.php stays the source of truth
-    $meta = array_intersect_key($r['manifest'], array_flip(['id', 'type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'assets', 'csrf_exempt', 'tokens', 'screenshot']));
+    $meta = array_intersect_key($r['manifest'], array_flip(['id', 'type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'assets', 'csrf_exempt', 'tokens', 'screenshot', 'importer']));
     $zip->addFromString($id . '/plugin.json', json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
     $zip->close();
     return $file;
@@ -301,7 +301,7 @@ function lang_keys(): array
     foreach ($files as $file) {
         $src = (string)@file_get_contents($file);
         if (preg_match_all('/\bt\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/', $src, $m, PREG_SET_ORDER)) {
-            foreach ($m as $hit) $keys[str_replace("\\'", "'", $hit[1] !== '' ? $hit[1] : ($hit[2] ?? ''))] = true;
+            foreach ($m as $hit) $keys[$hit[1] !== '' ? str_replace("\\'", "'", $hit[1]) : stripcslashes($hit[2] ?? '')] = true; // "…\n…" is a real line break, as t() receives it
         }
     }
     unset($keys[''], $keys['...']);

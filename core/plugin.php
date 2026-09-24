@@ -193,7 +193,7 @@ function plugin_sync(): array
         $m = $enabled ? plugin_read_manifest($id) : plugin_peek($id);
         if ($m === null) continue;
         $found[$id] = $m;
-        $snapshot = array_intersect_key($m, array_flip(['type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'tokens', 'screenshot']));
+        $snapshot = array_intersect_key($m, array_flip(['type', 'name', 'version', 'description', 'author', 'url', 'requires', 'hooks', 'routes', 'admin_pages', 'cron', 'settings', 'tokens', 'screenshot', 'importer']));
         $existing = plugins()[$id] ?? null;
         // files changed underneath an installed plugin (scan, zip upload, core upgrade): run its install routine for the new version now,
         // because the version stored below is what plugin_enable() compares against later

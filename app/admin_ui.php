@@ -28,6 +28,7 @@ function admin_menu_items(string $active): array
         'plugins' => ['label' => t('Plugins'), 'icon' => 'puzzle', 'group' => t('System')],
         'updates' => ['label' => t('Updates'), 'icon' => 'download', 'group' => t('System'), 'badge' => upgrade_available() ? t('new') : ''],
         'cron' => ['label' => t('Scheduled jobs'), 'icon' => 'clock', 'group' => t('System')],
+        'import' => ['label' => t('Import'), 'icon' => 'upload', 'group' => t('System')],
         'tools' => ['label' => t('Tools'), 'icon' => 'terminal', 'group' => t('System')],
     ];
     foreach ($items as $k => &$it) { $it['url'] = admin_url($k); $it['active'] = $k === $active; }

@@ -35,6 +35,8 @@ Regions are filters named `region.<position>` whose value is HTML (or an array f
 | `editor.options` | filter |  | `app/views/editor.php` |
 | `feed.topics` | filter |  | `app/api.php` |
 | `icon.paths` | filter | Add SVG icons: name => path markup. | `core/icons.php` |
+| `import.done` | event |  | `core/import.php` |
+| `import.reset` | event |  | `core/import.php` |
 | `link.previewable` | filter | Filter: whether a link may get a preview card (bool; ctx url, host). Return false to keep a link a link, e.g. when your plugin shows its own player for that site. | `core/links.php` |
 | `mail.send` | filter |  | `core/helpers.php` |
 | `markdown.after` | filter | Rendered HTML of a post. | `core/markdown.php` |

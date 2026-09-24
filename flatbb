@@ -24,6 +24,7 @@
  *   php flatbb schema:upgrade          create missing tables/columns/indexes
  *   php flatbb admin:password <user> <newpass>
  *   php flatbb migrate:import <file.sqlite>   copy all data from a SQLite database into the current (MySQL) database
+ *   php flatbb import [from] [--options]      import another forum through its importer plugin (Admin → Import); without from: list them. --cancel stops a job
  *   php flatbb upgrade:check           show the latest release on the marketplace
  *   php flatbb upgrade [file.zip]      upgrade the core in place (downloads the latest release when no file is given)
  *   php flatbb release                 maintainers: build dist/flatbb-<version>.zip and print its sha256
@@ -128,6 +129,10 @@ switch ($cmd) {
         foreach ($r['skipped'] as $t => $why) $out('  skipped ' . $t . ': ' . $why);
         $out('done in ' . $r['seconds'] . 's, ' . count($r['tables']) . ' tables. Copy uploads/ and plugins/ manually if you have not yet.');
         break;
+    case 'import':
+        $opts = [];
+        foreach ($flags as $f) { [$k, $v] = array_pad(explode('=', substr($f, 2), 2), 2, '1'); $opts[$k] = $v; }
+        exit(import_cli((string)($args[0] ?? ''), $opts, $out));
     case 'upgrade:check':
         $i = upgrade_check(true);
         if (!empty($i['error'])) exit('check failed: ' . $i['error'] . "\n");

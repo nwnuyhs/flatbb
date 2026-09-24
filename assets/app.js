@@ -908,6 +908,32 @@
       if ((document.documentElement.getAttribute('dir') === 'rtl' ? -dx : dx) < -60) document.body.classList.remove('drawer-open');
     });
   })();
+  /* ---------- Admin → Import: a running job goes on in slices while the page is open; the bars follow ---------- */
+  $$('[data-import="running"]').forEach(function (box) {
+    var fails = 0;
+    function draw(job) {
+      job.phases.forEach(function (p, i) {
+        var row = box.querySelector('.import-phase[data-key="' + p.key + '"]');
+        if (!row) return;
+        var past = i < job.phase, pct = past ? 100 : (p.total > 0 ? Math.min(100, Math.floor(p.done * 100 / p.total)) : 0);
+        row.querySelector('.import-bar i').style.width = pct + '%';
+        var n = row.querySelector('.import-count');
+        if (p.total > 0) n.textContent = p.done.toLocaleString() + ' / ' + p.total.toLocaleString();
+        else if (past && p.done > 0) n.textContent = p.done.toLocaleString();
+      });
+    }
+    function step() {
+      var fd = new FormData(); fd.append('action', 'step'); fd.append('_token', FB.csrf);
+      request(box.getAttribute('data-url'), { method: 'POST', body: fd }).then(function (res) {
+        if (!res.ok) { if (++fails > 3) { toast(res.error || FB.i18n.failed, 'error'); return; } setTimeout(step, 3000); return; }
+        fails = 0;
+        draw(res.job);
+        if (res.job.status !== 'running') { window.location.reload(); return; }
+        setTimeout(step, res.job.busy ? 2000 : 200); // busy: the command line or another tab is running it
+      }).catch(function () { if (++fails <= 3) setTimeout(step, 3000); }); // a dropped connection: try again a few times
+    }
+    step();
+  });
   // next tick: the plugin bundle is a deferred script after this one, so its listeners exist by then
   setTimeout(function () { document.dispatchEvent(new CustomEvent('fb:ready')); }, 0);
 })();

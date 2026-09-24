@@ -13,7 +13,7 @@ function admin_index(string $page = 'dashboard'): never
     $fn = 'admin_page_' . str_replace('-', '_', $page);
     if (!preg_match('/^[a-z][a-z0-9-]*$/', $page) || !function_exists($fn)) not_found();
     $leaving_preview = $page === 'themes' && is_post() && post_str('action', 20) === 'preview_exit'; // the preview bar's Exit only clears a cookie
-    if (in_array($page, ['settings', 'users', 'groups', 'plugins', 'themes', 'tools', 'layout', 'widgets', 'menus', 'updates', 'points'], true) && !$leaving_preview) need_sudo(); // confirm mode: password re-entered within the window set in Settings → Security
+    if (in_array($page, ['settings', 'users', 'groups', 'plugins', 'themes', 'tools', 'layout', 'widgets', 'menus', 'updates', 'points', 'import'], true) && !$leaving_preview) need_sudo(); // confirm mode: password re-entered within the window set in Settings → Security
     $fn();
 }
 

@@ -2,6 +2,13 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.2.1
+
+- **Importers** (core/import.php, Admin → Import): a plugin with the manifest key `importer` brings another forum into a new, empty FlatBB forum, from its own page or with `php flatbb import <from>`. The core keeps the job and runs the importer's `step` callback in short slices; the writers `import_user()`, `import_category()`, `import_tag()`, `import_topic()`, `import_post()`, `import_like()`, `import_read()` fill the forum, and the Counters and Search index phases finish it. Events `import.reset` and `import.done`. See "Importers" in the plugin guide. The first one is the Flarum Importer on the marketplace.
+- `avatar($user, $size, $link, $marks)`: `$marks = false` leaves out the online dot and the corner marks of `user.avatar_after` (the empty avatar field used to show a verified mark on a blank picture). The online dot now grows with the avatar up to 13 px.
+- **Simplified Chinese** language pack (`lang/zh-cn.php`). Language packs: strings in double quotes with `\n` inside (the three email bodies) are now read with real line breaks by `php flatbb lang:sync`, so their translations are used; they had always been sent in English before.
+- A text shown through `t()` that is not written as `t('…')` in the code (a phase label, a review reason) is listed in a comment as `t('…')` so `lang:sync` keeps it in the packs.
+
 ## 0.2.0
 
 - **Review queue** (app/review.php): a new topic or reply can wait for a moderator before anyone else sees it. It is stored at once with `is_deleted = 2` (`REVIEW_PENDING`; 0 shown, 1 deleted), so **every query that asks for `is_deleted = 0` already leaves it out**, in core and in plugins. Treat `is_deleted` as "not 0 = not public": a check written as `=== 1` lets a waiting post through; `content_visible($row)` answers for the current user (its author and moderators see a waiting post). What a post sets off when it goes public now waits for the approval: counts, search, @mentions and reply notifications, `topic.after_save` / `post.after_save` (new), points and link previews run in `topic_go_public($tid)` / `post_go_public($pid)`, at once for most posts and on approval for a held one — a plugin listening to those events keeps working and never hears of a post nobody may see yet.

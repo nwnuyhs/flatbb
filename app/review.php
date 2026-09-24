@@ -25,7 +25,7 @@ function review_hold_reason(string $kind, int $user_id, int $category_id, string
     $group = group_by_id((int)$user['group_id']);
     if ($group !== null && ((int)$group['is_admin'] === 1 || (int)$group['is_mod'] === 1)) return '';
     $cat = category_by_id($category_id);
-    $why = '';
+    $why = ''; // English source text, shown through t() in the queue: t('New topics in this category need approval') t('First posts of a new member')
     if ($kind === 'topic' && $cat !== null && (int)($cat['review_topics'] ?? 0) === 1) $why = 'New topics in this category need approval';
     $first = max(0, (int)setting('review_first_posts', '0'));
     if ($why === '' && $first > 0 && !review_trusted($user) && (int)$user['topic_count'] + (int)$user['post_count'] < $first) $why = 'First posts of a new member';
