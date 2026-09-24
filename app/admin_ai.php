@@ -15,6 +15,12 @@ function admin_ai_settings(array $sections): never
 {
     $back = admin_url('settings', ['section' => 'ai']);
     if (is_post()) {
+        if (post_str('do', 10) !== '') { // Remove / Undo on a saved key, at once (secret_field())
+            $field = post_str('field', 60);
+            $keys = array_map(static fn(int $n): string => ai_setting_name($n, 'key'), range(1, AI_SLOTS));
+            if (!in_array($field, $keys, true)) json_error(t('Request failed.'));
+            field_action('setting:' . $field, setting($field), static function (string $v) use ($field): void { save_settings([$field => $v]); admin_log('settings', 'ai', $field); }, null, t('API key'));
+        }
         $save = ['ai_timeout' => (string)max(5, min(120, post_int('ai_timeout')))];
         for ($n = 1; $n <= AI_SLOTS; $n++) {
             $provider = post_str(ai_setting_name($n, 'provider'), 20);
@@ -48,8 +54,7 @@ function admin_ai_settings(array $sections): never
         $body = form_row(t('AI service'), select($name('provider'), admin_ai_providers(), setting($name('provider'), '')))
             . form_row(t('API address'), input($name('base_url'), setting($name('base_url'), '')), h(t('Empty: the service default (https://api.openai.com/v1 or https://api.anthropic.com). DeepSeek: https://api.deepseek.com, a local Ollama: http://127.0.0.1:11434/v1.')))
             . form_row(t('Model'), input($name('model'), setting($name('model'), '')), h(t('e.g. gpt-4o-mini, deepseek-chat, qwen-plus, claude-haiku-4-5. A small, cheap model is enough for tagging.')))
-            . form_row(t('API key'), input($name('key'), '', ['type' => 'password', 'autocomplete' => 'new-password', 'placeholder' => $key !== '' ? t('Saved; leave empty to keep it') : ''])
-                . ($key !== '' ? '<div class="form-row" style="margin:6px 0 0">' . checkbox($name('key') . '_clear', false, t('Remove the saved key')) . '</div>' : ''), h(t('Stays on the server and is never shown again.')))
+            . form_row(t('API key'), secret_field($name('key'), $key, ['action' => $back]), h(t('Stays on the server and is never shown again.')))
             . '<div class="form-actions" style="margin-top:4px">'
             . (isset($ready[$n]) ? '<button type="submit" class="btn btn-sm" name="ai_test" value="' . $n . '">' . icon('check') . t('Save and test') . '</button>' : '')
             . ($n > 1 ? ' <button type="submit" class="btn btn-sm" name="ai_up" value="' . $n . '">' . icon('arrow-up') . t('Move up') . '</button>' : '')

@@ -178,6 +178,24 @@ function redirect(string $url, int $status = 302): never
     exit;
 }
 
+/**
+ * The value a removal replaced, kept on the server for a minute so the toast's Undo can bring it back (field_action()).
+ * $scope names what was removed ("setting:site_favicon", "avatar:12"); the value never goes to the browser.
+ */
+function undo_keep(string $scope, string $value): void
+{
+    @file_put_contents(CACHE_DIR . '/undo-' . sha1(uid() . '|' . $scope) . '.json', json_encode_value(['v' => $value, 't' => now()]), LOCK_EX);
+}
+
+/** Take back what undo_keep() kept for this member and scope, once, within a minute; null when it is gone. */
+function undo_take(string $scope): ?string
+{
+    $file = CACHE_DIR . '/undo-' . sha1(uid() . '|' . $scope) . '.json';
+    $data = is_file($file) ? json_decode((string)file_get_contents($file), true) : null;
+    @unlink($file);
+    return is_array($data) && now() - (int)($data['t'] ?? 0) <= 60 ? (string)($data['v'] ?? '') : null;
+}
+
 /** Flash message stored in a short-lived cookie (no server sessions). */
 function flash(string $message, string $type = 'success'): void
 {
@@ -281,6 +299,10 @@ function setting_defaults(): array
         'site_tagline' => 'A flat, lightweight forum',
         'site_description' => '',
         'site_logo' => '',
+        'site_logo_dark' => '',
+        'site_icon' => '',
+        'logo_style' => '',
+        'logo_phone_name' => '0',
         'site_favicon' => '',
         'site_lang' => '',
         'site_tz' => 'UTC',
@@ -288,6 +310,9 @@ function setting_defaults(): array
         'plugin_sync_pending' => '',
         'per_page' => '25',
         'list_paging' => 'pages',
+        'link_preview' => '1',
+        'link_preview_posts' => '1',
+        'link_preview_block' => '',
         'category_bar' => 'mobile',
         'category_required' => '1',
         'default_category' => '0',

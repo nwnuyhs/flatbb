@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 define('FLATBB', true);
-define('FLATBB_VERSION', '0.1.97');
+define('FLATBB_VERSION', '0.1.98');
 const TOPIC_NEW_FOR = 86400; // a topic wears the "New" mark for its first day
 define('ROOT', dirname(__DIR__));
 define('CORE_DIR', ROOT . '/core');
@@ -72,7 +72,7 @@ set_exception_handler(static function (Throwable $e): void {
     exit;
 });
 
-foreach (['helpers', 'db', 'schema', 'lang', 'auth', 'security', 'verify', 'hook', 'manifest', 'plugin', 'theme', 'theme_dev', 'icons', 'render', 'markdown', 'upload', 'ai', 'search', 'cron', 'router', 'points', 'devtools', 'migrate', 'upgrade'] as $file) {
+foreach (['helpers', 'db', 'schema', 'lang', 'auth', 'security', 'verify', 'hook', 'manifest', 'plugin', 'theme', 'theme_dev', 'icons', 'render', 'markdown', 'upload', 'ai', 'links', 'search', 'cron', 'router', 'points', 'devtools', 'migrate', 'upgrade'] as $file) {
     require CORE_DIR . '/' . $file . '.php';
 }
 

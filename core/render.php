@@ -119,6 +119,135 @@ function logo_mark(int $size = 28, string $class = ''): string
         . '<circle cx="43" cy="45" r="5.5" fill="#fff"/></svg>';
 }
 
+/**
+ * How the header shows the site (Admin → Settings → General → Logo): icon (the icon and the site name), image (the
+ * uploaded logo) or name (the name alone). Unset, a site with an uploaded logo keeps showing it; "image" without an
+ * uploaded logo falls back to the icon.
+ */
+function logo_style(): string
+{
+    $style = setting('logo_style', '');
+    if ($style === 'image' && setting('site_logo') === '') return 'icon';
+    if (in_array($style, ['icon', 'image', 'name'], true)) return $style;
+    return setting('site_logo') !== '' ? 'image' : 'icon';
+}
+
+/** The site's icon: the uploaded square icon, or the default mark. */
+function site_icon_html(int $size = 28): string
+{
+    $icon = setting('site_icon');
+    return $icon !== '' ? '<img class="logo-icon" src="' . h(upload_url($icon)) . '" width="' . $size . '" height="' . $size . '" alt="">' : logo_mark($size);
+}
+
+/**
+ * The header's link home in the chosen style. The full logo swaps to its dark version on dark themes, and on phones
+ * gives way to the icon when there is one; the name next to the icon hides on phones unless the admin keeps it.
+ */
+function site_logo_html(): string
+{
+    $site = h(setting('site_name'));
+    $style = logo_style();
+    $cls = 'logo logo-' . $style;
+    if ($style === 'image') {
+        $dark = setting('site_logo_dark');
+        $inner = '<img class="logo-img' . ($dark !== '' ? ' has-dark' : '') . '" src="' . h(upload_url(setting('site_logo'))) . '" alt="' . $site . '">'
+            . ($dark !== '' ? '<img class="logo-img-dark" src="' . h(upload_url($dark)) . '" alt="' . $site . '">' : '');
+        if (setting('site_icon') !== '') {
+            $inner .= '<span class="logo-phone">' . site_icon_html() . '</span>';
+            $cls .= ' has-phone';
+        }
+    } elseif ($style === 'name') {
+        $inner = '<span class="logo-text">' . $site . '</span>';
+    } else {
+        $inner = site_icon_html() . '<span class="logo-text' . (setting('logo_phone_name', '0') === '1' ? ' keep' : '') . '">' . $site . '</span>';
+    }
+    return '<a class="' . $cls . '" href="' . h(url('/')) . '">' . $inner . '</a>';
+}
+
+/**
+ * A picture setting: the picture (or $opts['empty'], a placeholder), Upload / Replace and Remove. With $opts['action']
+ * (a URL answering field_action()) a picked file is saved at once and Remove acts at once with an Undo; without
+ * JavaScript the file goes with the form and a Remove box does the rest ($name . '_remove').
+ * $opts: action, accept (extensions), label (for the toasts), empty (placeholder HTML), wide, url (the picture's own URL
+ * when $value is not an upload path), attr (extra attributes for the file input).
+ */
+function image_field(string $name, string $value, array $opts = []): string
+{
+    $empty = (string)($opts['empty'] ?? icon('image'));
+    $url = (string)($opts['url'] ?? ($value !== '' ? upload_url($value) : ''));
+    $accept = implode(',', array_map(static fn(string $e): string => '.' . $e, (array)($opts['accept'] ?? ['png', 'jpg', 'jpeg', 'webp', 'gif'])));
+    $attr = ['type' => 'file', 'accept' => $accept] + (array)($opts['attr'] ?? []);
+    return '<div class="image-field' . (!empty($opts['wide']) ? ' wide' : '') . (!empty($opts['round']) ? ' round' : '') . ($url === '' ? ' is-empty' : '') . '" data-image-field data-name="' . h($name) . '"'
+        . (!empty($opts['action']) ? ' data-action="' . h((string)$opts['action']) . '"' : '') . '>'
+        . '<template>' . $empty . '</template><span class="image-field-thumb">' . ($url !== '' ? '<img src="' . h($url) . '" alt="">' : $empty) . '</span>'
+        . '<span class="image-field-btns"><label class="btn btn-sm">' . icon('upload') . '<span class="if-upload">' . t('Upload') . '</span><span class="if-replace">' . t('Replace') . '</span>' . input($name, '', $attr + ['class' => 'image-field-input']) . '</label>'
+        . '<button type="button" class="btn btn-sm btn-ghost danger if-remove" data-field-remove>' . icon('trash') . t('Remove') . '</button>'
+        . ($url !== '' ? '<noscript>' . checkbox($name . '_remove', false, t('Remove')) . '</noscript>' : '') . '</span></div>';
+}
+
+/**
+ * A saved key: "Saved · ends in …ab12" with Change and Remove (at once, with an Undo, through $opts['action']), or the
+ * input when none is saved or Change was pressed. A new key goes with the form's Save; empty keeps the saved one.
+ */
+function secret_field(string $name, string $saved, array $opts = []): string
+{
+    $tail = strlen($saved) >= 12 ? t('Saved · ends in …%s', substr($saved, -4)) : t('Saved');
+    return '<div class="secret-field' . ($saved === '' ? ' is-empty' : '') . '" data-secret-field data-name="' . h($name) . '"' . (!empty($opts['action']) ? ' data-action="' . h((string)$opts['action']) . '"' : '') . '>'
+        . '<div class="secret-saved"><span class="secret-dot"></span><span>' . h($tail) . '</span><span class="secret-btns"><button type="button" class="btn btn-sm" data-secret-change>' . icon('edit') . t('Change') . '</button>'
+        . '<button type="button" class="btn btn-sm btn-ghost danger" data-field-remove>' . icon('trash') . t('Remove') . '</button></span></div>'
+        . '<div class="secret-input">' . input($name, '', ['type' => 'password', 'autocomplete' => 'new-password', 'placeholder' => (string)($opts['placeholder'] ?? '')]) . '<button type="button" class="btn btn-sm btn-ghost" data-secret-cancel>' . t('Cancel') . '</button></div>'
+        . ($saved !== '' ? '<noscript>' . checkbox($name . '_clear', false, t('Remove the saved key')) . '</noscript>' : '') . '</div>';
+}
+
+/**
+ * The server half of image_field() / secret_field(): POST do = upload (the file in "file") | remove | restore. $store
+ * writes the new value ('' removes); $upload returns the stored path of the uploaded file (RuntimeException: its message
+ * is shown); $scope keys the Undo. Answers JSON: ok, message, url (pictures).
+ */
+function field_action(string $scope, string $current, callable $store, ?callable $upload, string $label): never
+{
+    $url = static fn(string $v): string => $upload !== null && $v !== '' ? upload_url($v) : '';
+    switch (post_str('do', 10)) {
+        case 'upload':
+            if ($upload === null) json_error(t('Request failed.'));
+            try { $value = (string)$upload(); } catch (RuntimeException $e) { json_error($e->getMessage()); }
+            $store($value);
+            json_ok(['url' => $url($value), 'message' => t('%s saved.', $label)]);
+        case 'remove':
+            if ($current === '') json_error(t('There is nothing to remove.'));
+            undo_keep($scope, $current);
+            $store('');
+            json_ok(['message' => t('%s removed.', $label), 'undo' => true]);
+        case 'restore':
+            $old = undo_take($scope);
+            if ($old === null || $old === '') json_error(t('It is too late to undo.'));
+            $store($old);
+            json_ok(['url' => $url($old), 'message' => t('%s restored.', $label)]);
+    }
+    json_error(t('Request failed.'));
+}
+
+/** field_action() for a member's avatar: $user's picture, saved or removed at once; the letter avatar when empty. */
+function avatar_field_action(array $user): never
+{
+    $id = (int)$user['id'];
+    field_action('avatar:' . $id, (string)$user['avatar'], static function (string $v) use ($id): void {
+        db_update('fb_users', ['avatar' => $v], 'id=?', [$id]);
+        fire('user.after_save', ['user_id' => $id]);
+    }, static function () use ($id): string {
+        $f = (array)($_FILES['file'] ?? []);
+        if ((int)($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) throw new RuntimeException(t('No file received or the file is too large.'));
+        if ((int)$f['size'] > 4 * 1048576) throw new RuntimeException(t('Avatar must be smaller than 4 MB.'));
+        return avatar_store($id, (string)$f['tmp_name']);
+    }, t('Avatar'));
+}
+
+/** The avatar as an image_field(): round, the letter avatar as its placeholder. */
+function avatar_field(array $user, string $action, int $size = 96): string
+{
+    return image_field('avatar', (string)$user['avatar'], ['action' => $action, 'label' => t('Avatar'), 'accept' => ['jpg', 'jpeg', 'png', 'webp', 'gif'], 'round' => true, 'empty' => avatar(['avatar' => ''] + $user, $size, false)]);
+}
+
 /** Inline SVG icon (24x24, currentColor). Plugins can add icons via hook icon.paths. */
 /**
  * Address of a core asset (app.css, app.js) with a version that changes whenever the file's content changes, so browsers

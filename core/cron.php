@@ -14,6 +14,7 @@ function cron_jobs(): array
         'core.cleanup' => ['callback' => 'cron_cleanup', 'interval' => 86400, 'plugin' => ''],
         'core.stats' => ['callback' => 'cron_stats', 'interval' => 300, 'plugin' => ''],
         'core.update_check' => ['callback' => 'cron_update_check', 'interval' => 86400, 'plugin' => ''],
+        'core.link_previews' => ['callback' => 'link_fetch_job', 'interval' => 60, 'plugin' => ''],
     ];
     foreach (plugin_manifests() as $id => $m) {
         foreach ((array)($m['cron'] ?? []) as $name => $job) {

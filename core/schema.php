@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 9; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 10; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -125,6 +125,20 @@ function schema_tables(): array
             'topic_id' => 'uint',
             'created_at' => 'uint',
         ],
+        'fb_link_previews' => [      // core/links.php: one row per linked page, status 0 queued, 1 ready, 2 failed
+            'id' => 'id',
+            'url_hash' => 'key',       // sha1 of the url without its fragment
+            'url' => 'text',
+            'status' => 'uint',
+            'title' => 'string',
+            'description' => 'text',
+            'image' => 'text',
+            'site_name' => 'string',
+            'card' => 'string',        // large | small | text
+            'tries' => 'uint',
+            'fetched_at' => 'uint',
+            'created_at' => 'uint',
+        ],
         'fb_bookmarks' => [
             'id' => 'id',
             'user_id' => 'uint',
@@ -242,6 +256,8 @@ function schema_indexes(): array
         ['fb_likes', 'ux_likes', ['user_id', 'post_id'], true],
         ['fb_likes', 'ix_likes_post', ['post_id']],
         ['fb_bookmarks', 'ux_bookmarks', ['user_id', 'topic_id'], true],
+        ['fb_link_previews', 'ux_link_previews_hash', ['url_hash'], true],
+        ['fb_link_previews', 'ix_link_previews_status', ['status', 'fetched_at']],
         ['fb_topic_reads', 'ux_topic_reads', ['user_id', 'topic_id'], true],
         ['fb_notifications', 'ix_notifications_user', ['user_id', 'is_read', 'id']],
         ['fb_attachments', 'ix_attachments_post', ['post_id']],

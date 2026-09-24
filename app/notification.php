@@ -4,13 +4,19 @@
  * cached on fb_users.unread_notifications so the header badge costs no extra query.
  */
 
-/** Whether the member wants this kind of notification (Settings → Preferences). Kinds without a preference are always sent. */
+/**
+ * Whether the member wants this kind of notification (Settings → Preferences): the preference notify_<kind> set to 0 turns
+ * a kind off, so a plugin's own kind gets a switch by saving that key (user.prefs_save). Kinds nobody switched off are sent.
+ */
 function notify_wanted(int $to, string $kind): bool
 {
-    $key = ['reply' => 'notify_reply', 'mention' => 'notify_mention'][$kind] ?? '';
-    if ($key === '') return true;
     $u = user_by_id($to); // request-cached: a page full of mentions reads each member once
-    return $u === null || (int)(json_decode_array((string)$u['prefs'])[$key] ?? 1) === 1;
+    return $u === null || notify_pref_on((string)$u['prefs'], $kind);
+}
+
+function notify_pref_on(string $prefs, string $kind): bool
+{
+    return (int)(json_decode_array($prefs)['notify_' . $kind] ?? 1) === 1;
 }
 
 /** Create a notification. Returns false when suppressed (self, duplicate, preference, hook veto). */
@@ -24,6 +30,37 @@ function notify(int $to, int $from, string $kind, string $content = '', int $top
     db_increment('fb_users', 'unread_notifications', 1, 'id=?', [$to]);
     fire('notification.after_create', ['id' => $id] + $data);
     return true;
+}
+
+/**
+ * Notify many members of the same thing (a new topic for everyone who follows its author) in a few queries: recipients are
+ * read 100 at a time (active accounts that did not switch the kind off), written with one INSERT per 100 and their unread
+ * counts raised with one UPDATE each. The filter notification.before_create runs for every recipient (no DB there);
+ * notification.after_create_many fires once. Returns how many were notified.
+ */
+function notify_many(array $to, int $from, string $kind, string $content = '', int $topic_id = 0, int $post_id = 0): int
+{
+    $ids = array_values(array_filter(array_unique(array_map('intval', $to)), static fn(int $id): bool => $id > 0 && $id !== $from));
+    $content = cut($content, 500, '');
+    $done = [];
+    foreach (array_chunk($ids, 100) as $chunk) {
+        $rows = [];
+        foreach (all('SELECT id, prefs FROM fb_users WHERE status=1 AND id IN (' . sql_marks(count($chunk)) . ')', $chunk) as $u) {
+            if (!notify_pref_on((string)$u['prefs'], $kind)) continue;
+            $data = hook('notification.before_create', ['user_id' => (int)$u['id'], 'from_user_id' => $from, 'kind' => $kind, 'content' => $content, 'topic_id' => $topic_id, 'post_id' => $post_id], ['many' => true]);
+            if (is_array($data)) $rows[] = $data + ['is_read' => 0, 'created_at' => now()];
+        }
+        if ($rows === []) continue;
+        $cols = array_keys($rows[0]);
+        $params = [];
+        foreach ($rows as $r) foreach ($cols as $c) $params[] = $r[$c] ?? '';
+        q('INSERT INTO fb_notifications (`' . implode('`,`', $cols) . '`) VALUES ' . implode(',', array_fill(0, count($rows), '(' . sql_marks(count($cols)) . ')')), $params);
+        $uids = array_map(static fn(array $r): int => (int)$r['user_id'], $rows);
+        q('UPDATE fb_users SET unread_notifications=unread_notifications+1 WHERE id IN (' . sql_marks(count($uids)) . ')', $uids);
+        array_push($done, ...$uids);
+    }
+    if ($done !== []) fire('notification.after_create_many', ['user_ids' => $done, 'from_user_id' => $from, 'kind' => $kind, 'topic_id' => $topic_id, 'post_id' => $post_id]);
+    return count($done);
 }
 
 function notify_reply(array $topic, int $post_id, int $from, int $reply_to_id): void

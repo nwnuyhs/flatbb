@@ -57,9 +57,7 @@ foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>
       <?= form_row(t('Location'), input('location', (string)$user['location'])) ?>
     <?php elseif ($tab === 'avatar'): ?>
-      <div class="form-row"><?= avatar($user, 96, false) ?></div>
-      <?= form_row(t('Upload a new avatar'), input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It will be cropped to a square.')) ?>
-      <?php if ($user['avatar'] !== ''): ?><div class="form-row"><?= checkbox('remove', false, t('Remove current avatar')) ?></div><?php endif; ?>
+      <?= form_row(t('Avatar'), raw(avatar_field($user, url('/settings/avatar'))), t('JPG, PNG or WebP, up to 4 MB. It will be cropped to a square.') . ' ' . t('Changes to the picture are saved at once.')) ?>
     <?php elseif ($tab === 'password'): ?>
       <?php if ((string)$user['password'] === ''): ?><p class="muted"><?= t('You signed up through a connected account. Set a password to sign in with it as well.') ?></p><?php else: ?><?= form_row(t('Current password'), input('old_password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])) ?><?php endif; ?>
       <?= form_row(t('New password'), input('password', '', ['type' => 'password', 'required' => true, 'minlength' => 8, 'autocomplete' => 'new-password'])) ?>

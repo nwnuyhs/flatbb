@@ -56,9 +56,7 @@ $unread = notifications_unread();
 <header class="topbar" data-slot="header">
   <div class="container topbar-inner">
     <?php if ($has_left): ?><button class="icon-btn drawer-toggle" type="button" aria-label="<?= t('Menu') ?>" data-toggle="drawer"><?= icon('menu') ?></button><?php endif; ?>
-    <a class="logo" href="<?= h(url('/')) ?>">
-      <?php if (setting('site_logo') !== ''): ?><img src="<?= h(upload_url(setting('site_logo'))) ?>" alt="<?= h($site) ?>"><?php else: ?><?= logo_mark() ?><span class="logo-text"><?= h($site) ?></span><?php endif; ?>
-    </a>
+    <?= raw(site_logo_html()) ?>
     <?= region('header.left') ?>
     <nav class="topnav" data-slot="header.nav">
       <?php foreach ($nav as $item): ?><a href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['active']) ? ' class="active"' : '' ?><?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($item['icon']) ? icon_any((string)$item['icon']) : '' ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?>
@@ -71,7 +69,7 @@ $unread = notifications_unread();
 <div class="container page-grid">
   <?php if ($has_left): ?><aside class="col-left" data-slot="sidebar.left">
     <?php if (me() === null): [$qp, $qp_langs] = quick_prefs_html(); // a visitor's theme and language on phones: the first row of the drawer ?>
-    <div class="drawer-quick"><?= raw(logo_mark(26)) ?><?= raw($qp) ?></div><?= raw($qp_langs) ?>
+    <div class="drawer-quick"><?= raw(site_icon_html(26)) ?><?= raw($qp) ?></div><?= raw($qp_langs) ?>
     <?php endif; ?>
     <?php $drawer_nav = array_filter($nav, static fn($it): bool => is_array($it) && !in_array((string)($it['url'] ?? ''), request_cache('left_nav_urls') ?? [], true)); // the left menu below already has the others ?>
     <?php if ($drawer_nav !== []): ?><nav class="side-nav drawer-nav" aria-label="<?= t('Site') ?>"><?php foreach ($drawer_nav as $item): ?><a class="side-link<?= !empty($item['active']) ? ' active' : '' ?>" href="<?= h((string)($item['url'] ?? '#')) ?>"<?= !empty($item['new_tab']) ? ' target="_blank" rel="noopener"' : '' ?>><?= icon_any((string)($item['icon'] ?? 'external')) ?><span><?= h((string)($item['label'] ?? '')) ?></span></a><?php endforeach; ?></nav><?php endif; ?>
@@ -95,7 +93,7 @@ $unread = notifications_unread();
   </div>
 </footer>
 <div class="drawer-backdrop" data-toggle="drawer"></div>
-<script nonce="<?= h(csp_nonce()) ?>">window.FB=<?= json_encode_value(['base' => base_path(), 'csrf' => csrf_token(), 'uid' => uid(), 'rewrite' => rewrite_enabled(), 'api' => url('/api/preview'), 'upload' => url('/upload'), 'users' => url('/api/users'), 'i18n' => ['confirm' => t('Are you sure?'), 'uploading' => t('Uploading…'), 'failed' => t('Request failed.'), 'copied' => t('Link copied'), 'nothing' => t('Nothing to preview.')]]) ?></script>
+<script nonce="<?= h(csp_nonce()) ?>">window.FB=<?= json_encode_value(['base' => base_path(), 'csrf' => csrf_token(), 'uid' => uid(), 'rewrite' => rewrite_enabled(), 'api' => url('/api/preview'), 'upload' => url('/upload'), 'users' => url('/api/users'), 'i18n' => ['confirm' => t('Are you sure?'), 'uploading' => t('Uploading…'), 'failed' => t('Request failed.'), 'copied' => t('Link copied'), 'nothing' => t('Nothing to preview.'), 'undo' => t('Undo')]]) ?></script>
 <script src="<?= h(asset_url('app.js')) ?>" defer></script>
 <?= plugin_assets_tag('js') ?>
 <?= region('body.end', [], '', false) ?>

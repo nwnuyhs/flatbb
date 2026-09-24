@@ -106,8 +106,9 @@ function user_settings(string $tab = 'profile'): never
             fire('user.after_save', ['user_id' => (int)$me['id']]);
             flash($renamed ? t('Profile saved. Your username is now %s.', $new_name) : t('Profile saved.'));
         } elseif ($tab === 'avatar') {
+            if (post_str('do', 10) !== '') avatar_field_action((array)$me); // picked or removed on the page: saved at once
             $f = $_FILES['avatar'] ?? null;
-            if (post_int('remove') === 1) {
+            if (post_int('remove') === 1 || post_int('avatar_remove') === 1) {
                 db_update('fb_users', ['avatar' => ''], 'id=?', [(int)$me['id']]);
                 flash(t('Avatar removed.'));
             } elseif (is_array($f) && ($f['error'] ?? 1) === UPLOAD_ERR_OK) {

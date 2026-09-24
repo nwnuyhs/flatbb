@@ -121,7 +121,13 @@ function admin_settings_fields(): array
             'site_name' => ['text', t('Site name')],
             'site_tagline' => ['text', t('Tagline')],
             'site_description' => ['textarea', t('Meta description')],
-            'site_logo' => ['image', t('Logo'), t('PNG, JPG, WebP or SVG, up to 2 MB. Shown in the header instead of the site name.'), ['png', 'jpg', 'webp', 'svg', 'gif']],
+            // the logo: saved as five settings, drawn together (cards, uploads, a live preview) by admin_logo_block()
+            'logo_style' => ['select', t('Logo style'), '', ['icon' => '', 'image' => '', 'name' => ''], 'hide' => true],
+            'site_icon' => ['image', t('Icon'), '', ['png', 'jpg', 'webp', 'svg', 'gif'], 'hide' => true],
+            'site_logo' => ['image', t('Logo'), '', ['png', 'jpg', 'webp', 'svg', 'gif'], 'hide' => true],
+            'site_logo_dark' => ['image', t('Logo for dark themes'), '', ['png', 'jpg', 'webp', 'svg', 'gif'], 'hide' => true],
+            'logo_phone_name' => ['checkbox', t('Show the site name next to the icon on phones'), '', 'hide' => true],
+            'logo_block' => ['raw', t('Logo'), '', 'admin_logo_block'],
             'site_favicon' => ['image', t('Favicon'), t('PNG, ICO or SVG; a square PNG works everywhere.'), ['png', 'ico', 'svg']],
             'brand_color' => ['color', t('Brand color')],
             'theme' => ['select', t('Default theme'), '', ['auto' => t('Follow system'), 'light' => t('Light'), 'dark' => t('Dark')]],
@@ -133,6 +139,9 @@ function admin_settings_fields(): array
         ]],
         'content' => [t('Content'), [
             'per_page' => ['number', t('Topics per page'), '', null, 5, 100],
+            'link_preview' => ['checkbox', t('Link previews'), t('Fetch the title, description and picture of the pages posts link to, once, and keep them for a week. The server fetches public addresses only.')],
+            'link_preview_posts' => ['checkbox', t('Show a card for a link on a line of its own in posts'), t('A link inside a sentence stays a link.')],
+            'link_preview_block' => ['textarea', t('Never preview these sites'), t('Domains, one per line or separated by commas; their subdomains are included.')],
             'list_paging' => ['select', t('Topic list paging'), t('Load while scrolling: the next page joins the list as the reader nears its end. The page numbers stay under the list for jumping, for search engines and without JavaScript.'), ['pages' => t('Page numbers'), 'scroll' => t('Load while scrolling')]],
             'category_bar' => ['select', t('Category bar above topic lists'), t('A row of top-level categories above Latest / Top. On phones the left column is hidden, so this is the quickest way into a category.'), ['mobile' => t('Phones only'), 'always' => t('Always'), 'off' => t('Off')]],
             'category_required' => ['checkbox', t('A topic needs a category'), t('Off: a topic posted without a category goes to the default category below. A plugin (an AI, say) may pick one first either way.')],
@@ -192,8 +201,17 @@ function admin_page_settings(): never
     if ($key === 'ai') admin_ai_settings($sections);
     if (is_post()) {
         check_csrf();
+        if (post_str('do', 10) !== '') { // a picture or a key changed on its own (image_field(), secret_field())
+            $name = post_str('field', 60);
+            $def = $fields[$name] ?? null;
+            if (!is_array($def) || !in_array($def[0], ['image', 'secret'], true)) json_error(t('Request failed.'));
+            $store = static function (string $v) use ($name, $key): void { save_settings([$name => $v]); admin_log('settings', $key, $name); };
+            $upload = $def[0] === 'image' ? static fn(): string => upload_site_image($name, (array)($_FILES['file'] ?? []), (array)($def[3] ?? ['png', 'jpg'])) : null;
+            field_action('setting:' . $name, setting($name), $store, $upload, (string)$def[1]);
+        }
         $save = [];
         foreach ($fields as $name => $def) {
+            if ($def[0] === 'raw') continue; // drawn by a function, its inputs are fields of their own
             $raw = post_str($name, 20000);
             if ($def[0] === 'image') {
                 if (post_int($name . '_remove') === 1) { $save[$name] = ''; continue; }
@@ -229,7 +247,9 @@ function admin_page_settings(): never
     foreach ($sections as $k => [$l]) $tabs[$k] = ['label' => $l, 'url' => admin_url('settings', ['section' => $k]), 'active' => $k === $key];
     $html = tabs($tabs) . '<form method="post" action="' . h(admin_url('settings')) . '" class="admin-form" style="margin-top:14px" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="section" value="' . h($key) . '">';
     foreach ($fields as $name => $def) {
+        if (!empty($def['hide'])) continue; // drawn by a raw block of the same section
         [$type, $flabel] = $def;
+        if ($type === 'raw') { $html .= is_callable($def[3] ?? null) ? (string)$def[3]() : ''; continue; }
         $help = (string)($def[2] ?? '');
         $v = setting($name);
         $field = match ($type) {
@@ -240,14 +260,54 @@ function admin_page_settings(): never
             'number' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000]),
             'decimal' => input($name, $v, ['type' => 'number', 'min' => $def[4] ?? 0, 'max' => $def[5] ?? 100000, 'step' => 'any']), // any: 0.3 and 0.25 are both fine, the browser refuses nothing
             'color' => input($name, $v ?: '#e7672e', ['type' => 'color']),
-            'secret' => input($name, '', ['type' => 'password', 'autocomplete' => 'new-password', 'placeholder' => $v !== '' ? t('Saved; leave empty to keep it') : '']) . ($v !== '' ? '<div class="form-row" style="margin:6px 0 0">' . checkbox($name . '_clear', false, t('Remove the saved key')) . '</div>' : ''),
-            'image' => ($v !== '' ? '<div class="image-current"><img src="' . h(upload_url($v)) . '" alt=""> ' . checkbox($name . '_remove', false, t('Remove')) . '</div>' : '') . input($name, '', ['type' => 'file', 'accept' => implode(',', array_map(static fn(string $e): string => '.' . $e, (array)($def[3] ?? [])))]),
+            'secret' => secret_field($name, $v, ['action' => admin_url('settings', ['section' => $key])]),
+            'image' => image_field($name, $v, ['action' => admin_url('settings', ['section' => $key]), 'accept' => (array)($def[3] ?? ['png', 'jpg']), 'label' => $flabel]),
             default => input($name, $v),
         };
         $html .= $type === 'checkbox' ? '<div class="form-row">' . $field . ($help !== '' ? '<div class="form-help">' . h($help) . '</div>' : '') . '</div>' : form_row($flabel, $field, h($help));
     }
     $html .= admin_form_actions(t('Save')) . '</form>';
     admin_page(t('Settings'), $html, 'settings');
+}
+
+/**
+ * Settings → General → Logo: the three styles as cards, the icon and the logo uploads (a dark version too), the phone
+ * option, and a preview of the header (desktop, dark, phone) that follows the choices before they are saved (assets/app.js).
+ */
+function admin_logo_block(): string
+{
+    $style = logo_style();
+    $site = h(setting('site_name'));
+    $icon = setting('site_icon');
+    $logo = setting('site_logo');
+    $dark = setting('site_logo_dark');
+    $iconsrc = $icon !== '' ? h(upload_url($icon)) : '';
+    $cards = '';
+    foreach (['icon' => [t('Icon and site name'), t('The default')], 'image' => [t('Full logo image'), t('Replaces the icon and the name')], 'name' => [t('Site name only'), t('Text')]] as $k => [$label, $sub]) {
+        $demo = match ($k) { 'icon' => logo_mark(18) . '<span>' . $site . '</span>', 'image' => '<i class="logo-demo-word"></i>', default => '<span>' . $site . '</span>' };
+        $cards .= '<label class="logo-choice"><input type="radio" name="logo_style" value="' . $k . '"' . ($style === $k ? ' checked' : '') . '><span class="logo-demo">' . $demo . '</span><b>' . h($label) . '</b><small>' . h($sub) . '</small></label>';
+    }
+    $upload = static function (string $name, string $label, string $value, string $help, bool $wide, string $empty = ''): string {
+        $field = image_field($name, $value, ['action' => admin_url('settings', ['section' => 'general']), 'accept' => ['png', 'jpg', 'webp', 'svg', 'gif'], 'label' => $label, 'wide' => $wide, 'attr' => ['data-logo-file' => $name]] + ($empty !== '' ? ['empty' => $empty] : []));
+        return '<div class="logo-upload"><b>' . h($label) . '</b>' . $field . '<small>' . h($help) . '</small></div>';
+    };
+    $bar = static function (string $theme, bool $phone) use ($site, $iconsrc, $logo, $dark): string {
+        return '<div class="logo-pv' . ($phone ? ' is-phone' : '') . '" data-theme="' . $theme . '">' . ($phone ? icon('menu') : '')
+            . '<span class="pv-icon">' . ($iconsrc !== '' ? '<img src="' . $iconsrc . '" alt="">' : logo_mark(26)) . '</span>'
+            . '<span class="pv-name">' . $site . '</span>'
+            . '<img class="pv-logo" alt=""' . ($logo !== '' ? ' src="' . h(upload_url($logo)) . '"' : '') . '>'
+            . '<img class="pv-logo-dark" alt=""' . ($dark !== '' ? ' src="' . h(upload_url($dark)) . '"' : '') . '>'
+            . '<span class="pv-nav">' . icon($phone ? 'plus' : 'search') . icon('bell') . '</span></div>';
+    };
+    $preview = '<div class="logo-preview" data-logo-preview data-style="' . h($style) . '" data-icon="' . ($icon !== '' ? '1' : '0') . '" data-logo="' . ($logo !== '' ? '1' : '0') . '" data-dark="' . ($dark !== '' ? '1' : '0') . '" data-phone-name="' . h(setting('logo_phone_name', '0')) . '">'
+        . '<b>' . t('Preview') . '</b><small>' . t('Desktop') . '</small>' . $bar('light', false) . '<small>' . t('Dark mode') . '</small>' . $bar('dark', false) . '<small>' . t('Phone') . '</small>' . $bar('light', true)
+        . '<small class="muted">' . t('It follows your choices before you save.') . '</small></div>';
+    $left = '<div class="logo-choices">' . $cards . '</div>'
+        . $upload('site_icon', t('Icon'), $icon, t('Square, at least 128 px. Shown in the header, on phones and in the menu drawer. Empty: the FlatBB mark.'), false, logo_mark(30))
+        . $upload('site_logo', t('Full logo image'), $logo, t('PNG, JPG, WebP or SVG, up to 2 MB, shown 32 px high. On phones the icon takes its place when you set one.'), true)
+        . $upload('site_logo_dark', t('Logo for dark themes'), $dark, t('Optional: shown instead of the logo when the dark theme is on.'), true)
+        . '<div class="form-row">' . checkbox('logo_phone_name', setting('logo_phone_name', '0') === '1', t('Show the site name next to the icon on phones')) . '<div class="form-help">' . h(t('The site name is the one above.')) . '</div></div>';
+    return '<fieldset class="logo-settings"><legend>' . t('Logo') . '</legend><div class="logo-settings-grid"><div>' . $left . '</div>' . $preview . '</div></fieldset>';
 }
 
 /* ---------------------------------------------------------------- users */
@@ -258,6 +318,12 @@ function admin_page_users(): never
     $list_url = admin_url('users', $q !== '' ? ['q' => $q] : []);
     if (is_post()) {
         check_csrf();
+        if (post_str('do', 10) !== '') { // the avatar picked or removed on the page: saved at once
+            $u = user_by_id(get_int('edit'));
+            if ($u === null) json_error(t('User not found.'));
+            admin_log('user_avatar', (string)$u['id'], post_str('do', 10));
+            avatar_field_action($u);
+        }
         $u = user_by_id(post_int('id'));
         if ($u === null) fail(t('User not found.'));
         $group = group_by_id(post_int('group_id'));
@@ -310,7 +376,7 @@ function admin_page_users(): never
         foreach (groups() as $g) $opts[(string)$g['id']] = $g['name'];
         $former = array_map(static fn(array $f): string => (string)$f['name'], user_former_names($edit));
         $body = '<form method="post" action="' . h($list_url) . '" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
-            . form_row(t('Picture'), '<div class="image-current">' . avatar($edit, 48, false) . ' ' . ((string)$edit['avatar'] !== '' ? checkbox('avatar_remove', false, t('Remove')) : '') . '</div>' . input('avatar', '', ['type' => 'file', 'accept' => 'image/*']), t('JPG, PNG or WebP, up to 4 MB. It is cropped to a square.'))
+            . form_row(t('Picture'), avatar_field($edit, admin_url('users', ['edit' => (int)$edit['id']]), 64), h(t('Changes to the picture are saved at once.')))
             . form_row(t('Username'), input('username', (string)$edit['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), t('Letters, numbers, dot, dash or underscore. Links to the old name redirect to the new one.') . ($former !== [] ? ' ' . t('Former names: %s', implode(', ', $former)) : ''))
             . form_row(t('Group'), select('group_id', $opts, (string)$edit['group_id']))
             . form_row(t('Status'), select('status', ['1' => t('Active'), '0' => t('Suspended')], (string)$edit['status']))

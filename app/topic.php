@@ -49,6 +49,7 @@ function topic_create(int $category_id, int $user_id, string $title, string $bod
         notify_mentions($tid, $pid, $data['body'], $user_id);
         fire('topic.after_save', ['topic_id' => $tid, 'post_id' => $pid, 'new' => true]);
         points_award($user_id, 'topic', $tid);
+        link_queue_post(md($data['body']));
         return $tid;
     });
 }
@@ -76,6 +77,7 @@ function post_create(array $topic, int $user_id, string $body, int $reply_to = 0
         topic_mark_read((int)$topic['id'], $pid);
         fire('post.after_save', ['topic_id' => (int)$topic['id'], 'post_id' => $pid, 'new' => true]);
         points_award($user_id, 'reply', $pid);
+        link_queue_post(md($data['body']));
         request_cache('categories', null, true);
         return $pid;
     });
@@ -252,6 +254,7 @@ function posts_attach(array $posts, array $topic): array
         $p['reply_to'] = $parent ? ['id' => (int)$parent['id'], 'floor' => (int)$parent['floor'], 'user' => $parent_users[(int)$parent['user_id']] ?? null, 'excerpt' => md_excerpt((string)$parent['body'], 100)] : null;
     }
     unset($p);
+    $posts = link_cards_in_posts($posts); // a link on a line of its own shows as its card (core/links.php)
     return (array)hook('topic.posts', $posts, ['topic' => $topic]);
 }
 
@@ -379,6 +382,7 @@ function post_update(array $post, string $body, int $editor_id): void
     search_index_post((int)$post['id'], (int)$post['topic_id'], (string)($topic['title'] ?? ''), $body);
     attachments_link_to_post((int)$post['id'], (int)$post['user_id'], $body);
     fire('post.after_save', ['topic_id' => (int)$post['topic_id'], 'post_id' => (int)$post['id'], 'new' => false]);
+    link_queue_post(md($body));
 }
 
 /** POST /t/{id}/action  action=pin|unpin|lock|unlock|delete|restore|move (pin on a pinned topic moves it to the top of the pinned ones) */

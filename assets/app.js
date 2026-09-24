@@ -9,13 +9,21 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
   /* ---------- helpers ---------- */
-  function toast(msg, type) {
+  /* toast(message, type, action): action {label, run} adds a button (Undo) and keeps the toast up for 8 seconds */
+  function toast(msg, type, action) {
     var el = document.createElement('div');
     el.className = 'toast toast-' + (type || 'info');
     el.textContent = msg;
+    var close = function () { el.classList.remove('show'); setTimeout(function () { el.remove(); }, 300); };
+    if (action && action.label) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'toast-action'; b.textContent = action.label;
+      b.addEventListener('click', function () { close(); action.run(); });
+      el.appendChild(b);
+    }
     document.body.appendChild(el);
     setTimeout(function () { el.classList.add('show'); }, 10);
-    setTimeout(function () { el.classList.remove('show'); setTimeout(function () { el.remove(); }, 300); }, 3500);
+    setTimeout(close, action ? 8000 : 3500);
   }
   function request(url, opts) {
     opts = opts || {};
@@ -673,6 +681,79 @@
     });
   }
   localTimes(document);
+
+  /* ---------- picture fields and saved keys (image_field(), secret_field()): a change is saved at once, a removal can be undone ---------- */
+  (function () {
+    function send(box, what, file) {
+      var fd = new FormData();
+      fd.append('_token', FB.csrf); fd.append('field', box.getAttribute('data-name')); fd.append('do', what);
+      if (file) fd.append('file', file);
+      box.classList.add('is-busy');
+      return request(box.getAttribute('data-action'), { method: 'POST', body: fd }).then(function (r) {
+        box.classList.remove('is-busy');
+        if (!r || !r.ok) { toast((r && r.error) || FB.i18n.failed, 'error'); return null; }
+        return r;
+      });
+    }
+    function paint(box, url) {
+      if (box.hasAttribute('data-secret-field')) { box.classList.toggle('is-empty', !url); box.classList.remove('is-changing'); return; }
+      var thumb = box.querySelector('.image-field-thumb'), tpl = box.querySelector('template');
+      if (url) { var i = document.createElement('img'); i.alt = ''; i.src = url; thumb.replaceChildren(i); }
+      else thumb.replaceChildren(tpl.content.cloneNode(true));
+      box.classList.toggle('is-empty', !url);
+      box.dispatchEvent(new CustomEvent('fb:image', { bubbles: true, detail: { name: box.getAttribute('data-name'), url: url } }));
+    }
+    document.addEventListener('change', function (e) {
+      var input = e.target, box = input.closest && input.closest('[data-image-field][data-action]');
+      if (!box || input.type !== 'file' || !input.files || !input.files[0]) return;
+      send(box, 'upload', input.files[0]).then(function (r) { input.value = ''; if (r) { paint(box, r.url); toast(r.message, 'success'); } });
+    });
+    document.addEventListener('click', function (e) {
+      var rm = e.target.closest('[data-field-remove]');
+      if (rm) {
+        var box = rm.closest('[data-action]'); if (!box) return;
+        e.preventDefault();
+        send(box, 'remove').then(function (r) {
+          if (!r) return;
+          paint(box, '');
+          toast(r.message, 'info', { label: FB.i18n.undo || 'Undo', run: function () { send(box, 'restore').then(function (x) { if (x) { paint(box, x.url || '1'); toast(x.message, 'success'); } }); } });
+        });
+        return;
+      }
+      var sw = e.target.closest('[data-secret-change],[data-secret-cancel]');
+      if (sw) {
+        var f = sw.closest('[data-secret-field]'), on = sw.hasAttribute('data-secret-change'), input = f.querySelector('input');
+        f.classList.toggle('is-changing', on);
+        if (on) input.focus(); else input.value = '';
+      }
+    });
+  })();
+
+  /* ---------- Settings → General → Logo: the preview follows the choices (and a picked file) before they are saved ---------- */
+  (function () {
+    var pv = $('[data-logo-preview]'); if (!pv) return;
+    var form = pv.closest('form'), name = form.querySelector('[name=site_name]');
+    form.addEventListener('change', function (e) {
+      var t = e.target, n = t.getAttribute('data-logo-file');
+      if (t.name === 'logo_style') pv.setAttribute('data-style', t.value);
+      else if (t.name === 'logo_phone_name') pv.setAttribute('data-phone-name', t.checked ? '1' : '0');
+      else if (n && t.files && t.files[0]) {
+        var url = URL.createObjectURL(t.files[0]), img = function () { var i = document.createElement('img'); i.alt = ''; i.src = url; return i; };
+        var thumb = $('[data-logo-thumb="' + n + '"]'); if (thumb) thumb.replaceChildren(img());
+        if (n === 'site_icon') { pv.setAttribute('data-icon', '1'); $$('.pv-icon', pv).forEach(function (s) { s.replaceChildren(img()); }); }
+        else if (n === 'site_logo') { pv.setAttribute('data-logo', '1'); $$('.pv-logo', pv).forEach(function (i) { i.src = url; }); }
+        else if (n === 'site_logo_dark') { pv.setAttribute('data-dark', '1'); $$('.pv-logo-dark', pv).forEach(function (i) { i.src = url; }); }
+      }
+    });
+    if (name) name.addEventListener('input', function () { $$('.pv-name', pv).forEach(function (s) { s.textContent = name.value; }); });
+    // a picture saved, removed or brought back by its field (fb:image from the picture fields above)
+    form.addEventListener('fb:image', function (e) {
+      var n = e.detail.name, url = e.detail.url, box = e.target;
+      var img = function () { var i = document.createElement('img'); i.alt = ''; i.src = url; return i; };
+      if (n === 'site_icon') { pv.setAttribute('data-icon', url ? '1' : '0'); $$('.pv-icon', pv).forEach(function (s) { s.replaceChildren(url ? img() : box.querySelector('template').content.cloneNode(true)); }); }
+      else if (n === 'site_logo' || n === 'site_logo_dark') { pv.setAttribute(n === 'site_logo' ? 'data-logo' : 'data-dark', url ? '1' : '0'); $$(n === 'site_logo' ? '.pv-logo' : '.pv-logo-dark', pv).forEach(function (i) { if (url) i.src = url; else i.removeAttribute('src'); }); }
+    });
+  })();
 
   /* ---------- topic lists that load while scrolling (setting list_paging): the next page joins the list near its end ----------
    * Follows the rel="next" link of the page numbers under the list and swaps them for the new page's, so they always say
