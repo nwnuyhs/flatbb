@@ -581,7 +581,7 @@
     var mentionTimer;
     ta.addEventListener('input', function () {
       clearTimeout(mentionTimer);
-      var pos = ta.selectionStart, before = ta.value.slice(0, pos), m = before.match(/(?:^|\s)@([\w.-]{1,30})$/);
+      var pos = ta.selectionStart, before = ta.value.slice(0, pos), m = before.match(/(?:^|\s)@([^\s@]{1,30})$/); // a username, or the start of a display name in any script
       if (!m || !FB.uid) { menu.classList.add('hidden'); return; }
       mentionTimer = setTimeout(function () {
         request(FB.users + (FB.users.indexOf('?') > -1 ? '&' : '?') + 'q=' + encodeURIComponent(m[1])).then(function (r) {
@@ -590,7 +590,9 @@
           r.users.forEach(function (u) {
             var b = document.createElement('button'); b.type = 'button'; b.dataset.name = u.username;
             if (u.avatar) { var im = document.createElement('img'); im.src = u.avatar; im.alt = ''; b.appendChild(im); }
-            b.appendChild(document.createTextNode(u.username)); menu.appendChild(b);
+            b.appendChild(document.createTextNode(u.name || u.username));
+            if (u.name && u.name !== u.username) { var hd = document.createElement('small'); hd.textContent = '@' + u.username; b.appendChild(hd); } // a display name: which account it is
+            menu.appendChild(b);
           });
           menu.classList.remove('hidden');
         });
@@ -681,6 +683,17 @@
     });
   }
   localTimes(document);
+
+  /* ---------- link cards (link_card_html()): a picture that does not load takes its box with it, the card reads as a text card ---------- */
+  function dropCardPicture(img) {
+    var box = img.closest('.link-card-img'), card = box && box.closest('.link-card');
+    if (!box) return;
+    box.parentNode.removeChild(box);
+    if (card) { card.classList.remove('link-card-large', 'link-card-small'); card.classList.add('link-card-text'); }
+  }
+  // error does not bubble: listen while it goes down; the pictures that failed before this script ran are found by the check below
+  document.addEventListener('error', function (e) { var t = e.target; if (t && t.tagName === 'IMG' && t.closest && t.closest('.link-card-img')) dropCardPicture(t); }, true);
+  $$('.link-card-img img').forEach(function (img) { if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) dropCardPicture(img); });
 
   /* ---------- picture fields and saved keys (image_field(), secret_field()): a change is saved at once, a removal can be undone ---------- */
   (function () {

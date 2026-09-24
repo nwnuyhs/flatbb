@@ -33,7 +33,10 @@ function api_dispatch(string $action): never
             need_login();
             $q = mb_strtolower(get_str('q', 30));
             if ($q === '') json_ok(['users' => []]);
-            $rows = all("SELECT username,avatar FROM fb_users WHERE username_lower LIKE ? ESCAPE '!' AND status=1 ORDER BY post_count DESC LIMIT 8", [ltrim(db_like($q), '%')]);
+            $like = ltrim(db_like($q), '%'); // "starts with", on the username or (while they are on) the display name
+            $rows = all("SELECT username,display_name,avatar FROM fb_users WHERE (username_lower LIKE ? ESCAPE '!'" . (display_names_on() ? " OR display_name LIKE ? ESCAPE '!'" : '') . ') AND status=1 ORDER BY post_count DESC LIMIT 8', display_names_on() ? [$like, $like] : [$like]);
+            foreach ($rows as &$r) { $r['name'] = user_name($r); unset($r['display_name']); }
+            unset($r);
             foreach ($rows as &$r) $r['avatar'] = $r['avatar'] !== '' ? upload_url((string)$r['avatar']) : '';
             json_ok(['users' => $rows]);
         case 'unread':
@@ -102,7 +105,7 @@ function seo_rss(): never
     echo '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>' . h(setting('site_name')) . '</title><link>' . h(absolute_url('/')) . '</link><description>' . h(setting('site_tagline')) . '</description>';
     foreach ($rows as $t) {
         echo '<item><title>' . h($t['title']) . '</title><link>' . h(absolute_url('/t/' . $t['slug'] . '-' . $t['id'])) . '</link><guid>' . h(absolute_url('/t/' . $t['slug'] . '-' . $t['id'])) . '</guid>';
-        echo '<pubDate>' . date('r', (int)$t['created_at']) . '</pubDate><author>' . h($users[(int)$t['user_id']]['username'] ?? '') . '</author>';
+        echo '<pubDate>' . date('r', (int)$t['created_at']) . '</pubDate><author>' . h(isset($users[(int)$t['user_id']]) ? user_name($users[(int)$t['user_id']]) : '') . '</author>';
         echo '<description>' . h($posts[(int)$t['first_post_id']]['body_html'] ?? '') . '</description></item>';
     }
     echo '</channel></rss>';

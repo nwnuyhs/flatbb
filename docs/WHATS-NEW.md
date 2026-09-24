@@ -2,6 +2,11 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.1.99
+
+- **Display names** (Admin → Settings → Registration → Display names, off by default): a member may set a name in any language, up to 30 characters, shown instead of the username across the forum; the username stays the profile address, the sign-in name and what @mentions use, and a profile shows both. New column `fb_users.display_name` (in `user_public_columns()`), setting `display_name_days` (days between a member's changes). **Show a member's name with `user_name($user)`**, not `$user['username']`: it returns the display name while display names are on and one is set, else the username (and "deleted" for null). `user_link()` and `avatar()` already use it; keep `$user['username']` for addresses (`user_url()`), form values and @mentions. A plugin that selects user columns by hand should add `display_name`. Helpers `display_names_on()`, `display_name_clean()`, `display_name_check()`, `display_name_set()`. The member search behind @mention autocomplete (`/api/users`) also matches display names and returns `name` next to `username`. Template changed: `profile.php` (the heading shows the display name, and while display names are on an @username line sits under it on every profile).
+- Link cards: a picture that fails to load removes its box, and the card shows as a text card (assets/app.js).
+
 ## 0.1.98
 
 - **Link previews** (core/links.php): a link on a line of its own in a post shows as a card (the page's picture, site, title and description). Pages are fetched once on the server, after the request that found the link or by the scheduled job `core.link_previews`, and kept a week in the new table `fb_link_previews`; showing a card never fetches. The fetch takes public http(s) addresses on ports 80 and 443 only, checks every redirect the same way, and stops after 5 seconds or 512 KB. Settings `link_preview`, `link_preview_posts` and `link_preview_block` (Admin → Settings → Content).

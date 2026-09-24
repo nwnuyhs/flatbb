@@ -88,7 +88,7 @@ function site_stats(): array
             'users' => (int)val('SELECT COUNT(*) FROM fb_users'),
             'online' => (int)val('SELECT COUNT(*) FROM fb_users WHERE last_seen>?', [now() - 900]),
             // newest first, for the "Newest members" sidebar card; last_seen lets avatar() show the online dot (as fresh as this 5-minute cache)
-            'newest_users' => q('SELECT id, username, avatar, group_id, status, last_seen FROM fb_users ORDER BY id DESC LIMIT 8')->fetchAll(PDO::FETCH_ASSOC),
+            'newest_users' => q('SELECT id, username, display_name, avatar, group_id, status, last_seen FROM fb_users ORDER BY id DESC LIMIT 8')->fetchAll(PDO::FETCH_ASSOC),
             'newest' => '',
             'at' => now(),
         ];
@@ -345,16 +345,16 @@ function icon_paths(): array
     ] + icon_paths_more(); // core/icons.php: the rest of the built-in set
 }
 
-/** Avatar image or letter fallback. $user needs id, username, avatar. */
+/** Avatar image or letter fallback. $user needs id, username, avatar (and display_name for the letter and the tooltip). */
 function avatar(?array $user, int $size = 32, bool $link = true): string
 {
-    $name = (string)($user['username'] ?? '?');
+    $name = $user !== null ? user_name($user) : '?';
     $cls = 'avatar avatar-' . $size;
     $style = '--s:' . $size . 'px';
     if (!empty($user['avatar'])) {
         $img = '<img class="' . $cls . '" style="' . $style . '" src="' . h(upload_url((string)$user['avatar'])) . '" width="' . $size . '" height="' . $size . '" alt="' . h($name) . '" loading="lazy">';
     } else {
-        $hue = $name === '?' ? 0 : crc32(mb_strtolower($name)) % 360;
+        $hue = $name === '?' ? 0 : crc32(mb_strtolower((string)($user['username'] ?? $name))) % 360; // the colour stays when the display name changes
         $img = '<span class="' . $cls . ' avatar-letter" style="' . $style . ';--hue:' . $hue . '">' . h(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>';
     }
     $online = $user !== null && user_online($user);
@@ -394,12 +394,25 @@ function post_hold_notice(array $hold): string
         . '<div class="muted small">' . t('You can post again at %s.', time_tag((int)$hold['until'], 'full')) . '</div></div></div>';
 }
 
+/**
+ * The name shown for a member: their display name when display names are on and they set one, else the username.
+ * Profile addresses, sign-in and @mentions always use the username. null (a deleted account) gives "deleted".
+ */
+function user_name(?array $user): string
+{
+    if ($user === null) return t('deleted');
+    $display = (string)($user['display_name'] ?? '');
+    return $display !== '' && display_names_on() ? $display : (string)($user['username'] ?? '?');
+}
+
 function user_link(?array $user, string $class = 'user-link'): string
 {
     if ($user === null) return '<span class="' . h($class) . ' user-deleted">' . t('deleted') . '</span>';
     $g = str_contains($class, 'plain') ? null : group_by_id((int)($user['group_id'] ?? 0)); // "plain": no group colour (lists)
     $style = !empty($g['color']) ? ' style="color:' . h($g['color']) . '"' : '';
-    return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . '>' . h($user['username']) . '</a>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]);
+    $name = user_name($user);
+    $title = $name !== (string)$user['username'] ? ' title="@' . h((string)$user['username']) . '"' : ''; // a display name tells who it is on hover
+    return '<a class="' . h($class) . '" href="' . h(user_url($user)) . '"' . $style . $title . ' dir="auto">' . h($name) . '</a>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]);
 }
 
 /** A built-in icon by name, or an uploaded image (a path under uploads/, e.g. site/cat_3.png) as an icon-sized <img>; '' when neither. */

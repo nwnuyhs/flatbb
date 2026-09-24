@@ -46,7 +46,7 @@ $head = $head ?? null;
   </header>
   <div class="post-body">
     <?php if ($post['reply_to']): ?>
-      <a class="reply-quote" href="#post-<?= (int)$post['reply_to']['id'] ?>"><?= icon('reply') ?><b><?= h($post['reply_to']['user']['username'] ?? t('deleted')) ?></b><span><?= h($post['reply_to']['excerpt']) ?></span></a>
+      <a class="reply-quote" href="#post-<?= (int)$post['reply_to']['id'] ?>"><?= icon('reply') ?><b><?= h(isset($post['reply_to']['user']) ? user_name($post['reply_to']['user']) : t('deleted')) ?></b><span><?= h($post['reply_to']['excerpt']) ?></span></a>
     <?php endif; ?>
     <?php if ($deleted): ?>
       <div class="post-content muted"><em><?= t('This reply was deleted.') ?></em></div>

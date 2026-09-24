@@ -5,7 +5,7 @@
  * Plugins own their own tables (prefix plugin_<id>_) and must not touch fb_* tables.
  */
 
-const SCHEMA_VERSION = 10; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
+const SCHEMA_VERSION = 11; // bump on every change to schema_tables()/schema_indexes(): app_boot() runs schema_install() when the stored version differs
 
 function schema_tables(): array
 {
@@ -18,6 +18,7 @@ function schema_tables(): array
             'id' => 'id',
             'username' => 'key',
             'username_lower' => 'key',
+            'display_name' => 'string', // shown instead of the username when display names are on (user_name()); '' = none
             'email' => 'key',
             'password' => 'string',
             'group_id' => 'uint',

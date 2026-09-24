@@ -253,7 +253,7 @@ function users_cache_put(array $users, string $bucket = 'users'): void
 /** Public user columns safe to render anywhere (no password/email). */
 function user_public_columns(): string
 {
-    return 'id,username,avatar,group_id,post_count,topic_count,like_count,status,last_seen,created_at,points';
+    return 'id,username,display_name,avatar,group_id,post_count,topic_count,like_count,status,last_seen,created_at,points';
 }
 
 /**
@@ -333,6 +333,50 @@ function user_rename(array $user, string $new, int $by = 0): string
     request_cache('me', null, true);
     save_settings(['stats_cache' => '']); // the Newest members card caches usernames for five minutes
     fire('user.after_rename', ['user_id' => (int)$user['id'], 'old' => (string)$user['username'], 'new' => $new, 'by' => $by]);
+    return '';
+}
+
+/* ---------------------------------------------------------------- display names */
+
+/** Whether members may have a display name (Settings → Registration). While off, every name shows as the username. */
+function display_names_on(): bool
+{
+    return setting('display_names', '0') === '1';
+}
+
+/** A display name as it is stored: invisible and control characters removed, spaces collapsed. '' clears it. */
+function display_name_clean(string $name): string
+{
+    $name = preg_replace('/\p{C}+/u', '', $name) ?? '';
+    return trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+}
+
+/** '' when $name (cleaned) may be the display name of $user, else why not: at most 30 characters, nobody else's username. */
+function display_name_check(array $user, string $name): string
+{
+    if ($name === '') return '';
+    if (mb_strlen($name) > 30) return t('A display name has at most %d characters.', 30);
+    $other = user_by_name($name);
+    if ($other !== null && (int)$other['id'] !== (int)$user['id']) return t('That is the username of another member.');
+    return '';
+}
+
+/**
+ * Set a member's display name ('' clears it; the same as the username clears it too). Returns '' or the error to show.
+ * The profile address, sign-in and @mentions keep using the username.
+ */
+function display_name_set(array $user, string $name): string
+{
+    $name = display_name_clean($name);
+    if (mb_strtolower($name) === mb_strtolower((string)$user['username'])) $name = '';
+    $err = display_name_check($user, $name);
+    if ($err !== '') return $err;
+    if ($name === (string)($user['display_name'] ?? '')) return '';
+    db_update('fb_users', ['display_name' => $name], 'id=?', [(int)$user['id']]);
+    request_cache('users_full', null, true);
+    request_cache('users', null, true);
+    request_cache('me', null, true);
+    save_settings(['stats_cache' => '']); // the Newest members card caches names for five minutes
     return '';
 }
 

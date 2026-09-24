@@ -342,6 +342,8 @@ function setting_defaults(): array
         'username_max' => '30',
         'allow_rename' => '0',
         'rename_days' => '30',
+        'display_names' => '0',
+        'display_name_days' => '30',
         'post_interval' => '15',
         'new_user_limit_hours' => '24',
         'new_user_max_posts' => '5',

@@ -8,7 +8,7 @@
     <a class="notif<?= (int)$n['is_read'] ? '' : ' unread' ?>" href="<?= h($n['url'] ?: '#') ?>">
       <span class="notif-icon"><?= icon($ic) ?></span>
       <span class="notif-body">
-        <span class="notif-title"><?php if ($n['from']): ?><b><?= h($n['from']['username']) ?></b> <?php endif; ?><?= h($verb) ?><?php if ($n['topic']): ?> · <em><?= h(cut($n['topic']['title'], 60)) ?></em><?php endif; ?></span>
+        <span class="notif-title"><?php if ($n['from']): ?><b dir="auto"><?= h(user_name($n['from'])) ?></b> <?php endif; ?><?= h($verb) ?><?php if ($n['topic']): ?> · <em><?= h(cut($n['topic']['title'], 60)) ?></em><?php endif; ?></span>
         <?php if ($n['content'] !== ''): ?><span class="notif-excerpt"><?= h(cut((string)$n['content'], 140)) ?></span><?php endif; ?>
       </span>
       <span class="notif-time"><?= time_tag((int)$n['created_at']) ?></span>

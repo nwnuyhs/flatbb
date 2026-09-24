@@ -52,6 +52,9 @@ foreach (array_keys($by) as $g) if (!isset($groups[$g])) $groups[$g] = ucfirst($
       <?php if (user_rename_allowed()): ?>
       <?= form_row(t('Username'), input('username', (string)$user['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), user_rename_next($user) > now() ? t('You can change your username again on %s.', date('Y-m-d', user_rename_next($user))) : t('Letters, numbers, dot, dash or underscore. Links to your old profile name keep working.')) ?>
       <?php endif; ?>
+      <?php if (display_names_on()): $dn_next = display_name_next($user); ?>
+      <?= form_row(t('Display name'), input('display_name', (string)($user['display_name'] ?? ''), ['maxlength' => 30, 'placeholder' => (string)$user['username'], 'dir' => 'auto']), $dn_next > now() ? h(t('You can change your display name again on %s.', date('Y-m-d', $dn_next))) : h(t('Shown instead of your username across the forum; any language. Your profile address, sign-in and @mentions keep the username. Leave empty to show the username.'))) ?>
+      <?php endif; ?>
       <div class="form-row"><label><?= t('Email') ?></label><div class="email-line"><span><?= h((string)$user['email']) ?></span><a class="btn btn-sm" href="<?= h(url('/settings/email')) ?>"><?= t('Manage') ?></a></div></div>
       <?= form_row(t('Bio'), textarea('bio', (string)$user['bio'], ['rows' => 3, 'maxlength' => 1000])) ?>
       <?= form_row(t('Website'), input('website', (string)$user['website'], ['placeholder' => 'https://'])) ?>

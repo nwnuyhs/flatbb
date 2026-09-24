@@ -106,7 +106,7 @@ function admin_page_dashboard(): never
     $rows = '';
     foreach ($info as [$k, $v]) $rows .= '<tr><th>' . h($k) . '</th><td>' . h($v) . '</td></tr>';
     $ru = '';
-    foreach (all('SELECT id,username,created_at FROM fb_users ORDER BY id DESC LIMIT 8') as $u) $ru .= '<tr><td>' . user_link($u) . '</td><td>' . human_time((int)$u['created_at']) . '</td></tr>';
+    foreach (all('SELECT id,username,display_name,created_at FROM fb_users ORDER BY id DESC LIMIT 8') as $u) $ru .= '<tr><td>' . user_link($u) . '</td><td>' . human_time((int)$u['created_at']) . '</td></tr>';
     $html .= '<div class="form-grid"><div class="table-wrap"><table class="admin"><thead><tr><th colspan="2">' . t('System') . '</th></tr></thead><tbody>' . $rows . '</tbody></table></div>';
     $html .= '<div class="table-wrap"><table class="admin"><thead><tr><th>' . t('Newest members') . '</th><th></th></tr></thead><tbody>' . $ru . '</tbody></table></div></div>';
     admin_page(t('Dashboard'), $html, 'dashboard');
@@ -168,6 +168,8 @@ function admin_settings_fields(): array
             'register_verify' => ['checkbox', t('Require email verification'), t('New members confirm their address with a six-digit code before the account is created; changing the address later needs a code too. Mail is delivered by: %s.', mail_transport_label())],
             'allow_rename' => ['checkbox', t('Members may change their own username'), t('Administrators can always rename users from the Users page. Old profile links redirect to the new name.')],
             'rename_days' => ['number', t('Days between username changes'), t('Applies to members renaming themselves.'), null, 0, 3650],
+            'display_names' => ['checkbox', t('Display names'), t('Members may set a display name in any language (up to 30 characters), shown instead of the username across the forum. Profile addresses, sign-in and @mentions keep the username, and a profile shows both.')],
+            'display_name_days' => ['number', t('Days between display name changes'), t('Applies to members; 0 = any time. Administrators can change them on the Users page.'), null, 0, 3650],
         ]],
         'email' => [t('Email'), [
             'mail_from' => ['text', t('Sender address'), t('Used for password resets and notifications. Install an SMTP plugin for reliable delivery; without one PHP mail() is used.')],
@@ -334,6 +336,7 @@ function admin_page_users(): never
             $err = user_rename($u, $new_name, uid());
             if ($err !== '') fail($err, admin_url('users', ['q' => $q, 'edit' => $u['id']]));
         }
+        if (display_names_on() && ($err = display_name_set($u, post_str('display_name', 120))) !== '') fail($err, admin_url('users', ['q' => $q, 'edit' => $u['id']]));
         db_update('fb_users', ['group_id' => (int)$group['id'], 'status' => post_int('status') ? 1 : 0], 'id=?', [(int)$u['id']]);
         $af = $_FILES['avatar'] ?? null;
         if (post_int('avatar_remove') === 1) {
@@ -354,14 +357,14 @@ function admin_page_users(): never
         flash(t('User saved.'));
         redirect($list_url);
     }
-    $where = $q !== '' ? "WHERE username_lower LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!'" : '';
-    $params = $q !== '' ? [db_like(mb_strtolower($q)), db_like(mb_strtolower($q))] : [];
+    $where = $q !== '' ? "WHERE username_lower LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!' OR display_name LIKE ? ESCAPE '!'" : '';
+    $params = $q !== '' ? [db_like(mb_strtolower($q)), db_like(mb_strtolower($q)), db_like($q)] : [];
     $pg = paginate_calc((int)val("SELECT COUNT(*) FROM fb_users {$where}", $params), get_int('page', 1, 1, 100000), 30);
     $rows = [];
     foreach (all("SELECT * FROM fb_users {$where} ORDER BY id DESC LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], $params) as $u) {
         $g = group_by_id((int)$u['group_id']);
         $rows[] = [
-            avatar($u, 24) . ' ' . user_link($u) . '<br><small class="muted">#' . (int)$u['id'] . ($u['email'] !== '' ? ' · ' . h((string)$u['email']) : '') . '</small>',
+            avatar($u, 24) . ' ' . user_link($u) . '<br><small class="muted">#' . (int)$u['id'] . (user_name($u) !== (string)$u['username'] ? ' · @' . h((string)$u['username']) : '') . ($u['email'] !== '' ? ' · ' . h((string)$u['email']) : '') . '</small>',
             h($g['name'] ?? '?'), (int)$u['topic_count'] . ' / ' . (int)$u['post_count'], human_time((int)$u['last_seen']),
             (int)$u['status'] === 1 ? '<span class="flag flag-success">' . t('active') . '</span>' : '<span class="flag flag-danger">' . t('suspended') . '</span>',
             '<div class="row-actions">' . admin_drawer_link(admin_url('users', ['q' => $q, 'edit' => $u['id']]), t('Edit')) . '</div>',
@@ -378,6 +381,7 @@ function admin_page_users(): never
         $body = '<form method="post" action="' . h($list_url) . '" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="id" value="' . (int)$edit['id'] . '">'
             . form_row(t('Picture'), avatar_field($edit, admin_url('users', ['edit' => (int)$edit['id']]), 64), h(t('Changes to the picture are saved at once.')))
             . form_row(t('Username'), input('username', (string)$edit['username'], ['maxlength' => 30, 'pattern' => '[A-Za-z0-9][A-Za-z0-9_.-]{1,29}']), t('Letters, numbers, dot, dash or underscore. Links to the old name redirect to the new one.') . ($former !== [] ? ' ' . t('Former names: %s', implode(', ', $former)) : ''))
+            . (display_names_on() ? form_row(t('Display name'), input('display_name', (string)($edit['display_name'] ?? ''), ['maxlength' => 30, 'placeholder' => (string)$edit['username'], 'dir' => 'auto']), h(t('Empty: the username is shown.'))) : '')
             . form_row(t('Group'), select('group_id', $opts, (string)$edit['group_id']))
             . form_row(t('Status'), select('status', ['1' => t('Active'), '0' => t('Suspended')], (string)$edit['status']))
             . form_row(t('New password'), input('password', '', ['type' => 'password', 'autocomplete' => 'new-password']), t('Leave empty to keep the current password.'))

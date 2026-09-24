@@ -18,6 +18,14 @@ function user_rename_next(array $user): int
     return $last > 0 ? $last + $days * 86400 : 0;
 }
 
+/** When a member may change their display name again (0 = now); administrators are not limited. */
+function display_name_next(array $user): int
+{
+    $last = (int)(json_decode_array((string)($user['prefs'] ?? ''))['display_name_at'] ?? 0);
+    $days = max(0, (int)setting('display_name_days', '30'));
+    return $last > 0 && $days > 0 ? $last + $days * 86400 : 0;
+}
+
 /** GET /u/{name}[/{tab}] tabs: topics, replies, bookmarks (own only) */
 function user_profile(string $name, string $tab = 'topics'): never
 {
@@ -65,7 +73,7 @@ function user_profile(string $name, string $tab = 'topics'): never
     $main = view('profile', ['user' => $user, 'group' => group_by_id((int)$user['group_id']), 'self' => $self, 'tabs' => tabs($tabs), 'body' => $body, 'pagination' => pagination($pg, $url_fn), 'stats' => $stats, 'cards' => $cards]);
     // the profile card takes the place of both site columns: the right one is off, the left menu is hidden on wide screens by
     // CSS only, so a phone keeps it in the drawer
-    page($user['username'], $main, ['class' => 'page-profile', 'right' => false]);
+    page(user_name($user), $main, ['class' => 'page-profile', 'right' => false]);
 }
 
 /** GET|POST /settings[/{tab}] tabs: profile, avatar, password, preferences */
@@ -102,6 +110,18 @@ function user_settings(string $tab = 'profile'): never
                 $err = user_rename((array)$me, $new_name, (int)$me['id']);
                 if ($err !== '') fail($err, $back);
                 $renamed = true;
+            }
+            if (display_names_on()) {
+                $display = display_name_clean(post_str('display_name', 120));
+                if ($display !== display_name_clean((string)($me['display_name'] ?? ''))) {
+                    $next = display_name_next((array)$me);
+                    if ($next > now()) fail(t('You can change your display name again on %s.', date('Y-m-d', $next)), $back);
+                    $err = display_name_set((array)$me, $display);
+                    if ($err !== '') fail($err, $back);
+                    $prefs = json_decode_array((string)val('SELECT prefs FROM fb_users WHERE id=?', [(int)$me['id']]));
+                    $prefs['display_name_at'] = now();
+                    db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$me['id']]);
+                }
             }
             fire('user.after_save', ['user_id' => (int)$me['id']]);
             flash($renamed ? t('Profile saved. Your username is now %s.', $new_name) : t('Profile saved.'));

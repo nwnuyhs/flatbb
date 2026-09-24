@@ -22,7 +22,8 @@ $aside = $bars !== [] || $sections !== [] || region_visible($after) || $cards !=
     <header class="profile-head">
       <?= avatar($user, 96, false) ?>
       <div class="profile-id">
-        <h1 class="profile-name" dir="auto"><?= h($user['username']) ?></h1>
+        <h1 class="profile-name" dir="auto"><?= h(user_name($user)) ?></h1>
+        <?php if (display_names_on()): // every profile names its account while display names are on, set or not ?><div class="profile-handle">@<?= h($user['username']) ?></div><?php endif; ?>
         <div class="profile-labels"><?= raw(hook('user.link_after', '', ['user' => $user, 'class' => 'profile-name'])) ?><?php if ($group): ?><span class="flag" style="<?= !empty($group['color']) ? 'color:' . h($group['color']) : '' ?>"><?= h($group['name']) ?></span><?php endif; ?><?php if ((int)$user['status'] !== 1): ?><span class="flag flag-danger"><?= t('Suspended') ?></span><?php endif; ?><?= region('user.profile.labels', $ctx, '', false) ?><?= region('member.labels', $mctx, '', false) ?></div>
         <?php if ($user['bio'] !== '' && $user['bio'] !== null): ?><p class="profile-bio"><?= raw(bio_html((string)$user['bio'])) ?></p><?php endif; ?>
         <div class="profile-meta">

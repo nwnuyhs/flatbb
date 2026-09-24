@@ -620,6 +620,7 @@ body.editor-fs { overflow: hidden; }
 .mention-menu { position: absolute; inset-inline-start: 12px; bottom: 34px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 20; min-width: 180px; }
 .mention-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; text-align: start; }
 .mention-menu button:hover { background: var(--panel-2); }
+.mention-menu button small { margin-inline-start: auto; color: var(--text-muted); font-size: var(--font-size-xs); }
 .mention-menu img { width: 20px; height: 20px; border-radius: 50%; }
 
 /* ---------- auth, profile, settings, search, notifications ---------- */
@@ -657,6 +658,7 @@ body.editor-fs { overflow: hidden; }
 .profile-head .online-dot { width: 18px; height: 18px; top: 4px; left: 4px; border-width: 3px; } /* sized for the big avatar, not in proportion to it */
 .profile-id { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-top: 4px; }
 .profile-name { margin: 0; font-size: var(--font-size-2xl); line-height: 1.25; overflow-wrap: anywhere; }
+.profile-handle { margin-top: 1px; color: var(--text-muted); font-size: var(--font-size-sm); }
 .profile-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: -2px; }
 .profile-labels:empty { display: none; }
 .profile-bio { margin: 0; max-width: 640px; color: var(--text); overflow-wrap: anywhere; }
