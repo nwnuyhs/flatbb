@@ -37,6 +37,7 @@ $aside = $bars !== [] || $sections !== [] || region_visible($after) || $cards !=
       <div class="profile-side">
         <?php if ($self): ?><a class="btn btn-sm" href="<?= h(url('/settings')) ?>" title="<?= t('Edit profile') ?>"><?= icon('settings') ?><span><?= t('Edit profile') ?></span></a><?php endif; ?>
         <?php if (is_admin() && !$self): ?><a class="btn btn-sm" href="<?= h(admin_url('users', ['q' => $user['username'], 'edit' => $user['id']])) ?>" title="<?= t('Manage') ?>"><?= icon('shield') ?><span><?= t('Manage') ?></span></a><?php endif; ?>
+        <?php if (is_mod() && !$self): ?><a class="btn btn-sm" href="<?= h(url('/u/' . rawurlencode((string)$user['username']) . '/moderate')) ?>" title="<?= t('Ban or delete') ?>"><?= icon('lock') ?><span><?= t('Ban or delete') ?></span></a><?php endif; ?>
         <?= region('user.profile.actions', $ctx, '', false) ?>
         <?php foreach ($actions as $id => $a): if (!is_array($a)) continue; ?><?= raw(member_action_html((string)$id, $a, 'btn btn-sm' . (!empty($a['primary']) ? ' btn-primary' : ''))) ?><?php endforeach; ?>
       </div>

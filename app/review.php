@@ -127,21 +127,10 @@ function review_ban(array $r, int $by): bool
     if ($user === null || $uid === $by) return false;
     $group = group_by_id((int)$user['group_id']);
     if ($group !== null && ((int)$group['is_admin'] === 1 || (int)$group['is_mod'] === 1)) return false; // staff is never banned from the queue
-    $topics = array_map('intval', col('SELECT DISTINCT topic_id FROM fb_posts WHERE user_id=? AND is_deleted<>1', [$uid]));
-    $posts = array_map('intval', col('SELECT id FROM fb_posts WHERE user_id=? AND is_deleted=0', [$uid])); // the ones in the search index
-    $cats = $topics !== [] ? array_map('intval', col('SELECT DISTINCT category_id FROM fb_topics WHERE id IN (' . sql_marks(count($topics)) . ')', $topics)) : [];
-    tx(static function () use ($uid, $by): void {
-        q("UPDATE fb_review SET status=2, note='', decided_at=?, decided_by=? WHERE user_id=? AND status=0", [now(), $by, $uid]);
-        q('UPDATE fb_posts SET is_deleted=1 WHERE user_id=? AND is_deleted<>1', [$uid]);
-        q('UPDATE fb_topics SET is_deleted=1 WHERE user_id=? AND is_deleted<>1', [$uid]);
-        db_update('fb_users', ['status' => 0, 'topic_count' => 0, 'post_count' => 0], 'id=?', [$uid]);
-    });
-    // a rare moderator action, not a page: the few queries per topic touched are fine here
-    foreach ($posts as $pid) search_delete_post($pid);
-    foreach ($topics as $tid) topic_stats_refresh($tid);
-    foreach ($cats as $cid) category_refresh_stats($cid);
-    request_cache('review_count', null, true);
-    admin_log('review.ban', '#' . $uid . ' ' . (string)$user['username'], count($topics) . ' topics touched');
+    user_ban($uid); // app/moderation.php: suspended and signed out everywhere
+    $r = user_remove_content($uid, $by);
+    admin_log('review.ban', '#' . $uid . ' ' . (string)$user['username'], $r['topics'] . ' topics, ' . $r['replies'] . ' replies');
+    fire('user.after_moderate', ['user_ids' => [$uid], 'action' => 'remove', 'by' => $by, 'ips' => [$uid => (string)($user['created_ip'] ?? '')]]);
     return true;
 }
 

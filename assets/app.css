@@ -422,6 +422,23 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .tag-badge { display: inline-block; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--panel-2); border: 1px solid var(--line); color: var(--text-muted); font-size: var(--font-size-xs); font-weight: 500; }
 .tag-badge:hover { border-color: var(--brand); color: var(--brand); }
 .stat { display: inline-flex; align-items: center; gap: 4px; }
+/* Ban or delete a member (app/moderation.php) and the batch bar of Admin → Users */
+.mod-page { max-width: 760px; }
+.mod-who { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+.mod-who h2 { margin: 0 0 4px; font-size: var(--font-size-xl); }
+.mod-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.mod-stats div { background: var(--panel-2); border-radius: var(--radius-sm); padding: 8px 12px; }
+.mod-stats b { display: block; font-size: var(--font-size-xl); }
+.mod-stats span { color: var(--text-muted); font-size: var(--font-size-sm); }
+.mod-page h3 { margin: 16px 0 8px; font-size: var(--font-size-md); }
+.mod-recent { margin: 0; padding-inline-start: 18px; font-size: var(--font-size-sm); }
+.mod-recent li { margin: 3px 0; }
+.mod-others { display: grid; gap: 6px; margin-bottom: 12px; }
+.mod-other { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-sm); }
+.mod-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
+.users-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.admin-user-tabs { margin: 8px 0 4px; }
+
 /* Admin → Import (app/admin_import.php): importer rows and the job's progress bars */
 .import-list { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 16px; margin: 16px 0; max-width: 760px; }
 .import-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line-soft); }

@@ -53,6 +53,7 @@ function routes_core(): array
         '/review' => 'review_page',
         '/review/act' => 'review_act',
         '/u/{name}' => 'user_profile',
+        '/u/{name}/moderate' => 'user_moderate_page',
         '/u/{name}/{tab}' => 'user_profile',
         '/settings' => 'user_settings',
         '/settings/{tab}' => 'user_settings',

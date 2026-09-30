@@ -109,16 +109,27 @@ function upgrade_apply(?string $zip_file = null, ?callable $log = null): string
     $log('Installing ' . $new_version);
     $backup = DATA_DIR . '/backup-' . FLATBB_VERSION . '-' . date('Ymd-His');
     @mkdir($backup, 0755, true);
-    foreach (upgrade_paths() as $rel) {
-        $from = $root . '/' . $rel;
-        $to = ROOT . '/' . $rel;
-        if (!file_exists($from)) continue;
-        if (file_exists($to)) upgrade_copy($to, $backup . '/' . $rel);
-        if (file_exists($to)) upgrade_rmdir($to); // also removes a stray directory where a file is expected (or vice versa)
-        if (is_dir($from)) { upgrade_copy($from, $to); }
-        else { @mkdir(dirname($to), 0755, true); if (!@copy($from, $to)) throw new RuntimeException('Cannot write ' . $rel); }
+    $done = []; // rel => whether it existed before, for the way back
+    try {
+        foreach (upgrade_paths() as $rel) {
+            $from = $root . '/' . $rel;
+            $to = ROOT . '/' . $rel;
+            if (!file_exists($from)) continue;
+            $had = file_exists($to);
+            if ($had) upgrade_copy($to, $backup . '/' . $rel);
+            $done[$rel] = $had;
+            if ($had) upgrade_rmdir($to); // also removes a stray directory where a file is expected (or vice versa)
+            if (file_exists($to)) throw new RuntimeException('Cannot replace ' . $rel . ': a file in it is in use');
+            upgrade_copy($from, $to);
+        }
+    } catch (Throwable $e) {
+        upgrade_restore($done, $backup);
+        upgrade_rmdir($tmp);
+        $log('The previous files were put back.');
+        throw new RuntimeException($e->getMessage() . '. The previous files were put back; nothing was upgraded.');
     }
     upgrade_rmdir($tmp);
+    foreach (upgrade_keep_language_packs($backup . '/lang', ROOT . '/lang') as $file) $log('Kept the language pack lang/' . $file);
     $log('Backup of the previous files: ' . $backup);
     // finish: caches. This process still runs the old code, so the schema is brought up to date by app_boot() on the first request
     // with the new code (SCHEMA_VERSION differs from the stored one); schema_install() here only covers helpers that already exist.
@@ -131,9 +142,38 @@ function upgrade_apply(?string $zip_file = null, ?callable $log = null): string
     return $new_version;
 }
 
+/**
+ * lang/ is replaced as a whole: put back the packs the release does not ship (a site's own translation, lang/bg.php).
+ * A pack the release does ship is the release's. Returns the file names put back.
+ */
+function upgrade_keep_language_packs(string $old_dir, string $new_dir): array
+{
+    $kept = [];
+    foreach (glob($old_dir . '/*.php') ?: [] as $file) {
+        $name = basename($file);
+        if (!preg_match('/^[a-z]{2}(-[a-z]{2})?\.php$/', $name) || file_exists($new_dir . '/' . $name)) continue;
+        if (@copy($file, $new_dir . '/' . $name)) $kept[] = $name;
+    }
+    return $kept;
+}
+
+/** Put back what an interrupted upgrade replaced: every path in $done from the backup (a path that did not exist before goes). */
+function upgrade_restore(array $done, string $backup, string $root = ROOT): void
+{
+    foreach ($done as $rel => $had) {
+        $to = $root . '/' . $rel;
+        try {
+            upgrade_rmdir($to);
+            if ($had && file_exists($backup . '/' . $rel)) upgrade_copy($backup . '/' . $rel, $to);
+        } catch (Throwable) {
+            // keep going: every other path is still put back; the backup folder holds this one
+        }
+    }
+}
+
 function upgrade_copy(string $from, string $to): void
 {
-    if (is_file($from)) { @mkdir(dirname($to), 0755, true); copy($from, $to); return; }
+    if (is_file($from)) { @mkdir(dirname($to), 0755, true); if (!@copy($from, $to)) throw new RuntimeException('Cannot write ' . (str_starts_with($to, ROOT . '/') ? substr($to, strlen(ROOT) + 1) : $to)); return; }
     @mkdir($to, 0755, true);
     foreach (scandir($from) ?: [] as $e) {
         if ($e === '.' || $e === '..') continue;
@@ -143,12 +183,29 @@ function upgrade_copy(string $from, string $to): void
 
 function upgrade_rmdir(string $dir): void
 {
-    if (!is_dir($dir)) { @unlink($dir); return; }
+    if (!is_dir($dir)) { upgrade_unlink($dir); return; }
     foreach (scandir($dir) ?: [] as $e) {
         if ($e === '.' || $e === '..') continue;
         upgrade_rmdir($dir . '/' . $e);
     }
     @rmdir($dir);
+}
+
+/**
+ * Remove a file. On Windows the running script stays open (index.php under php-cgi, flatbb on the command line): deleting it
+ * only marks it, its name stays taken until the process ends and the new file cannot be written. Moving it aside first frees
+ * the name at once; the moved copy goes when the process ends (or with the next cache clear).
+ */
+function upgrade_unlink(string $file): void
+{
+    if (!file_exists($file) && !is_link($file)) return;
+    if (PHP_OS_FAMILY === 'Windows') {
+        if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+        foreach ([CACHE_DIR . '/old-' . random_token(6) . '-' . basename($file), $file . '.old-' . random_token(6)] as $aside) { // data/ may sit on another drive
+            if (@rename($file, $aside)) { @unlink($aside); return; }
+        }
+    }
+    @unlink($file);
 }
 
 /** Maintainers: build dist/flatbb-<version>.zip from this checkout and print its sha256. */

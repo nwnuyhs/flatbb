@@ -26,6 +26,10 @@ if ($pending && can_edit_post($post)) { // while it waits its author may still f
     if ((int)$post['floor'] > 0) $actions['delete'] = ['html' => action_form(url('/post/' . $post['id'] . '/delete'), '<button type="submit" class="act danger">' . icon('trash') . '<span>' . t('Delete') . '</span></button>', [], 'inline', t('Delete this reply?'))];
 }
 if ($deleted && is_mod()) $actions['restore'] = ['html' => action_form(url('/post/' . $post['id'] . '/delete'), '<button type="submit" class="act">' . icon('refresh') . '<span>' . t('Restore') . '</span></button>', ['action' => 'restore'], 'inline')];
+$author_group = $u !== null ? group_by_id((int)($u['group_id'] ?? 0)) : null; // cached: no query in the loop
+if (is_mod() && $u !== null && (int)$u['id'] !== uid() && !(int)($author_group['is_admin'] ?? 0) && !(int)($author_group['is_mod'] ?? 0)) {
+    $actions['moderate'] = ['html' => '<a class="act" href="' . h(url('/u/' . rawurlencode((string)$u['username']) . '/moderate')) . '" title="' . t('Ban or delete this member') . '">' . icon('lock') . '<span>' . t('Ban') . '</span></a>', 'weight' => 90];
+}
 $actions['link'] = ['html' => '<a class="act" href="' . h(url('/post/' . $post['id'])) . '" data-copy="' . h(absolute_url('/post/' . $post['id'])) . '" title="' . t('Copy link to this post') . '">' . icon('link') . '<span>' . t('Link') . '</span></a>'];
 $actions = region_list('post.actions', $actions, $ctx);
 $head = $head ?? null;

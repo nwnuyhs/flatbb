@@ -321,9 +321,19 @@ function admin_logo_block(): string
 function admin_page_users(): never
 {
     $q = get_str('q', 50);
-    $list_url = admin_url('users', $q !== '' ? ['q' => $q] : []);
+    $show = in_array(get_str('show', 10), ['new', 'suspended'], true) ? get_str('show', 10) : 'all';
+    $list_url = admin_url('users', array_filter(['q' => $q, 'show' => $show === 'all' ? '' : $show]));
     if (is_post()) {
         check_csrf();
+        if (post_str('bulk', 10) !== '') { // several members at once (app/moderation.php): ban, ban and remove, delete, lift the ban
+            $action = post_str('bulk', 10);
+            $ids = array_map('intval', post_list('ids'));
+            if ($ids === []) fail(t('Tick the members first.'), $list_url);
+            $r = user_moderate($ids, $action, (array)me());
+            if ($r['done'] === [] && $r['skipped'] !== []) fail(implode(' ', array_unique(array_values($r['skipped']))), $list_url);
+            flash(user_moderate_message($r, $action));
+            redirect($list_url);
+        }
         if (post_str('do', 10) !== '') { // the avatar picked or removed on the page: saved at once
             $u = user_by_id(get_int('edit'));
             if ($u === null) json_error(t('User not found.'));
@@ -361,22 +371,35 @@ function admin_page_users(): never
         flash(t('User saved.'));
         redirect($list_url);
     }
-    $where = $q !== '' ? "WHERE username_lower LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!' OR display_name LIKE ? ESCAPE '!'" : '';
-    $params = $q !== '' ? [db_like(mb_strtolower($q)), db_like(mb_strtolower($q)), db_like($q)] : [];
+    $conds = [];
+    $params = [];
+    if ($q !== '') { $conds[] = "(username_lower LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!' OR display_name LIKE ? ESCAPE '!' OR created_ip=?)"; array_push($params, db_like(mb_strtolower($q)), db_like(mb_strtolower($q)), db_like($q), $q); }
+    if ($show === 'new') { $conds[] = 'created_at>?'; $params[] = now() - 7 * 86400; }
+    if ($show === 'suspended') $conds[] = 'status=0';
+    $where = $conds !== [] ? 'WHERE ' . implode(' AND ', $conds) : '';
     $pg = paginate_calc((int)val("SELECT COUNT(*) FROM fb_users {$where}", $params), get_int('page', 1, 1, 100000), 30);
     $rows = [];
     foreach (all("SELECT * FROM fb_users {$where} ORDER BY id DESC LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], $params) as $u) {
         $g = group_by_id((int)$u['group_id']);
         $rows[] = [
+            '<input type="checkbox" name="ids[]" value="' . (int)$u['id'] . '" form="users-bulk" aria-label="' . h(t('Select')) . '">',
             avatar($u, 24) . ' ' . user_link($u) . '<br><small class="muted">#' . (int)$u['id'] . (user_name($u) !== (string)$u['username'] ? ' · @' . h((string)$u['username']) : '') . ($u['email'] !== '' ? ' · ' . h((string)$u['email']) : '') . '</small>',
             h($g['name'] ?? '?'), (int)$u['topic_count'] . ' / ' . (int)$u['post_count'], human_time((int)$u['last_seen']),
             (int)$u['status'] === 1 ? '<span class="flag flag-success">' . t('active') . '</span>' : '<span class="flag flag-danger">' . t('suspended') . '</span>',
-            '<div class="row-actions">' . admin_drawer_link(admin_url('users', ['q' => $q, 'edit' => $u['id']]), t('Edit')) . '</div>',
+            '<div class="row-actions">' . admin_drawer_link(admin_url('users', ['q' => $q, 'edit' => $u['id']]), t('Edit')) . '<a class="btn btn-sm" href="' . h(url('/u/' . rawurlencode((string)$u['username']) . '/moderate')) . '">' . t('Ban or delete') . '</a></div>',
         ];
     }
-    $html = '<form method="get" action="' . h(admin_url('users')) . '" class="admin-toolbar">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/users">') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . t('Search username or email') . '"><button class="btn" type="submit">' . icon('search') . t('Search') . '</button><span class="muted small">' . t('%d users', $pg['total']) . '</span></form>';
-    $html .= admin_table([t('User'), t('Group'), t('Topics / replies'), t('Seen'), t('Status'), ''], $rows, t('No users match.'));
-    $html .= pagination($pg, static fn(int $n): string => admin_url('users', ['q' => $q, 'page' => $n]));
+    $html = '<form method="get" action="' . h(admin_url('users')) . '" class="admin-toolbar">' . (rewrite_enabled() ? '' : '<input type="hidden" name="r" value="/admin/users">') . '<input type="search" name="q" value="' . h($q) . '" placeholder="' . t('Search name, email or IP address') . '"><button class="btn" type="submit">' . icon('search') . t('Search') . '</button><span class="muted small">' . t('%d users', $pg['total']) . '</span></form>';
+    $tabs = '<div class="tabs admin-user-tabs">';
+    foreach (['all' => t('All'), 'new' => t('New this week'), 'suspended' => t('Suspended')] as $k => $label) $tabs .= '<a class="tab' . ($show === $k ? ' active' : '') . '" href="' . h(admin_url('users', array_filter(['q' => $q, 'show' => $k === 'all' ? '' : $k]))) . '">' . h($label) . '</a>';
+    $html .= $tabs . '</div>';
+    $html .= '<form method="post" action="' . h($list_url) . '" id="users-bulk" class="admin-toolbar users-bulk">' . csrf_field() . '<label class="muted small"><input type="checkbox" data-check-all="users-bulk"> ' . t('All on this page') . '</label>'
+        . '<button class="btn btn-sm" name="bulk" value="ban" data-confirm="' . h(t('Ban the ticked members? They are signed out and can no longer sign in.')) . '">' . icon('lock') . t('Ban') . '</button>'
+        . '<button class="btn btn-sm btn-danger" name="bulk" value="remove" data-confirm="' . h(t('Ban the ticked members and remove everything they wrote? Posts can be restored one by one.')) . '">' . icon('trash') . t('Ban and remove all they wrote') . '</button>'
+        . '<button class="btn btn-sm btn-danger" name="bulk" value="delete" data-confirm="' . h(t('Delete the ticked members and everything they wrote, for good? This cannot be undone.')) . '">' . icon('x') . t('Delete') . '</button>'
+        . '<button class="btn btn-sm" name="bulk" value="unban">' . t('Lift the ban') . '</button></form>';
+    $html .= admin_table(['', t('User'), t('Group'), t('Topics / replies'), t('Seen'), t('Status'), ''], $rows, t('No users match.'));
+    $html .= pagination($pg, static fn(int $n): string => admin_url('users', array_filter(['q' => $q, 'show' => $show === 'all' ? '' : $show, 'page' => $n])));
     $drawer = null;
     if (($edit = user_by_id(get_int('edit', 0))) !== null) {
         $opts = [];

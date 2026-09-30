@@ -332,7 +332,15 @@
   /* ---------- plain forms with confirm ---------- */
   document.addEventListener('submit', function (e) {
     var f = e.target;
-    if (f.matches('form[data-confirm]:not([data-ajax])') && !window.confirm(f.getAttribute('data-confirm') || FB.i18n.confirm)) e.preventDefault();
+    if (f.matches('form[data-confirm]:not([data-ajax])') && !window.confirm(f.getAttribute('data-confirm') || FB.i18n.confirm)) { e.preventDefault(); return; }
+    var b = e.submitter; // a button of its own: "Ban", "Delete" in one form
+    if (b && b.hasAttribute('data-confirm') && !f.hasAttribute('data-ajax') && !f.hasAttribute('data-review') && !window.confirm(b.getAttribute('data-confirm') || FB.i18n.confirm)) e.preventDefault();
+  });
+  /* a "select all" box ticks the boxes that belong to its form (form="id" on each box) */
+  document.addEventListener('change', function (e) {
+    var all = e.target.closest ? e.target.closest('[data-check-all]') : null;
+    if (!all) return;
+    $$('input[type="checkbox"][form="' + all.getAttribute('data-check-all') + '"]').forEach(function (c) { c.checked = all.checked; });
   });
 
   /* ---------- a form posted back to its own page keeps the reader's place ---------- */
