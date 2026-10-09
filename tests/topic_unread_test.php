@@ -43,3 +43,20 @@ function test_topic_new_from_marks_the_first_post_not_read_before(): void
     test_same(13, topic_new_from([['id' => 12, 'is_deleted' => 1], ['id' => 13]], 11), 'a deleted post is passed over');
     test_same(0, topic_new_from($posts, 14), 'everything on the page was read');
 }
+
+function test_topic_read_mark_never_moves_back(): void
+{
+    $author = user_create('back_author', '', 'password-123');
+    $reader = user_create('back_reader', '', 'password-123');
+    $cat = (int)val('SELECT id FROM fb_categories ORDER BY id LIMIT 1');
+    $tid = topic_create($cat, $author, 'A long topic read to the end', 'First post.');
+    $first = (int)val('SELECT MIN(id) FROM fb_posts WHERE topic_id=?', [$tid]);
+    $last = post_create(topic_by_id($tid), $author, 'The last reply.');
+    $u = user_by_id($reader);
+    request_cache('me', null, true);
+    request_cache('me', static fn() => $u);
+    topic_mark_read($tid, $last); // read to the end (the last page)
+    topic_mark_read($tid, $first); // then page 1 again (reported by Arruba: the topic showed as unread)
+    test_same($last, (int)val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [$reader, $tid]), 'the mark stays at the end');
+    request_cache('me', null, true);
+}

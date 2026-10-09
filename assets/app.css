@@ -237,7 +237,7 @@ body.no-left.no-right .page-grid { grid-template-columns: minmax(0, 1fr); max-wi
 /* the right column follows the page the way X does (app.js moves --right-top): it scrolls until its last card shows, then stays;
    scrolling back up brings its top back. Shorter than the window, it simply stays under the top bar. Setting right_follow */
 @media (min-width: 1201px) { body.right-follow .col-right { position: sticky; top: var(--right-top, calc(var(--topbar-h) + 20px)); } }
-@media (min-width: 993px) { .page-admin .col-left { max-height: calc(100vh - var(--topbar-h) - 20px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 20px; } } /* a long admin menu scrolls on its own; app.js keeps its position between pages */
+@media (min-width: 993px) { .col-left { max-height: calc(100vh - var(--topbar-h) - 20px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; padding-bottom: 20px; } .col-left:hover { scrollbar-color: var(--line) transparent; } } /* a long menu (many categories, the admin menu) scrolls on its own, also while the list keeps loading below; app.js keeps the admin menu's position between pages */
 .col-main { min-width: 0; }
 .region:empty { display: none; }
 .side-nav, .side-section { margin-bottom: 18px; }
@@ -892,6 +892,8 @@ b.up { color: var(--success); } b.down { color: var(--danger); }
 
 /* ---------- admin ---------- */
 .admin-page h1 { display: flex; align-items: center; gap: 10px; }
+.admin-dash-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+.wrap-anywhere { overflow-wrap: anywhere; }
 .admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .admin-cards .card-body b { display: block; font-size: var(--font-size-3xl); }
 .admin-cards .card-body span { color: var(--text-muted); font-size: var(--font-size-sm); }

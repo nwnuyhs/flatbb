@@ -315,6 +315,7 @@ return [
     'First posts of a new member' => 'نخستین نوشته‌های یک عضو تازه',
     'Fix topic/reply counts on users, categories and tags.' => 'اصلاح شمارنده‌های موضوع/پاسخ روی کاربران، دسته‌ها و برچسب‌ها.',
     'Fix: add the rules from nginx.conf.example to your nginx site (on BaoTa/aaPanel paste them into the site\'s "URL rewrite" box), or keep the shipped .htaccess on Apache. Then click re-check.' => 'رفع مشکل: قوانین nginx.conf.example را به سایت nginx خود اضافه کنید (در BaoTa/aaPanel آن‌ها را در کادر «URL rewrite» سایت بچسبانید)، یا همان .htaccess همراه پکیج را در Apache نگه دارید. سپس «بررسی مجدد» را بزنید.',
+    'Fix: set \'debug\' => false in data/config.php once the site works.' => 'رفع مشکل: وقتی سایت درست کار کرد، در data/config.php مقدار \'debug\' => false را تنظیم کنید.',
     'FlatBB %s is available' => 'flatbb %s در دسترس است',
     'FlatBB Default' => 'پیش‌فرض FlatBB',
     'FlatBB is installed. Welcome!' => 'flatbb نصب شد. خوش آمدید!',

@@ -314,6 +314,7 @@ return [
     'First posts of a new member' => '新会员的前几帖',
     'Fix topic/reply counts on users, categories and tags.' => '修正用户、分类和标签上的主题数和回复数。',
     'Fix: add the rules from nginx.conf.example to your nginx site (on BaoTa/aaPanel paste them into the site\'s "URL rewrite" box), or keep the shipped .htaccess on Apache. Then click re-check.' => '修复方法：把 nginx.conf.example 中的规则加到你的 nginx 站点（宝塔/aaPanel 请粘贴到站点的“伪静态”设置里），Apache 则保留自带的 .htaccess。然后点击重新检查。',
+    'Fix: set \'debug\' => false in data/config.php once the site works.' => '修复方法：网站正常运行后，在 data/config.php 中设置 \'debug\' => false。',
     'FlatBB %s is available' => 'FlatBB %s 已发布',
     'FlatBB Default' => 'FlatBB 默认',
     'FlatBB is installed. Welcome!' => 'FlatBB 已安装。欢迎！',

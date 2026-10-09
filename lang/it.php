@@ -314,6 +314,7 @@ return [
     'First posts of a new member' => 'Primi messaggi di un nuovo membro',
     'Fix topic/reply counts on users, categories and tags.' => 'Corregge i conteggi di discussioni/risposte su utenti, categorie e tag.',
     'Fix: add the rules from nginx.conf.example to your nginx site (on BaoTa/aaPanel paste them into the site\'s "URL rewrite" box), or keep the shipped .htaccess on Apache. Then click re-check.' => 'Soluzione: aggiungi le regole da nginx.conf.example al tuo sito nginx (su BaoTa/aaPanel incollale nel campo "URL rewrite" del sito), oppure mantieni il file .htaccess fornito su Apache. Poi clicca su ricontrolla.',
+    'Fix: set \'debug\' => false in data/config.php once the site works.' => 'Soluzione: imposta \'debug\' => false in data/config.php quando il sito funziona.',
     'FlatBB %s is available' => 'flatbb %s è disponibile',
     'FlatBB Default' => 'FlatBB predefinito',
     'FlatBB is installed. Welcome!' => 'flatbb è installato. Benvenuto!',

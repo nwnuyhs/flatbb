@@ -2,6 +2,13 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.2.3
+
+- **Fix: a read topic turned unread again.** Opening page 1 of a long topic moved the member's read mark back to the end of page 1, so the topic showed as unread in the lists. `topic_mark_read($tid, $last_post_id, $known = -1)` now only moves the mark forward. Reported by [Arruba](https://www.flatbb.com/post/799).
+- **Fix: the left column could not show all its links** on a long page (many categories) while the topic list keeps loading below. On wide screens it now scrolls on its own, with a thin scrollbar that shows on hover. Reported by [Arruba](https://www.flatbb.com/post/802).
+- Admin dashboard: on phones the System and Newest members tables have space between them and the cron address wraps. The deployment check gives the fix for the problem it found: the web server rules, or switching debug mode off. Reported by [luoyekx](https://www.flatbb.com/post/701).
+- For plugins: to add options to Settings → Preferences, answer `user.settings_tab` when `$ctx['tab'] === 'preferences'` (the HTML goes inside the form, before Save) and save them in `user.prefs_save`.
+
 ## 0.2.2
 
 - **Dealing with spammers** (app/moderation.php): one page per member, `/u/{name}/moderate`, for moderators (profile "Ban or delete", a post's "Ban" action, Admin → Users). Ban (suspended and signed out everywhere), ban and remove everything they wrote (soft, restorable post by post), delete the member and everything they wrote (administrators; cannot be undone: topics with the replies in them, replies elsewhere, likes, notifications, bookmarks, read marks, attachments and their files, points), lift a ban. Accounts that signed up from the same address are listed and can be handled together. Admin → Users ticks several members at once, lists the new and the suspended ones, and searches by IP address. Moderators act on members, administrators also on moderators, nobody on an administrator or on themselves. Functions `user_ban()`, `user_unban()`, `user_remove_content()`, `user_delete()`, `user_moderate()`.

@@ -86,9 +86,11 @@ function admin_page_dashboard(): never
     $cards = region_list('admin.dashboard.cards', $cards, []);
     $html = '';
     if (!empty($sec['issues'])) {
-        $html .= '<div class="flash flash-error"><b>' . t('Deployment check') . '</b><ul style="margin:6px 0 8px 18px;padding:0">';
+        $html .= '<div class="flash flash-error"><b>' . t('Deployment check') . '</b><ul style="margin:6px 0 8px;padding-inline-start:18px">';
         foreach ($sec['issues'] as $i) $html .= '<li>' . h($i) . '</li>';
-        $html .= '</ul><div class="small">' . t('Fix: add the rules from nginx.conf.example to your nginx site (on BaoTa/aaPanel paste them into the site\'s "URL rewrite" box), or keep the shipped .htaccess on Apache. Then click re-check.') . '</div>' . action_form(admin_url(), '<button class="btn btn-sm" style="margin-top:8px">' . icon('refresh') . t('Re-check') . '</button>', ['action' => 'recheck']) . '</div>';
+        $server = count($sec['issues']) > (debug_mode() ? 1 : 0); // something besides debug mode: the web server's rules need a look
+        $html .= '</ul>' . ($server ? '<div class="small">' . t('Fix: add the rules from nginx.conf.example to your nginx site (on BaoTa/aaPanel paste them into the site\'s "URL rewrite" box), or keep the shipped .htaccess on Apache. Then click re-check.') . '</div>' : '')
+            . (debug_mode() ? '<div class="small">' . t('Fix: set \'debug\' => false in data/config.php once the site works.') . '</div>' : '') . action_form(admin_url(), '<button class="btn btn-sm" style="margin-top:8px">' . icon('refresh') . t('Re-check') . '</button>', ['action' => 'recheck']) . '</div>';
     } else {
         $html .= '<p class="muted small">' . icon('check') . ' ' . t('Deployment check passed %s.', human_time((int)($sec['at'] ?? now()))) . ' ' . action_form(admin_url(), '<button class="link">' . t('re-check') . '</button>', ['action' => 'recheck'], 'inline') . '</p>';
     }
@@ -104,10 +106,10 @@ function admin_page_dashboard(): never
         [t('Cron'), setting('cron_key') !== '' ? absolute_url('/cron', ['key' => setting('cron_key')]) : '-'],
     ];
     $rows = '';
-    foreach ($info as [$k, $v]) $rows .= '<tr><th>' . h($k) . '</th><td>' . h($v) . '</td></tr>';
+    foreach ($info as [$k, $v]) $rows .= '<tr><th>' . h($k) . '</th><td class="wrap-anywhere">' . h($v) . '</td></tr>';
     $ru = '';
     foreach (all('SELECT id,username,display_name,created_at FROM fb_users ORDER BY id DESC LIMIT 8') as $u) $ru .= '<tr><td>' . user_link($u) . '</td><td>' . human_time((int)$u['created_at']) . '</td></tr>';
-    $html .= '<div class="form-grid"><div class="table-wrap"><table class="admin"><thead><tr><th colspan="2">' . t('System') . '</th></tr></thead><tbody>' . $rows . '</tbody></table></div>';
+    $html .= '<div class="admin-dash-tables"><div class="table-wrap"><table class="admin"><thead><tr><th colspan="2">' . t('System') . '</th></tr></thead><tbody>' . $rows . '</tbody></table></div>';
     $html .= '<div class="table-wrap"><table class="admin"><thead><tr><th>' . t('Newest members') . '</th><th></th></tr></thead><tbody>' . $ru . '</tbody></table></div></div>';
     admin_page(t('Dashboard'), $html, 'dashboard');
 }

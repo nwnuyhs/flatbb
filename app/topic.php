@@ -130,9 +130,15 @@ function topic_stats_refresh(int $tid): void
     category_refresh_stats((int)$t['category_id']);
 }
 
-function topic_mark_read(int $tid, int $last_post_id): void
+/**
+ * Remember how far the member has read a topic. The mark only moves forward: opening an earlier page of a long topic
+ * does not make the later replies unread again. $known: the mark already read by the caller (-1 = look it up).
+ */
+function topic_mark_read(int $tid, int $last_post_id, int $known = -1): void
 {
     if (uid() === 0) return;
+    if ($known < 0) $known = (int)(val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [uid(), $tid]) ?? 0);
+    if ($last_post_id <= $known) return;
     db_upsert('fb_topic_reads', ['user_id' => uid(), 'topic_id' => $tid, 'last_post_id' => $last_post_id, 'read_at' => now()], ['user_id', 'topic_id']);
 }
 
@@ -185,7 +191,7 @@ function topic_view(string $id): never
     $posts = posts_attach($posts, $topic);
     topic_count_view((int)$topic['id']);
     $prev_read = uid() > 0 ? (int)(val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [uid(), (int)$topic['id']]) ?? 0) : 0; // before this visit moves it
-    if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max((int)end($posts)['id'], (int)$topic['last_post_id']) : (int)end($posts)['id']);
+    if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max((int)end($posts)['id'], (int)$topic['last_post_id']) : (int)end($posts)['id'], $prev_read);
     $topic['category'] = $cat;
     $topic['tags'] = tags_for_topics([(int)$topic['id']])[(int)$topic['id']] ?? [];
     $topic['user'] = $posts[0]['user'] ?? user_by_id((int)$topic['user_id']);
