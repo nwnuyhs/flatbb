@@ -2,6 +2,11 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.2.4
+
+- **Vietnamese** language pack (`lang/vi.php`), contributed by [Hàn Phong](https://www.flatbb.com/t/134).
+- One-click upgrades no longer clear the whole opcode cache at the end: only the PHP files that were replaced are invalidated (`upgrade_opcache_invalidate()`). A full `opcache_reset()` while the site was serving requests crashed PHP 8.4 workers on one server. This takes effect from the next upgrade on; after the upgrade to 0.2.4 a server on PHP 8.4 may need its PHP service restarted once if pages answer 502.
+
 ## 0.2.3
 
 - **Fix: a read topic turned unread again.** Opening page 1 of a long topic moved the member's read mark back to the end of page 1, so the topic showed as unread in the lists. `topic_mark_read($tid, $last_post_id, $known = -1)` now only moves the mark forward. Reported by [Arruba](https://www.flatbb.com/post/799).

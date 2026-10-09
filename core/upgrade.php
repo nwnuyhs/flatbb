@@ -137,9 +137,24 @@ function upgrade_apply(?string $zip_file = null, ?callable $log = null): string
     foreach (glob(CACHE_DIR . '/*') ?: [] as $f) if (is_file($f) && !str_starts_with(basename($f), 'plugins.')) @unlink($f);
     plugin_sync();
     save_settings(['stats_cache' => '', 'core_update_cache' => '']);
-    if (function_exists('opcache_reset')) @opcache_reset();
+    upgrade_opcache_invalidate(); // only the files just replaced: a full opcache_reset() under load crashed PHP 8.4 workers (live, 0.2.3)
     fire('upgrade.after_apply', ['from' => FLATBB_VERSION, 'to' => $new_version]);
     return $new_version;
+}
+
+/** Tell the opcode cache that the PHP files of the upgraded paths changed. Returns how many it dropped. */
+function upgrade_opcache_invalidate(): int
+{
+    if (!function_exists('opcache_invalidate')) return 0;
+    $n = 0;
+    foreach (upgrade_paths() as $rel) {
+        $path = ROOT . '/' . $rel;
+        $files = is_dir($path) ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)) : (is_file($path) ? [new SplFileInfo($path)] : []);
+        foreach ($files as $f) {
+            if ($f->isFile() && (str_ends_with($f->getFilename(), '.php') || $f->getFilename() === 'flatbb') && @opcache_invalidate($f->getPathname(), true)) $n++;
+        }
+    }
+    return $n;
 }
 
 /**
