@@ -24,7 +24,7 @@ function admin_page_import(): never
     $html = '<p class="muted">' . t('Bring members, topics and replies over from another forum. Each source forum has its own importer plugin.') . '</p>';
     if ($job !== []) {
         $imp = importer((string)$job['plugin']);
-        $html .= '<div class="admin-form import-current"><h3>' . t('Import from %s', $imp['label'] ?? (string)$job['plugin']) . '</h3>' . import_job_html($job, admin_url('import')) . '</div>';
+        $html .= '<div class="admin-form import-current"><h3>' . t('Import from %s', h((string)($imp['label'] ?? $job['plugin']))) . '</h3>' . import_job_html($job, admin_url('import')) . '</div>';
     }
     $rows = '';
     foreach (importers() as $imp) {
@@ -78,7 +78,7 @@ function import_job_html(array $job, string $back): string
             . '<p class="muted small">' . t('A large forum? Run it from the command line instead:') . ' <code>php flatbb import ' . h($imp['from'] ?? (string)$job['plugin']) . '</code></p>'
             . action_form(admin_url('import'), '<button class="btn btn-sm">' . t('Cancel import') . '</button>', ['action' => 'cancel'] + $hidden, '', t('Stop the import? What was imported so far stays until you start again.'));
     } elseif ($status === 'failed') {
-        $html .= '<div class="flash flash-error">' . t('The import stopped: %s', (string)$job['error']) . '</div><div class="btn-row">'
+        $html .= '<div class="flash flash-error">' . t('The import stopped: %s', h((string)$job['error'])) . '</div><div class="btn-row">'
             . action_form(admin_url('import'), '<button class="btn btn-primary">' . t('Try again') . '</button>', ['action' => 'retry'] + $hidden, 'inline')
             . action_form(admin_url('import'), '<button class="btn">' . t('Cancel import') . '</button>', ['action' => 'cancel'] + $hidden, 'inline', t('Stop the import? What was imported so far stays until you start again.')) . '</div>';
     } elseif ($status === 'cancelled') {

@@ -64,24 +64,55 @@ function search_query(string $q, int $page = 1, int $per_page = 20): array
     if (mb_strlen($q) < 2) return ['total' => 0, 'rows' => []];
     $offset = max(0, $page - 1) * $per_page;
     $backend = search_backend();
-    if ($backend === 'fts5') {
-        $terms = array_filter(preg_split('/\s+/', $q) ?: []);
-        $match = implode(' ', array_map(static fn(string $t): string => '"' . str_replace('"', '', $t) . '"', $terms));
-        $total = (int)val('SELECT COUNT(*) FROM fb_search_fts WHERE fb_search_fts MATCH ?', [$match]);
-        $rows = all('SELECT post_id,topic_id FROM fb_search_fts WHERE fb_search_fts MATCH ? ORDER BY rank LIMIT ? OFFSET ?', [$match, $per_page, $offset]);
+    ['index' => $index, 'like' => $like] = search_terms($q, $backend);
+    if ($index === [] && $like === []) return ['total' => 0, 'rows' => []];
+    // words the index cannot find are matched with LIKE on fb_search, every word required
+    $where = []; $args = [];
+    foreach ($like as $t) { $where[] = "(s.title LIKE ? ESCAPE '!' OR s.body LIKE ? ESCAPE '!')"; $args[] = db_like($t); $args[] = db_like($t); }
+    if ($backend === 'fts5' && $index !== []) {
+        $match = implode(' ', array_map(static fn(string $t): string => '"' . $t . '"', $index));
+        $join = $like !== [] ? ' JOIN fb_search s ON s.post_id=f.post_id' : '';
+        $cond = 'fb_search_fts MATCH ?' . ($where !== [] ? ' AND ' . implode(' AND ', $where) : '');
+        $total = (int)val("SELECT COUNT(*) FROM fb_search_fts f{$join} WHERE {$cond}", array_merge([$match], $args));
+        $rows = all("SELECT f.post_id,f.topic_id FROM fb_search_fts f{$join} WHERE {$cond} ORDER BY f.rank LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, array_merge([$match], $args));
         return ['total' => $total, 'rows' => $rows];
     }
-    if ($backend === 'mysql') {
-        $terms = array_filter(preg_split('/\s+/', $q) ?: [], static fn(string $t): bool => mb_strlen($t) >= 2);
-        $bool = implode(' ', array_map(static fn(string $t): string => '+' . preg_replace('/[+\-<>()~*"@]/', '', $t) . '*', $terms));
-        $total = (int)val('SELECT COUNT(*) FROM fb_search WHERE MATCH(title,body) AGAINST(? IN BOOLEAN MODE)', [$bool]);
-        $rows = all('SELECT post_id,topic_id FROM fb_search WHERE MATCH(title,body) AGAINST(? IN BOOLEAN MODE) ORDER BY MATCH(title,body) AGAINST(? IN BOOLEAN MODE) DESC LIMIT ' . (int)$per_page . ' OFFSET ' . (int)$offset, [$bool, $bool]);
+    if ($backend === 'mysql' && $index !== []) {
+        $bool = implode(' ', array_map(static fn(string $t): string => '+' . $t . '*', $index));
+        $cond = 'MATCH(s.title,s.body) AGAINST(? IN BOOLEAN MODE)' . ($where !== [] ? ' AND ' . implode(' AND ', $where) : '');
+        $total = (int)val("SELECT COUNT(*) FROM fb_search s WHERE {$cond}", array_merge([$bool], $args));
+        $rows = all("SELECT s.post_id,s.topic_id FROM fb_search s WHERE {$cond} ORDER BY MATCH(s.title,s.body) AGAINST(? IN BOOLEAN MODE) DESC LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, array_merge([$bool], $args, [$bool]));
         return ['total' => $total, 'rows' => $rows];
     }
-    $like = db_like($q);
-    $total = (int)val("SELECT COUNT(*) FROM fb_search WHERE title LIKE ? ESCAPE '!' OR body LIKE ? ESCAPE '!'", [$like, $like]);
-    $rows = all("SELECT post_id,topic_id FROM fb_search WHERE title LIKE ? ESCAPE '!' OR body LIKE ? ESCAPE '!' ORDER BY post_id DESC LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, [$like, $like]);
+    foreach ($index as $t) { $where[] = "(s.title LIKE ? ESCAPE '!' OR s.body LIKE ? ESCAPE '!')"; $args[] = db_like($t); $args[] = db_like($t); }
+    $cond = implode(' AND ', $where);
+    $total = (int)val("SELECT COUNT(*) FROM fb_search s WHERE {$cond}", $args);
+    $rows = all("SELECT s.post_id,s.topic_id FROM fb_search s WHERE {$cond} ORDER BY s.post_id DESC LIMIT " . (int)$per_page . ' OFFSET ' . (int)$offset, $args);
     return ['total' => $total, 'rows' => $rows];
+}
+
+/**
+ * Split a search into the words the full-text index can find and the words it cannot, which are matched with LIKE:
+ * Chinese, Japanese, Korean and Thai (written without spaces, so the index never splits them into words), and on MySQL
+ * two-letter words (InnoDB indexes three letters and up). Stopwords (MySQL's list: "the", "how", …) and single letters are
+ * dropped when other words remain: MySQL never indexes them, and requiring one returned nothing ("how to install"). Returns ['index' => [...], 'like' => [...]], at most 8 words in all.
+ */
+function search_terms(string $q, string $backend): array
+{
+    static $stop = ['a', 'about', 'an', 'are', 'as', 'at', 'be', 'by', 'com', 'de', 'en', 'for', 'from', 'how', 'i', 'in', 'is', 'it', 'la', 'of', 'on', 'or', 'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who', 'will', 'with', 'und', 'www'];
+    // the index backends treat + - " * ( ) … as operators: there they separate words; LIKE takes the words as typed
+    $words = preg_split($backend === 'like' ? '/\s+/u' : '/[\s+\-<>()~*"@]+/u', $q) ?: [];
+    $index = $like = $stops = [];
+    foreach (array_unique(array_filter($words, static fn(string $t): bool => $t !== '')) as $t) {
+        if (count($index) + count($like) >= 8) break;
+        if ($backend === 'like') $like[] = $t;
+        elseif (preg_match('/[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}\p{Thai}]/u', $t)) $like[] = $t;
+        elseif (in_array(mb_strtolower($t), $stop, true) || mb_strlen($t) === 1) $stops[] = $t; // "how to install" means "install"
+        elseif ($backend === 'mysql' && mb_strlen($t) < 3) $like[] = $t;
+        else $index[] = $t;
+    }
+    if ($index === [] && $like === []) $like = $stops; // only stopwords: look for them as text
+    return ['index' => array_values($index), 'like' => array_values($like)];
 }
 
 /** Rebuild the whole index from fb_posts. Returns number of posts indexed. */

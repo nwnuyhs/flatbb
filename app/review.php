@@ -21,7 +21,11 @@ const REVIEW_PENDING = 2; // fb_topics / fb_posts is_deleted: 0 shown, 1 deleted
 function review_hold_reason(string $kind, int $user_id, int $category_id, string $text): string
 {
     $user = user_by_id($user_id);
-    if ($user === null) return '';
+    if ($user === null) { // a post without an account (a guest-comments plugin): only the review.hold filter decides (ctx user null, guest true)
+        if ($user_id !== 0) return '';
+        $why = hook('review.hold', '', ['kind' => $kind, 'user' => null, 'guest' => true, 'category' => category_by_id($category_id), 'text' => $text]);
+        return is_string($why) ? $why : '';
+    }
     $group = group_by_id((int)$user['group_id']);
     if ($group !== null && ((int)$group['is_admin'] === 1 || (int)$group['is_mod'] === 1)) return '';
     $cat = category_by_id($category_id);
@@ -107,6 +111,7 @@ function review_reject(array $r, int $by, string $note): bool
 /** Approve every waiting item of this member and trust them: the new-member rule no longer holds their posts. */
 function review_trust(array $r, int $by): int
 {
+    if ((int)$r['user_id'] <= 0) return review_approve($r, $by) ? 1 : 0; // guests share user id 0: trusting one would approve them all
     $prefs = json_decode_array((string)val('SELECT prefs FROM fb_users WHERE id=?', [(int)$r['user_id']]));
     $prefs['review_trusted'] = 1;
     db_update('fb_users', ['prefs' => json_encode_value($prefs)], 'id=?', [(int)$r['user_id']]);
@@ -146,15 +151,32 @@ function review_page(): never
     $join = $status === 0 ? ' JOIN fb_posts p ON p.id=r.post_id AND p.is_deleted=' . REVIEW_PENDING : ''; // withdrawn while waiting: gone from the queue
     $pg = paginate_calc((int)val("SELECT COUNT(*) FROM fb_review r{$join} WHERE r.status=?", [$status]), get_int('page', 1, 1, 100000), 30);
     $rows = all("SELECT r.* FROM fb_review r{$join} WHERE r.status=? ORDER BY r.id " . ($status === 0 ? 'ASC' : 'DESC') . ' LIMIT ' . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [$status]);
-    $posts = rows_by_ids('fb_posts', array_column($rows, 'post_id'), 'id,topic_id,user_id,body,is_deleted,created_at');
+    $posts = rows_by_ids('fb_posts', array_column($rows, 'post_id'), 'id,topic_id,user_id,body,body_html,meta,is_deleted,created_at');
+    $links = array_map(static fn(array $p): array => review_links((string)$p['body_html']), $posts);
     $topics = rows_by_ids('fb_topics', array_column($rows, 'topic_id'), 'id,title,slug,category_id,is_deleted');
     $users = users_by_ids(array_merge(array_column($rows, 'user_id'), array_column($rows, 'decided_by')));
     $full = $rows !== [] ? rows_by_ids('fb_users', array_column($rows, 'user_id'), 'id,created_at,topic_count,post_count,status') : [];
     $counts = ['waiting' => review_count(), 'approved' => (int)val('SELECT COUNT(*) FROM fb_review WHERE status=1'), 'rejected' => (int)val('SELECT COUNT(*) FROM fb_review WHERE status=2')];
     $tabs = [];
     foreach (['waiting' => t('Waiting'), 'approved' => t('Approved'), 'rejected' => t('Rejected')] as $k => $label) $tabs[$k] = ['label' => $label, 'url' => url('/review', $k === 'waiting' ? [] : ['tab' => $k]), 'active' => $k === $tab, 'badge' => $counts[$k] ?: ''];
-    page(t('Review queue'), view('review', ['rows' => $rows, 'posts' => $posts, 'topics' => $topics, 'users' => $users, 'full' => $full, 'tab' => $tab, 'tabs' => tabs($tabs),
+    page(t('Review queue'), view('review', ['rows' => $rows, 'posts' => $posts, 'links' => $links, 'topics' => $topics, 'users' => $users, 'full' => $full, 'tab' => $tab, 'tabs' => tabs($tabs),
         'pagination' => pagination($pg, static fn(int $n): string => url('/review', array_filter(['tab' => $tab === 'waiting' ? null : $tab, 'page' => $n > 1 ? $n : null])))]), ['class' => 'page-review', 'robots' => 'noindex']);
+}
+
+/** The addresses a post links to outside this site, at most 8, so a moderator sees where a post sends readers before approving it. */
+function review_links(string $html): array
+{
+    if (!preg_match_all('/<a\s[^>]*href="(https?:\/\/[^"]+)"/i', $html, $m)) return [];
+    $own = strtolower((string)parse_url(absolute_url('/'), PHP_URL_HOST));
+    $out = [];
+    foreach ($m[1] as $href) {
+        $href = html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $host = strtolower((string)parse_url($href, PHP_URL_HOST));
+        if ($host === '' || $host === $own) continue;
+        $out[$href] = $host;
+        if (count($out) >= 8) break;
+    }
+    return $out;
 }
 
 /** POST /review/act: id, do = approve | trust | reject | ban, note (reject). Answers JSON to the page's script, else goes back. */

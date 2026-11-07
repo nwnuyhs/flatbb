@@ -162,7 +162,7 @@ function attachments_link_to_post(int $post_id, int $user_id, string $body): voi
 }
 
 /**
- * Store a site asset (logo, favicon) uploaded from the admin: uploads/site/<key>.<ext>.
+ * Store a site asset (logo, favicon) uploaded from the admin: uploads/site/<key>-<new name>.<ext> (icon_* library files: <key>.<ext>).
  * Returns the relative path for setting(); throws RuntimeException with a user message.
  */
 function upload_site_image(string $key, array $file, array $exts, int $max_bytes = 2097152): string
@@ -186,8 +186,14 @@ function upload_site_image(string $key, array $file, array $exts, int $max_bytes
     }
     $dir = UPLOAD_DIR . '/site';
     if (!is_dir($dir) && !@mkdir($dir, 0755, true)) throw new RuntimeException(t('Upload directory is not writable.'));
-    foreach (glob($dir . '/' . $key . '.*') ?: [] as $old) @unlink($old);
-    $rel = 'site/' . preg_replace('/[^a-z0-9_]/', '', $key) . '.' . $ext;
+    // Every upload gets a new file name: a web server that caches open files (nginx open_file_cache) kept serving the old
+    // picture under the same name, ?v= or not (a new favicon never showed). The one before stays for the admin's Undo.
+    $key = (string)preg_replace('/[^a-z0-9_]/', '', $key);
+    $by_content = str_starts_with($key, 'icon_'); // the icon library names files by their content: same name, same file
+    $old = array_merge(glob($dir . '/' . $key . '.*') ?: [], glob($dir . '/' . $key . '-*.*') ?: []);
+    usort($old, static fn(string $a, string $b): int => (int)@filemtime($b) <=> (int)@filemtime($a));
+    foreach ($by_content ? $old : array_slice($old, 1) as $f) @unlink($f);
+    $rel = 'site/' . $key . ($by_content ? '' : '-' . base_convert((string)now(), 10, 36) . bin2hex(random_bytes(2))) . '.' . $ext;
     if ($clean !== null) { if (@file_put_contents(UPLOAD_DIR . '/' . $rel, $clean) === false) throw new RuntimeException(t('Could not save the file.')); }
     elseif (!@move_uploaded_file($tmp, UPLOAD_DIR . '/' . $rel) && !@rename($tmp, UPLOAD_DIR . '/' . $rel)) throw new RuntimeException(t('Could not save the file.'));
     fire('upload.after_save', ['kind' => 'site', 'id' => 0, 'path' => $rel, 'file' => UPLOAD_DIR . '/' . $rel, 'name' => basename($rel), 'mime' => $ext === 'svg' ? 'image/svg+xml' : upload_mime(UPLOAD_DIR . '/' . $rel), 'size' => (int)filesize(UPLOAD_DIR . '/' . $rel), 'is_image' => true, 'user_id' => uid()]);

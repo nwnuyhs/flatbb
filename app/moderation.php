@@ -58,7 +58,7 @@ function user_remove_content(int $uid, int $by): array
     foreach ($topics as $tid) { search_delete_topic($tid); fire('topic.after_delete', ['topic_id' => $tid]); }
     foreach (array_diff($touched, $topics) as $tid) topic_stats_refresh($tid);
     foreach ($cats as $cid) category_refresh_stats($cid);
-    if ($tags !== []) q('UPDATE fb_tags SET topic_count=(SELECT COUNT(*) FROM fb_topic_tags tt JOIN fb_topics t ON t.id=tt.topic_id WHERE tt.tag_id=fb_tags.id AND t.is_deleted=0) WHERE id IN (' . sql_marks(count($tags)) . ')', $tags);
+    tags_refresh_counts($tags);
     request_cache('review_count', null, true);
     save_settings(['stats_cache' => '']);
     return ['topics' => count($topics), 'replies' => $replies];
@@ -117,12 +117,8 @@ function user_delete(int $uid): array
     if ($liked_posts !== []) q('UPDATE fb_posts SET like_count=(SELECT COUNT(*) FROM fb_likes WHERE fb_likes.post_id=fb_posts.id) WHERE id IN (' . sql_marks(count($liked_posts)) . ')', $liked_posts);
     foreach ($touched as $tid) topic_stats_refresh($tid);
     foreach ($cats as $cid) category_refresh_stats($cid);
-    if ($tags !== []) q('UPDATE fb_tags SET topic_count=(SELECT COUNT(*) FROM fb_topic_tags tt JOIN fb_topics t ON t.id=tt.topic_id WHERE tt.tag_id=fb_tags.id AND t.is_deleted=0) WHERE id IN (' . sql_marks(count($tags)) . ')', $tags);
-    if ($others !== []) {
-        q('UPDATE fb_users SET topic_count=(SELECT COUNT(*) FROM fb_topics t WHERE t.user_id=fb_users.id AND t.is_deleted=0),'
-            . ' post_count=(SELECT COUNT(*) FROM fb_posts p WHERE p.user_id=fb_users.id AND p.is_deleted=0 AND p.floor>0),'
-            . ' like_count=(SELECT COUNT(*) FROM fb_likes l JOIN fb_posts p ON p.id=l.post_id WHERE p.user_id=fb_users.id) WHERE id IN (' . sql_marks(count($others)) . ')', $others);
-    }
+    tags_refresh_counts($tags);
+    users_refresh_counts($others);
     request_cache('review_count', null, true);
     request_cache('users_full', null, true);
     save_settings(['stats_cache' => '']);

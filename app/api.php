@@ -75,12 +75,29 @@ function seo_sitemap(): never
     exit;
 }
 
+/** The site's favicon as a page link names it (an uploaded one, else the FlatBB mark): the default site icon address. */
+function site_favicon_url(): string
+{
+    $fav = setting('site_favicon');
+    return $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg';
+}
+
+/**
+ * GET /favicon.ico: search engines, bookmarks, feed readers and some browsers ask this address instead of reading the
+ * page's <link rel="icon">. It sends them to the current favicon, cached for an hour so a new upload shows up soon.
+ */
+function seo_favicon(): never
+{
+    header('Cache-Control: public, max-age=3600');
+    header('Location: ' . site_favicon_url(), true, 302);
+    exit;
+}
+
 /** Web app manifest: "Add to home screen" uses the site name and icon instead of the page title. */
 function seo_manifest(): never
 {
     $site = setting('site_name');
-    $fav = setting('site_favicon');
-    $icon = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg';
+    $icon = site_favicon_url();
     $type = str_contains($icon, '.svg') ? 'image/svg+xml' : (str_contains($icon, '.ico') ? 'image/x-icon' : 'image/png');
     $brand = preg_match('/^#[0-9a-f]{6}$/i', setting('brand_color', '#e7672e')) ? setting('brand_color') : '#e7672e';
     header('Content-Type: application/manifest+json; charset=utf-8');

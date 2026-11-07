@@ -55,6 +55,15 @@ function topic_set_tags(int $topic_id, array $names): void
     }
 }
 
+/** Recount tags from their visible topics: the given tag ids, or every tag when $ids is null. */
+function tags_refresh_counts(?array $ids = null): void
+{
+    $sql = 'UPDATE fb_tags SET topic_count=(SELECT COUNT(*) FROM fb_topic_tags tt JOIN fb_topics t ON t.id=tt.topic_id WHERE tt.tag_id=fb_tags.id AND t.is_deleted=0)';
+    if ($ids === null) { q($sql); return; }
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if ($ids !== []) q($sql . ' WHERE id IN (' . sql_marks(count($ids)) . ')', $ids);
+}
+
 /** GET /tags */
 function tag_index(): never
 {

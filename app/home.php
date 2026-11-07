@@ -134,9 +134,18 @@ function topic_list_attach(array $rows): array
         $ids = array_map('intval', array_column($rows, 'id'));
         foreach (all('SELECT topic_id,last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id IN (' . sql_marks(count($ids)) . ')', array_merge([uid()], $ids)) as $r) $reads[(int)$r['topic_id']] = (int)$r['last_post_id'];
     }
+    $guest_posts = []; // the last reply (or the topic) written without an account: its author comes from the post (post_author())
+    if (hook_has('post.author')) {
+        $ids = [];
+        foreach ($rows as $r) {
+            if ((int)$r['user_id'] === 0 && (int)($r['first_post_id'] ?? 0) > 0) $ids[] = (int)$r['first_post_id'];
+            if ((int)$r['last_user_id'] === 0 && (int)($r['last_post_id'] ?? 0) > 0) $ids[] = (int)$r['last_post_id'];
+        }
+        if ($ids !== []) $guest_posts = rows_by_ids('fb_posts', $ids, 'id,user_id,meta,created_at');
+    }
     foreach ($rows as &$t) {
-        $t['user'] = $users[(int)$t['user_id']] ?? null;
-        $t['last_user'] = $users[(int)$t['last_user_id']] ?? null;
+        $t['user'] = (int)$t['user_id'] === 0 && isset($guest_posts[(int)($t['first_post_id'] ?? 0)]) ? post_author($guest_posts[(int)$t['first_post_id']], []) : ($users[(int)$t['user_id']] ?? null);
+        $t['last_user'] = (int)$t['last_user_id'] === 0 && isset($guest_posts[(int)($t['last_post_id'] ?? 0)]) ? post_author($guest_posts[(int)$t['last_post_id']], []) : ($users[(int)$t['last_user_id']] ?? null);
         $t['category'] = category_by_id((int)$t['category_id']);
         $t['tags'] = $tags[(int)$t['id']] ?? [];
         $t['unread'] = uid() > 0 && (int)$t['last_post_at'] > (int)(me()['created_at'] ?? 0) && (!isset($reads[(int)$t['id']]) || $reads[(int)$t['id']] < (int)$t['last_post_id']);

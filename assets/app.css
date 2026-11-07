@@ -589,6 +589,12 @@ table.sortable tr:hover .drag-grip { color: var(--text-muted); }
 .review-reason { padding: 1px 7px; border-radius: 6px; background: var(--warning-soft); color: var(--warning); font-size: var(--font-size-xs); }
 .review-title { display: block; color: var(--text); font-weight: 600; }
 .review-text { margin-top: 2px; color: var(--text-muted); font-size: var(--font-size-sm); overflow-wrap: anywhere; }
+.review-links { margin-top: 4px; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.review-links .icon { width: 14px; height: 14px; }
+.review-links a { color: var(--danger); overflow-wrap: anywhere; }
+.review-full { margin-top: 4px; }
+.review-full summary { cursor: pointer; color: var(--brand); }
+.review-full .post-content { margin-top: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); max-height: 420px; overflow: auto; font-size: var(--font-size-sm); }
 .review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .review-actions .review-danger { color: var(--danger); }
 .review-note { display: inline-flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }

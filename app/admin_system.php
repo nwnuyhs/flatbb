@@ -359,7 +359,7 @@ function admin_page_tools(): never
             case 'recount':
                 foreach (categories() as $c) category_refresh_stats((int)$c['id']);
                 q('UPDATE fb_users SET topic_count=(SELECT COUNT(*) FROM fb_topics WHERE fb_topics.user_id=fb_users.id AND is_deleted=0), post_count=(SELECT COUNT(*) FROM fb_posts WHERE fb_posts.user_id=fb_users.id AND is_deleted=0 AND floor>0)');
-                q('UPDATE fb_tags SET topic_count=(SELECT COUNT(*) FROM fb_topic_tags WHERE fb_topic_tags.tag_id=fb_tags.id)');
+                tags_refresh_counts(); // visible topics only, as everywhere else
                 save_settings(['stats_cache' => '']);
                 flash(t('Counters recalculated.'));
                 break;

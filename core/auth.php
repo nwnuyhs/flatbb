@@ -281,6 +281,43 @@ function users_by_ids(array $ids): array
     return $out;
 }
 
+/**
+ * The author of a post, from users already loaded with users_by_ids(): the member; for a post written without an account
+ * (user_id 0, a guest-comments plugin) the guest a plugin names through the post.author filter, as a user row with id 0
+ * that avatar() and user_link() show without a profile link; null when neither. No database access: lists call it per row.
+ */
+function post_author(array $post, array $users): ?array
+{
+    $uid = (int)($post['user_id'] ?? 0);
+    if ($uid > 0) return $users[$uid] ?? null;
+    $g = hook_has('post.author') ? hook('post.author', null, ['post' => $post]) : null;
+    if (!is_array($g) || trim((string)($g['username'] ?? $g['display_name'] ?? '')) === '') return null;
+    return ['id' => 0, 'username' => (string)($g['username'] ?? $g['display_name']), 'display_name' => (string)($g['display_name'] ?? ''), 'avatar' => (string)($g['avatar'] ?? ''),
+        'group_id' => 0, 'post_count' => 0, 'topic_count' => 0, 'like_count' => 0, 'status' => 1, 'last_seen' => 0, 'created_at' => (int)($post['created_at'] ?? 0), 'points' => 0, 'guest' => true];
+}
+
+/** Whether a user row is a guest author from post_author() (no account, no profile page). */
+function user_is_guest(?array $user): bool
+{
+    return $user !== null && (int)($user['id'] ?? -1) === 0;
+}
+
+/**
+ * Recount members' topics, replies and likes received from the rows themselves (one statement for any number of members).
+ * Call after anything hides, restores or removes posts; Admin → Tools → Recalculate counters runs the same for everyone.
+ */
+function users_refresh_counts(array $ids): void
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn(int $id): bool => $id > 0)));
+    if ($ids === []) return;
+    q('UPDATE fb_users SET topic_count=(SELECT COUNT(*) FROM fb_topics t WHERE t.user_id=fb_users.id AND t.is_deleted=0),'
+        . ' post_count=(SELECT COUNT(*) FROM fb_posts p WHERE p.user_id=fb_users.id AND p.is_deleted=0 AND p.floor>0),'
+        . ' like_count=(SELECT COUNT(*) FROM fb_likes l JOIN fb_posts p ON p.id=l.post_id WHERE p.user_id=fb_users.id) WHERE id IN (' . sql_marks(count($ids)) . ')', $ids);
+    request_cache('users', null, true);
+    request_cache('users_full', null, true);
+    request_cache('me', null, true);
+}
+
 /** Username length rule from the settings: [min, max] (letters, numbers, dot, dash, underscore; the first character a letter or digit). */
 function username_rule(): array
 {

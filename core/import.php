@@ -345,7 +345,7 @@ function import_topic(array $t): int
     $title = cut(trim((string)$t['title']), 250, '') ?: 'Untitled';
     $at = (int)($t['created_at'] ?? 0) ?: now();
     $row = [
-        'category_id' => (int)$t['category_id'], 'user_id' => (int)$t['user_id'], 'title' => $title, 'slug' => slugify($title),
+        'category_id' => (int)$t['category_id'], 'user_id' => (int)$t['user_id'], 'title' => $title, 'slug' => topic_slug($title),
         'is_pinned' => (int)($t['is_pinned'] ?? 0), 'pinned_at' => !empty($t['is_pinned']) ? $at : 0, 'is_locked' => (int)($t['is_locked'] ?? 0),
         'is_deleted' => (int)($t['is_deleted'] ?? 0), 'view_count' => (int)($t['view_count'] ?? 0),
         'created_at' => $at, 'updated_at' => $at, 'last_post_at' => $at, 'last_user_id' => (int)$t['user_id'], 'meta' => '{}',

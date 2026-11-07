@@ -37,7 +37,7 @@ function topic_create(int $category_id, int $user_id, string $title, string $bod
         $data = hook('topic.before_save', ['category_id' => $category_id, 'user_id' => $user_id, 'title' => $title, 'body' => $body, 'tags' => $tags], []);
         $held = review_hold_reason('topic', $user_id, (int)$data['category_id'], $data['title'] . "\n" . $data['body']);
         $tid = db_insert('fb_topics', [
-            'category_id' => (int)$data['category_id'], 'user_id' => $user_id, 'title' => $data['title'], 'slug' => slugify($data['title']),
+            'category_id' => (int)$data['category_id'], 'user_id' => $user_id, 'title' => $data['title'], 'slug' => topic_slug($data['title']),
             'is_pinned' => $pinned ? 1 : 0, 'pinned_at' => $pinned ? now() : 0, 'created_at' => now(), 'updated_at' => now(), 'last_post_at' => now(), 'last_user_id' => $user_id, 'meta' => '{}',
             'is_deleted' => $held !== '' ? REVIEW_PENDING : 0,
         ]);
@@ -115,6 +115,14 @@ function post_go_public(int $pid): void
     request_cache('categories', null, true);
 }
 
+/** After a topic is deleted or restored: its author's topic count and its tags' counts follow (a member's replies inside it keep counting, as in Admin → Tools → Recalculate counters). */
+function topic_counts_refresh(array $topic): void
+{
+    users_refresh_counts([(int)$topic['user_id']]);
+    tags_refresh_counts(array_map('intval', col('SELECT tag_id FROM fb_topic_tags WHERE topic_id=?', [(int)$topic['id']])));
+    save_settings(['stats_cache' => '']);
+}
+
 function topic_stats_refresh(int $tid): void
 {
     $t = topic_by_id($tid);
@@ -187,11 +195,21 @@ function topic_view(string $id): never
     $show_deleted = is_mod() ? '' : ' AND (is_deleted=0 OR (is_deleted=' . REVIEW_PENDING . ' AND user_id=' . uid() . '))'; // your own replies that wait for review show, marked
     $total = (int)val("SELECT COUNT(*) FROM fb_posts WHERE topic_id=?{$show_deleted}", [(int)$topic['id']]);
     $pg = paginate_calc($total, get_int('page', 1, 1, 100000), $per);
-    $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} ORDER BY id LIMIT " . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'], [(int)$topic['id']]);
+    $page_sql = ' ORDER BY id LIMIT ' . (int)$pg['per_page'] . ' OFFSET ' . (int)$pg['offset'];
+    if (hook_has('topic.post_ids')) { // a plugin decides which posts this page shows, and in what order (threaded replies)
+        $ids = array_map('intval', col("SELECT id FROM fb_posts WHERE topic_id=?{$show_deleted}{$page_sql}", [(int)$topic['id']]));
+        $ids = array_slice(array_values(array_unique(array_map('intval', (array)hook('topic.post_ids', $ids, ['topic' => $topic, 'page' => $pg])))), 0, 500);
+        $rows = $ids !== [] ? all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted} AND id IN (" . sql_marks(count($ids)) . ')', array_merge([(int)$topic['id']], $ids)) : [];
+        $by_id = array_column($rows, null, 'id');
+        $posts = array_values(array_filter(array_map(static fn(int $id): ?array => $by_id[$id] ?? null, $ids))); // the plugin's order; ids of other topics or hidden posts are dropped
+    } else {
+        $posts = all("SELECT * FROM fb_posts WHERE topic_id=?{$show_deleted}{$page_sql}", [(int)$topic['id']]);
+    }
     $posts = posts_attach($posts, $topic);
     topic_count_view((int)$topic['id']);
     $prev_read = uid() > 0 ? (int)(val('SELECT last_post_id FROM fb_topic_reads WHERE user_id=? AND topic_id=?', [uid(), (int)$topic['id']]) ?? 0) : 0; // before this visit moves it
-    if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max((int)end($posts)['id'], (int)$topic['last_post_id']) : (int)end($posts)['id'], $prev_read);
+    $page_last = $posts !== [] ? max(array_map('intval', array_column($posts, 'id'))) : 0;
+    if ($posts !== []) topic_mark_read((int)$topic['id'], $pg['page'] >= $pg['pages'] ? max($page_last, (int)$topic['last_post_id']) : $page_last, $prev_read);
     $topic['category'] = $cat;
     $topic['tags'] = tags_for_topics([(int)$topic['id']])[(int)$topic['id']] ?? [];
     $topic['user'] = $posts[0]['user'] ?? user_by_id((int)$topic['user_id']);
@@ -293,14 +311,14 @@ function posts_attach(array $posts, array $topic): array
         $liked = array_flip(array_map('intval', col('SELECT post_id FROM fb_likes WHERE user_id=? AND post_id IN (' . sql_marks(count($ids)) . ')', array_merge([uid()], $ids))));
     }
     $reply_ids = array_filter(array_map('intval', array_column($posts, 'reply_to_id')));
-    $parents = $reply_ids !== [] ? rows_by_ids('fb_posts', $reply_ids, 'id,user_id,floor,body') : [];
+    $parents = $reply_ids !== [] ? rows_by_ids('fb_posts', $reply_ids, 'id,user_id,floor,body,meta,created_at') : [];
     $parent_users = users_by_ids(array_column($parents, 'user_id'));
     foreach ($posts as &$p) {
-        $p['user'] = $users[(int)$p['user_id']] ?? null;
+        $p['user'] = post_author($p, $users);
         $p['liked'] = isset($liked[(int)$p['id']]);
         $p['editor'] = (int)$p['edited_by'] > 0 ? ($users[(int)$p['edited_by']] ?? null) : null;
         $parent = $parents[(int)$p['reply_to_id']] ?? null;
-        $p['reply_to'] = $parent ? ['id' => (int)$parent['id'], 'floor' => (int)$parent['floor'], 'user' => $parent_users[(int)$parent['user_id']] ?? null, 'excerpt' => md_excerpt((string)$parent['body'], 100)] : null;
+        $p['reply_to'] = $parent ? ['id' => (int)$parent['id'], 'floor' => (int)$parent['floor'], 'user' => post_author($parent, $parent_users), 'excerpt' => md_excerpt((string)$parent['body'], 100)] : null;
     }
     unset($p);
     $posts = link_cards_in_posts($posts); // a link on a line of its own shows as its card (core/links.php)
@@ -412,7 +430,7 @@ function topic_edit(string $id): never
         if (!post_body_valid($body)) fail(t('Post body is too short.'));
         tx(static function () use ($topic, $post, $me, $title, $body, $cat): void {
             $old_cat = (int)$topic['category_id'];
-            db_update('fb_topics', ['title' => $title, 'slug' => slugify($title), 'category_id' => (int)$cat['id'], 'updated_at' => now()], 'id=?', [(int)$topic['id']]);
+            db_update('fb_topics', ['title' => $title, 'slug' => topic_slug($title), 'category_id' => (int)$cat['id'], 'updated_at' => now()], 'id=?', [(int)$topic['id']]);
             post_update($post, $body, (int)$me['id']);
             topic_set_tags((int)$topic['id'], tags_parse(post_str('tags', 200)));
             search_update_title((int)$topic['id'], $title);
@@ -457,6 +475,7 @@ function topic_action(string $id): never
             db_update('fb_topics', ['is_deleted' => 1], 'id=?', [(int)$topic['id']]);
             search_delete_topic((int)$topic['id']);
             category_refresh_stats((int)$topic['category_id']);
+            topic_counts_refresh($topic);
             fire('topic.after_delete', ['topic_id' => (int)$topic['id']]);
             flash(t('Topic deleted.'));
             redirect(url('/'));
@@ -464,6 +483,7 @@ function topic_action(string $id): never
             if ((int)$topic['is_deleted'] !== 1) fail(t('This topic waits in the review queue.'), url('/review'));
             db_update('fb_topics', ['is_deleted' => 0], 'id=?', [(int)$topic['id']]);
             category_refresh_stats((int)$topic['category_id']);
+            topic_counts_refresh($topic);
             foreach (all('SELECT id,body FROM fb_posts WHERE topic_id=? AND is_deleted=0', [(int)$topic['id']]) as $p) search_index_post((int)$p['id'], (int)$topic['id'], (string)$topic['title'], (string)$p['body']);
             break;
         case 'move':
@@ -571,6 +591,7 @@ function post_delete(string $id): never
     if ($restore) search_index_post((int)$post['id'], (int)$topic['id'], (string)$topic['title'], (string)$post['body']);
     else search_delete_post((int)$post['id']);
     topic_stats_refresh((int)$topic['id']);
+    users_refresh_counts([(int)$post['user_id']]);
     fire('post.after_delete', ['post_id' => (int)$post['id'], 'restored' => $restore]);
     flash($restore ? t('Reply restored.') : t('Reply deleted.'));
     redirect(topic_url($topic));

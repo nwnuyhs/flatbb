@@ -35,7 +35,7 @@ $unread = notifications_unread();
 <meta name="apple-mobile-web-app-title" content="<?= h($site) ?>">
 <link rel="manifest" href="<?= h(url('/manifest.webmanifest')) ?>">
 <link rel="alternate" type="application/rss+xml" title="<?= h($site) ?>" href="<?= h(url('/rss')) ?>">
-<?php $fav = setting('site_favicon'); $fav_url = $fav !== '' ? upload_url($fav) : base_path() . '/assets/favicon.svg'; $fav_type = str_contains($fav_url, '.svg') ? 'image/svg+xml' : (str_contains($fav_url, '.ico') ? 'image/x-icon' : 'image/png'); ?>
+<?php $fav = setting('site_favicon'); $fav_url = site_favicon_url(); $fav_type = str_contains($fav_url, '.svg') ? 'image/svg+xml' : (str_contains($fav_url, '.ico') ? 'image/x-icon' : 'image/png'); ?>
 <link rel="icon" href="<?= h($fav_url) ?>" type="<?= h($fav_type) ?>">
 <?php if ($fav !== '' && $fav_type === 'image/png'): ?><link rel="apple-touch-icon" href="<?= h($fav_url) ?>"><?php endif; ?>
 <link rel="stylesheet" href="<?= h(asset_url('app.css')) ?>">

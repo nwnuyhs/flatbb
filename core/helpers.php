@@ -75,6 +75,35 @@ function slugify(string $s, int $max = 80): string
     return cut($s, $max, '');
 }
 
+/**
+ * Latin letters with accents folded to plain ASCII, in lower case: "Hướng dẫn Đà Nẵng" -> "huong dan da nang", "Größe" -> "grosse".
+ * A fixed map (Vietnamese, Latin-1, Latin Extended-A) works on every server; with the intl extension any other accent on a
+ * Latin letter goes too. Other scripts (Chinese, Cyrillic, Arabic, …) are left as they are.
+ */
+function slug_fold(string $s): string
+{
+    static $map = null;
+    if ($map === null) {
+        $map = ['ß' => 'ss', 'æ' => 'ae', 'œ' => 'oe', 'þ' => 'th', 'ð' => 'd'];
+        foreach (['a' => 'àáâãäåāăąǎạảấầẩẫậắằẳẵặ', 'c' => 'çćĉċč', 'd' => 'ďđ', 'e' => 'èéêëēĕėęěẹẻẽếềểễệ', 'g' => 'ĝğġģ', 'h' => 'ĥħ',
+            'i' => 'ìíîïĩīĭįıỉị', 'j' => 'ĵ', 'k' => 'ķ', 'l' => 'ĺļľŀł', 'n' => 'ñńņňŉ', 'o' => 'òóôõöøōŏőơọỏốồổỗộớờởỡợ', 'r' => 'ŕŗř',
+            's' => 'śŝşšș', 't' => 'ţťŧț', 'u' => 'ùúûüũūŭůűųưụủứừửữự', 'w' => 'ŵ', 'y' => 'ýÿŷỳỵỷỹ', 'z' => 'źżž'] as $plain => $letters) {
+            foreach (mb_str_split($letters) as $l) $map[$l] = $plain;
+        }
+    }
+    $s = mb_strtolower($s);
+    if (class_exists('Normalizer') && ($d = Normalizer::normalize($s, Normalizer::FORM_D)) !== false) { // text pasted already decomposed, and the rarer accents
+        $s = (string)Normalizer::normalize(preg_replace('/(?<=[a-z])\p{Mn}+/u', '', $d) ?? $d, Normalizer::FORM_C);
+    }
+    return strtr($s, $map);
+}
+
+/** The URL slug of a topic title, accents folded (slug_fold()): "Hướng dẫn nạp tiền" -> "huong-dan-nap-tien". Topic addresses resolve by id, so old slugs keep working. */
+function topic_slug(string $title, int $max = 80): string
+{
+    return slugify(slug_fold($title), $max);
+}
+
 function json_decode_array(?string $json, array $default = []): array
 {
     if ($json === null || $json === '') return $default;

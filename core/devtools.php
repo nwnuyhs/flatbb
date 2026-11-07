@@ -200,7 +200,8 @@ function docs_hook_descriptions(): array
         'ai.response' => 'Event: after each attempt on an AI connection (ctx: purpose, connection = 1 for the main one, 2 and 3 for the backups, model, usage [in, out] tokens, ok). A request that falls back fires it once per connection tried. For plugins that count or log usage.',
         'topic_list.query' => 'Filter the conditions of every topic list (front page, category, tag, unread): value ["where" => conditions on alias t, "params"]; append to both. Ctx: where, join.',
         'topic.after_save' => 'After a topic was created or edited (ctx: topic_id, post_id, new). A new topic that waits in the review queue fires it when a moderator approves it, so the topic is public by then.',
-        'review.hold' => 'Filter: why a new topic or reply waits in the review queue (value: the reason so far, an English text shown through t(), or empty; ctx: kind topic|reply, user, category, text). Return a reason to hold it. Administrators and moderators are never held.',
+        'review.hold' => 'Filter: why a new topic or reply waits in the review queue (value: the reason so far, an English text shown through t(), or empty; ctx: kind topic|reply, user, category, text). Return a reason to hold it. Administrators and moderators are never held. A post written without an account (user_id 0) runs it with user null and guest true, and only this filter can hold it.',
+        'post.author' => 'Filter: the author of a post written without an account (user_id 0; value null; ctx: post with its meta). Return [username, display_name, avatar] to show that name (no profile link) instead of "deleted" on the topic page, in replies to it, search, the review queue and topic lists. Runs per row: no database access, read what you need from the post.',
         'review.held' => 'Event: a topic or reply was put in the review queue (ctx: id, kind, topic_id, post_id, user_id, reason).',
         'review.decided' => 'Event: a moderator approved (status 1) or rejected (status 2) an item of the review queue (ctx: id, status, by). On approval the usual topic.after_save / post.after_save fire as well.',
         'topic.after_delete' => 'After a topic was soft-deleted.',
@@ -210,6 +211,7 @@ function docs_hook_descriptions(): array
         'composer.values' => 'Filter the values a composer opens with: title, body, category_id, tags for a new topic (ctx mode new), body for a reply (ctx mode reply, topic). Used by drafts plugins.',
         'topic.title' => 'Filter the escaped title html of a topic in lists and on the topic page (ctx: topic, where list|page); loop, no DB.',
         'topic.posts' => 'Filter the posts of the current page (batch-loaded, attach extra data here).',
+        'topic.post_ids' => 'Filter: the ids of the posts the current topic page shows, in display order, before they are loaded (ctx: topic, page = the pagination numbers). Add replies from other pages, drop ones shown elsewhere, reorder them: threaded replies. Ids of other topics and posts the reader may not see are dropped afterwards; at most 500.',
         'topic_list.rows' => 'Filter topic rows of any list (batch-loaded, attach extra data here).',
         'post.before_save' => 'New reply data (body, reply_to_id) before insert.',
         'post.before_update' => 'Reply body before an edit is saved.',
@@ -352,6 +354,7 @@ function security_files(string $dir): array
  * Rules every file must pass (core, app and plugins alike). Returns "file:line: message" findings.
  *  - no direct $_GET/$_POST/$_REQUEST/$_COOKIE reads (use post_str/post_int/post_list/post_secret/get_str/get_int)
  *  - no eval/exec/system/passthru/shell_exec/popen/proc_open/unserialize
+ *  - no inline event handlers in markup (onclick="…"): the CSP blocks them
  *  - in views: <?= ... ?> may only start with h(), t(), raw() or another known safe helper, never a bare variable
  */
 function security_scan(array $files): array
@@ -372,6 +375,9 @@ function security_scan(array $files): array
             }
             if (!in_array($rel, $allow_exec, true) && preg_match('/(?<![\w>:$])(eval|exec|system|passthru|shell_exec|popen|proc_open|unserialize)\s*\(/', $line, $d)) {
                 $found[] = "$rel:$n: dangerous function call (" . $d[1] . ")";
+            }
+            if (preg_match('/(?<=\s)on(click|change|submit|input|load|error|focus|blur|key(?:up|down|press)|mouse(?:over|out|down|up|enter|leave))\s*=\s*\\\\?["\']/i', $line, $d)) {
+                $found[] = "$rel:$n: inline event handler (on" . strtolower($d[1]) . "=) is blocked by the Content Security Policy; use a data-* attribute and a listener in your JS";
             }
             if ($is_view && preg_match_all('/<\?=\s*(.*?)\?>/', $line, $m)) {
                 foreach ($m[1] as $expr) {
@@ -444,6 +450,7 @@ function test_run(string $only = '', ?callable $out = null): array
         foreach ($new as $fn) {
             if (!str_starts_with($fn, 'test_') || in_array($fn, ['test_boot', 'test_assert', 'test_same', 'test_contains', 'test_not_contains', 'test_run'], true)) continue;
             try {
+                @set_time_limit(0); // a test of code that sets its own limit (import_run()) must not cut the tests after it short
                 $fn();
                 $passed++;
                 $out('  ok   ' . $fn);

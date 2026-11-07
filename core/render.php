@@ -361,6 +361,7 @@ function avatar(?array $user, int $size = 32, bool $link = true, bool $marks = t
         $img = '<span class="' . $cls . ' avatar-letter" style="' . $style . ';--hue:' . $hue . '">' . h(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>';
     }
     if (!$marks) return $img;
+    if (user_is_guest($user)) $link = false; // a guest author has no profile page
     $online = $user !== null && user_online($user);
     if ($online) $img .= '<i class="online-dot" style="' . $style . '" title="' . h(t('Online')) . '"></i>';
     $mark = $user !== null ? (string)hook('user.avatar_after', '', ['user' => $user, 'size' => $size]) : ''; // a plugin's corner mark (a verified badge)
@@ -412,6 +413,7 @@ function user_name(?array $user): string
 function user_link(?array $user, string $class = 'user-link'): string
 {
     if ($user === null) return '<span class="' . h($class) . ' user-deleted">' . t('deleted') . '</span>';
+    if (user_is_guest($user)) return '<span class="' . h($class) . ' user-guest" dir="auto">' . h(user_name($user)) . '</span>' . hook('user.link_after', '', ['user' => $user, 'class' => $class]); // post_author(): no profile to link to
     $g = str_contains($class, 'plain') ? null : group_by_id((int)($user['group_id'] ?? 0)); // "plain": no group colour (lists)
     $style = !empty($g['color']) ? ' style="color:' . h($g['color']) . '"' : '';
     $name = user_name($user);

@@ -79,6 +79,7 @@ function routes_core(): array
         '/sitemap.xml' => 'seo_sitemap',
         '/rss' => 'seo_rss',
         '/manifest.webmanifest' => 'seo_manifest',
+        '/favicon.ico' => 'seo_favicon',
         '/setup' => 'setup_index',
         '/__rewrite_check' => 'router_rewrite_check',
     ];

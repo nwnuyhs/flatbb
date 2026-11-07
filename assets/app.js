@@ -54,6 +54,12 @@
 
   /* a select that navigates: <select data-jump><option value="/url"> (settings menu on phones) */
   document.addEventListener('change', function (e) { var s = e.target.closest('select[data-jump]'); if (s && s.value) window.location.href = s.value; });
+  /* a field that sends its form when it changes: <select data-autosubmit> (no inline onchange, which the CSP blocks) */
+  document.addEventListener('change', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-autosubmit]') : null;
+    if (!el || !el.form || el.value === '') return;
+    el.form.requestSubmit ? el.form.requestSubmit() : el.form.submit();
+  });
 
   /* ---------- dropdowns that must escape a scrolling box (the admin tables scroll sideways) ---------- */
   function clippingParent(el) {

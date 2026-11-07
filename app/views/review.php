@@ -1,7 +1,7 @@
 <?php
 /**
- * Review queue (/review, moderators). Variables: rows (fb_review), posts, topics, users (by id), full (joined, counts, status
- * of the authors), tab (waiting|approved|rejected), tabs (html), pagination. The buttons post to /review/act; assets/app.js
+ * Review queue (/review, moderators). Variables: rows (fb_review), posts, links (outside addresses per post id: href => host),
+ * topics, users (by id), full (joined, counts, status of the authors), tab (waiting|approved|rejected), tabs (html), pagination. The buttons post to /review/act; assets/app.js
  * sends them without a reload ([data-review] forms) and asks for the note before a rejection.
  */
 ?>
@@ -12,7 +12,7 @@
   <?php foreach ($rows as $r):
     $p = $posts[(int)$r['post_id']] ?? null;
     $tp = $topics[(int)$r['topic_id']] ?? null;
-    $u = $users[(int)$r['user_id']] ?? null;
+    $u = $p !== null ? post_author($p, $users) : ($users[(int)$r['user_id']] ?? null);
     $info = $full[(int)$r['user_id']] ?? null;
     $staff = $u !== null && ($g = group_by_id((int)$u['group_id'])) !== null && ((int)$g['is_admin'] === 1 || (int)$g['is_mod'] === 1);
     $cat = $tp !== null ? category_by_id((int)$tp['category_id']) : null;
@@ -28,14 +28,18 @@
         <span class="review-reason"><?= h(t((string)$r['reason'])) ?></span>
       </div>
       <?php if ($r['kind'] === 'topic' && $tp): ?><a class="review-title" href="<?= h(topic_url($tp)) ?>"><?= h((string)$tp['title']) ?></a><?php endif; ?>
-      <?php if ($p): ?><div class="review-text"><?= h(md_excerpt((string)$p['body'], 280)) ?></div><?php endif; ?>
+      <?php if ($p): $short = md_excerpt((string)$p['body'], 280); ?>
+      <div class="review-text"><?= h($short) ?></div>
+      <?php if ($links[(int)$p['id']] ?? []): ?><div class="review-links small"><?= icon('link') ?> <?= t('Links to') ?> <?php foreach ($links[(int)$p['id']] as $href => $host): ?><a href="<?= h($href) ?>" rel="nofollow noopener noreferrer" target="_blank" title="<?= h($href) ?>"><?= h($host) ?></a> <?php endforeach; ?></div><?php endif; ?>
+      <?php if (mb_strlen($short) < mb_strlen(md_excerpt((string)$p['body'], 100000))): ?><details class="review-full"><summary class="small"><?= t('Show the whole post') ?></summary><div class="post-content"><?= raw((string)$p['body_html']) ?></div></details><?php endif; ?>
+      <?php endif; ?>
       <?php if ($tab === 'waiting'): ?>
       <form method="post" action="<?= h(url('/review/act')) ?>" class="review-actions" data-review>
         <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
         <button type="submit" name="do" value="approve" class="btn btn-sm btn-primary"><?= t('Approve') ?></button>
-        <button type="submit" name="do" value="trust" class="btn btn-sm" title="<?= h(t('Approve everything this member has waiting; their posts no longer wait for review.')) ?>"><?= t('Approve and trust') ?></button>
+        <?php if ((int)$r['user_id'] > 0): ?><button type="submit" name="do" value="trust" class="btn btn-sm" title="<?= h(t('Approve everything this member has waiting; their posts no longer wait for review.')) ?>"><?= t('Approve and trust') ?></button><?php endif; ?>
         <button type="button" class="btn btn-sm review-reject" data-review-reject><?= t('Reject…') ?></button>
-        <?php if (!$staff): ?><button type="submit" name="do" value="ban" class="btn btn-sm review-danger" data-confirm="<?= h(t('Suspend this member and delete everything they wrote?')) ?>"><?= t('Ban and delete all') ?></button><?php endif; ?>
+        <?php if (!$staff && (int)$r['user_id'] > 0): ?><button type="submit" name="do" value="ban" class="btn btn-sm review-danger" data-confirm="<?= h(t('Suspend this member and delete everything they wrote?')) ?>"><?= t('Ban and delete all') ?></button><?php endif; ?>
         <span class="review-note" hidden><input type="text" name="note" maxlength="190" placeholder="<?= h(t('Reason shown to the author (optional)')) ?>"><button type="submit" name="do" value="reject" class="btn btn-sm review-danger"><?= t('Reject') ?></button></span>
       </form>
       <?php else: $by = $users[(int)$r['decided_by']] ?? null; ?>
