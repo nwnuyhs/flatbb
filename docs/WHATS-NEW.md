@@ -2,7 +2,7 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
-## 0.2.6
+## 0.2.6 (not released yet)
 
 - **Right-to-left placeholders:** on an RTL page (Persian, Arabic, Hebrew) the title and editor placeholders sit on the right; an empty `dir="auto"` field had fallen back to left-to-right. The editor placeholder uses the text font, and on RTL pages the editor itself does (monospace fonts have no Arabic letters). Reported by [idmal](https://www.flatbb.com/t/200).
 - **Your own files survive upgrades:** files a site added to `assets/` (a `custom.css`, a font) are put back after an upgrade (`upgrade_keep_own_files()`; never PHP), from the upgrade after 0.2.6 on. Admin → Settings → Advanced → **Custom CSS** keeps styles in the database instead, loaded after the theme and every plugin (`<style id="custom-css">`). Reported by [Arruba](https://www.flatbb.com/t/186).
