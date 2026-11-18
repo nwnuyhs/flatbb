@@ -219,6 +219,7 @@ return [
     'Current email' => 'Aktuelle E-Mail',
     'Current password' => 'Aktuelles Passwort',
     'Current password is incorrect.' => 'Das aktuelle Passwort ist falsch.',
+    'Custom CSS' => 'Eigenes CSS',
     'Customize' => 'Anpassen',
     'Customize %s' => '%s anpassen',
     'Daily cap' => 'Tageslimit',
@@ -980,6 +981,7 @@ Wenn nicht, öffne innerhalb von 7 Tagen diesen Link: Er stellt diese Adresse wi
     'Your group cannot reply.' => 'Ihre Gruppe kann nicht antworten.',
     'Your icons' => 'Deine Symbole',
     'Your link' => 'Dein Link',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'Eigene Stile, nach dem Theme und allen Plugins angewendet. In der Datenbank gespeichert, daher bleibt es bei Updates erhalten.',
     'Your session expired. Please go back and try again.' => 'Ihre Sitzung ist abgelaufen. Bitte gehen Sie zurück und versuchen Sie es erneut.',
     'Your verification code for %s is:
 

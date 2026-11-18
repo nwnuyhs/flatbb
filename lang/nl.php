@@ -219,6 +219,7 @@ return [
     'Current email' => 'Huidig e-mailadres',
     'Current password' => 'Huidig wachtwoord',
     'Current password is incorrect.' => 'Het huidige wachtwoord is onjuist.',
+    'Custom CSS' => 'Eigen CSS',
     'Customize' => 'Aanpassen',
     'Customize %s' => '%s aanpassen',
     'Daily cap' => 'Daglimiet',
@@ -980,6 +981,7 @@ Zo niet, open dan binnen 7 dagen deze link: die zet dit adres terug en meldt je 
     'Your group cannot reply.' => 'Je groep kan niet reageren.',
     'Your icons' => 'Jouw pictogrammen',
     'Your link' => 'Jouw link',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'Je eigen stijlen, toegepast na het thema en alle plugins. Opgeslagen in de database, dus updates laten ze ongemoeid.',
     'Your session expired. Please go back and try again.' => 'Je sessie is verlopen. Ga terug en probeer het opnieuw.',
     'Your verification code for %s is:
 

@@ -371,3 +371,38 @@ function plugin_assets_serve(string $type): never
     echo is_file($file) ? file_get_contents($file) : '';
     exit;
 }
+
+/* ---------------------------------------------------------------- marketplace rules (plugin:check and the marketplace server) */
+
+/** Whether a text has letters of a script other than Latin (Chinese, Cyrillic, Arabic, …). Accented Latin letters are fine. */
+function text_not_latin(string $s): bool
+{
+    return (bool)preg_match('/(?=\p{L})\P{Latin}/u', $s);
+}
+
+/**
+ * Where a plugin shows text that is not English: the manifest's name, description, settings (labels, help, choices) and
+ * admin page labels, and every t() text in its PHP files outside lang/. Returns the places, e.g. 'Setting "mode" label'.
+ */
+function plugin_text_not_english(array $m, string $dir): array
+{
+    $out = [];
+    foreach (['name', 'description'] as $k) if (text_not_latin((string)($m[$k] ?? ''))) $out[] = 'The manifest "' . $k . '"';
+    foreach ((array)($m['settings'] ?? []) as $key => $def) {
+        foreach (['label', 'help'] as $k) if (is_array($def) && text_not_latin((string)($def[$k] ?? ''))) $out[] = 'Setting "' . $key . '" ' . $k;
+        foreach ((array)(is_array($def) ? ($def['options'] ?? []) : []) as $label) if (is_string($label) && text_not_latin($label)) { $out[] = 'Setting "' . $key . '" options'; break; }
+    }
+    foreach ((array)($m['admin_pages'] ?? []) as $key => $page) if (is_array($page) && text_not_latin((string)($page['label'] ?? ''))) $out[] = 'Admin page "' . $key . '" label';
+    if (is_dir($dir)) {
+        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $f) {
+            $rel = str_replace('\\', '/', substr($f->getPathname(), strlen($dir) + 1));
+            if (!$f->isFile() || !str_ends_with($rel, '.php') || str_starts_with($rel, 'lang/')) continue;
+            if (!preg_match_all('/\bt\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/', (string)file_get_contents($f->getPathname()), $hits, PREG_SET_ORDER)) continue;
+            $bad = 0;
+            foreach ($hits as $hit) if (text_not_latin($hit[1] !== '' ? $hit[1] : ($hit[2] ?? ''))) $bad++;
+            if ($bad > 0) $out[] = $rel . ': ' . $bad . ' t() text' . ($bad > 1 ? 's' : '');
+        }
+    }
+    return $out;
+}

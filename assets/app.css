@@ -1067,6 +1067,10 @@ body.adrawer-open { overflow: hidden; }
 }
 
 /* right-to-left languages (lang pack __dir => rtl): mirror the icons that point somewhere */
+/* an empty field with dir="auto" falls back to left-to-right: on a right-to-left page its placeholder belongs on the right */
+[dir="rtl"] input[dir="auto"]:placeholder-shown, [dir="rtl"] textarea[dir="auto"]:placeholder-shown { direction: rtl; }
+.editor-input::placeholder { font-family: var(--font); }
+[dir="rtl"] .editor-input { font-family: var(--font); } /* monospace fonts have no Arabic or Hebrew letters: the text font reads better */
 [dir="rtl"] .icon-reply, [dir="rtl"] .icon-arrow-left, [dir="rtl"] .icon-chevron-left, [dir="rtl"] .icon-chevron-right, [dir="rtl"] .icon-logout { transform: scaleX(-1); }
 
 /* ---------- themes: Admin → Appearance → Themes, and the bar an admin sees while previewing a theme ---------- */

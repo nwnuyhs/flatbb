@@ -220,6 +220,7 @@ return [
     'Current email' => 'ایمیل کنونی',
     'Current password' => 'پسورد فعلی',
     'Current password is incorrect.' => 'پسورد فعلی اشتباه است.',
+    'Custom CSS' => 'CSS سفارشی',
     'Customize' => 'سفارشی‌سازی',
     'Customize %s' => 'سفارشی‌سازی %s',
     'Daily cap' => 'سقف روزانه',
@@ -981,6 +982,7 @@ If you did not, open this link within 7 days: it puts this address back and sign
     'Your group cannot reply.' => 'گروه شما نمی‌تواند پاسخ بدهد.',
     'Your icons' => 'نمادهای شما',
     'Your link' => 'پیوند شما',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'استایل‌های خودتان، پس از پوسته و همه افزونه‌ها اعمال می‌شود. در پایگاه داده نگهداری می‌شود، پس به‌روزرسانی‌ها به آن دست نمی‌زنند.',
     'Your session expired. Please go back and try again.' => 'نشست شما منقضی شد. لطفاً برگردید و دوباره امتحان کنید.',
     'Your verification code for %s is:
 

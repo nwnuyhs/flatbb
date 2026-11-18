@@ -61,6 +61,8 @@ function plugin_check(string $id): array
         try { $added = count((array)$nav([], ['layout' => true])); } catch (Throwable) { $added = 0; }
         if ($added > 1) $warnings[] = 'adds ' . $added . ' links to the left menu: keep one and put the other pages under tabs of that page (docs/PLUGIN.md, "Where an entry goes")';
     }
+    // the marketplace is shared by every forum: what a plugin shows is written in English, other languages ship in lang/<code>.php
+    foreach (plugin_text_not_english($m, plugin_path($id)) as $where) $errors[] = $where . ' must be written in English; put other languages in plugins/' . $id . '/lang/<code>.php (docs/PLUGIN.md, "Marketplace rules")';
     $installed = version_compare((string)FLATBB_VERSION, (string)($m['requires']['flatbb'] ?? '0'), '>=');
     if (!$installed) $warnings[] = 'requires flatbb ' . $m['requires']['flatbb'] . ' but this is ' . FLATBB_VERSION;
     return ['errors' => $errors, 'warnings' => $warnings, 'manifest' => $m];

@@ -219,6 +219,7 @@ return [
     'Current email' => 'Correo actual',
     'Current password' => 'Contraseña actual',
     'Current password is incorrect.' => 'La contraseña actual es incorrecta.',
+    'Custom CSS' => 'CSS personalizado',
     'Customize' => 'Personalizar',
     'Customize %s' => 'Personalizar %s',
     'Daily cap' => 'Límite diario',
@@ -980,6 +981,7 @@ Si no fuiste tú, abre este enlace en los próximos 7 días: devuelve esta direc
     'Your group cannot reply.' => 'Tu grupo no puede responder.',
     'Your icons' => 'Tus iconos',
     'Your link' => 'Tu enlace',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'Tus propios estilos, aplicados después del tema y de todos los plugins. Se guardan en la base de datos, así que las actualizaciones no los tocan.',
     'Your session expired. Please go back and try again.' => 'Tu sesión expiró. Vuelve atrás e inténtalo de nuevo.',
     'Your verification code for %s is:
 

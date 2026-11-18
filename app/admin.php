@@ -193,6 +193,7 @@ function admin_settings_fields(): array
         'advanced' => [t('Advanced'), [
             'rewrite' => ['checkbox', t('Clean URLs (requires rewrite rules)'), t('Only enable when /__rewrite_check returns "ok" on your server.')],
             'seo_keywords' => ['text', t('Meta keywords')],
+            'custom_css' => ['code', t('Custom CSS'), t('Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.')],
             'head_code' => ['code', t('Extra HTML in <head>'), t('Analytics, fonts, meta tags.')],
             'foot_code' => ['code', t('Extra HTML before </body>')],
         ]],
@@ -220,7 +221,7 @@ function admin_page_settings(): never
         $save = [];
         foreach ($fields as $name => $def) {
             if ($def[0] === 'raw') continue; // drawn by a function, its inputs are fields of their own
-            $raw = post_str($name, 20000);
+            $raw = post_str($name, $name === 'custom_css' ? 60000 : 20000);
             if ($def[0] === 'image') {
                 if (post_int($name . '_remove') === 1) { $save[$name] = ''; continue; }
                 $f = $_FILES[$name] ?? null;

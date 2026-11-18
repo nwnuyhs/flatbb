@@ -20,6 +20,7 @@ const REVIEW_PENDING = 2; // fb_topics / fb_posts is_deleted: 0 shown, 1 deleted
  */
 function review_hold_reason(string $kind, int $user_id, int $category_id, string $text): string
 {
+    if (request_cache('review_skip') === true) return ''; // review_skip(): trusted automation posts straight away
     $user = user_by_id($user_id);
     if ($user === null) { // a post without an account (a guest-comments plugin): only the review.hold filter decides (ctx user null, guest true)
         if ($user_id !== 0) return '';
@@ -35,6 +36,18 @@ function review_hold_reason(string $kind, int $user_id, int $category_id, string
     if ($why === '' && $first > 0 && !review_trusted($user) && (int)$user['topic_count'] + (int)$user['post_count'] < $first) $why = 'First posts of a new member';
     $why = hook('review.hold', $why, ['kind' => $kind, 'user' => $user, 'category' => $cat, 'text' => $text]);
     return is_string($why) ? $why : '';
+}
+
+/**
+ * Run $fn with the review queue off for what it posts: trusted automation, such as the marketplace writing the topic of a
+ * plugin it has just accepted. Nothing a member types should go through here. Returns what $fn returns.
+ */
+function review_skip(callable $fn): mixed
+{
+    $was = request_cache('review_skip') === true;
+    request_cache('review_skip', null, true);
+    request_cache('review_skip', static fn(): bool => true);
+    try { return $fn(); } finally { if (!$was) request_cache('review_skip', null, true); }
 }
 
 /** A member a moderator approved "and trusted": their posts no longer wait for the new-member rule. */

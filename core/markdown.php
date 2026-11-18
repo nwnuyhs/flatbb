@@ -31,7 +31,7 @@ function md_fences(string $text, array &$ph, bool $escaped): string
         return "\n" . $key . "\n";
     }, $text) ?? $text;
     return preg_replace_callback('/`([^`\n]+)`/', static function (array $m) use (&$ph, $esc): string {
-        $key = "\x1A" . count($ph) . "\x1A";
+        $key = "\x1B" . count($ph) . "\x1B"; // not \x1A: a line holding only inline code is still part of its paragraph, not a block
         $ph[$key] = '<code>' . $esc($m[1]) . '</code>';
         return $key;
     }, $text) ?? $text;

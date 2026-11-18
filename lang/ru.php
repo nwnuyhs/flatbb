@@ -219,6 +219,7 @@ return [
     'Current email' => 'Текущая почта',
     'Current password' => 'Текущий пароль',
     'Current password is incorrect.' => 'Текущий пароль неверен.',
+    'Custom CSS' => 'Свой CSS',
     'Customize' => 'Настроить',
     'Customize %s' => 'Настроить %s',
     'Daily cap' => 'Дневной лимит',
@@ -980,6 +981,7 @@ If you did not, open this link within 7 days: it puts this address back and sign
     'Your group cannot reply.' => 'Ваша группа не может отвечать.',
     'Your icons' => 'Ваши значки',
     'Your link' => 'Ваша ссылка',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'Ваши стили, применяются после темы и всех плагинов. Хранятся в базе данных, поэтому обновления их не затрагивают.',
     'Your session expired. Please go back and try again.' => 'Сессия истекла. Вернитесь и попробуйте снова.',
     'Your verification code for %s is:
 

@@ -395,6 +395,7 @@ function setting_defaults(): array
         'editor_emoji' => '1',
         'editor_fullscreen' => '1',
         'editor_draft_days' => '7',
+        'custom_css' => '',
         'head_code' => '',
         'foot_code' => '',
     ];

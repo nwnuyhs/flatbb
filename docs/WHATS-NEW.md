@@ -2,6 +2,15 @@
 
 The changes that matter when you write a plugin or a theme, newest release first. Everything else a release brings is in the release notes on GitHub: https://github.com/nwnuyhs/flatbb/releases
 
+## 0.2.6
+
+- **Right-to-left placeholders:** on an RTL page (Persian, Arabic, Hebrew) the title and editor placeholders sit on the right; an empty `dir="auto"` field had fallen back to left-to-right. The editor placeholder uses the text font, and on RTL pages the editor itself does (monospace fonts have no Arabic letters). Reported by [idmal](https://www.flatbb.com/t/200).
+- **Your own files survive upgrades:** files a site added to `assets/` (a `custom.css`, a font) are put back after an upgrade (`upgrade_keep_own_files()`; never PHP), from the upgrade after 0.2.6 on. Admin → Settings → Advanced → **Custom CSS** keeps styles in the database instead, loaded after the theme and every plugin (`<style id="custom-css">`). Reported by [Arruba](https://www.flatbb.com/t/186).
+- **Fix:** a line holding only inline code (`` `code` ``) was taken out of its paragraph; it stays in the paragraph now.
+- **Marketplace rules:** `plugin:check` refuses a plugin whose name, description, settings, admin page labels or `t()` texts are not in English (`plugin_text_not_english()`, `text_not_latin()`); translations ship in `plugins/<id>/lang/<code>.php`. The marketplace refuses a non-English name or description. docs/PLUGIN.md has a "Marketplace rules" section (English first, fit the default look). Suggested by [Arruba](https://www.flatbb.com/t/198).
+- `review_skip(callable $fn)`: what `$fn` posts never waits in the review queue, for trusted automation (the marketplace's own plugin topics, which waited when the developer was a new member).
+- **Bundled plugins:** the release carries Featured, Lightbox, Report, SEO Meta and Share (`upgrade_bundled_plugins()`), off until enabled. An upgrade adds the ones a site does not have and never replaces one it has. Suggested by [Arruba](https://www.flatbb.com/t/6).
+
 ## 0.2.5
 
 - **Fix: deleting a topic or reply left the member's counts as they were** (and restoring did not count it again), so profiles kept growing. `users_refresh_counts(array $ids)` and `tags_refresh_counts(?array $ids)` recount from the rows; deletes, restores, moderation and Admin → Tools → Recalculate counters all use them (tags count visible topics only). Reported by [luoyekx](https://www.flatbb.com/t/172).

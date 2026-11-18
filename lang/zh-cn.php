@@ -219,6 +219,7 @@ return [
     'Current email' => '当前邮箱',
     'Current password' => '当前密码',
     'Current password is incorrect.' => '当前密码不正确。',
+    'Custom CSS' => '自定义 CSS',
     'Customize' => '自定义',
     'Customize %s' => '自定义 %s',
     'Daily cap' => '每日上限',
@@ -980,6 +981,7 @@ If you did not, open this link within 7 days: it puts this address back and sign
     'Your group cannot reply.' => '你所在的用户组不能回复。',
     'Your icons' => '你的图标',
     'Your link' => '你的链接',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => '你自己的样式，在风格和所有插件之后加载。保存在数据库中，升级不会动它。',
     'Your session expired. Please go back and try again.' => '会话已过期。请返回后重试。',
     'Your verification code for %s is:
 

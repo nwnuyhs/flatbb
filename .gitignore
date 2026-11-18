@@ -7,6 +7,11 @@
 !/plugins/hello/
 !/plugins/market/
 !/plugins/nav_menu/
+!/plugins/featured/
+!/plugins/lightbox/
+!/plugins/report/
+!/plugins/seo_meta/
+!/plugins/share/
 *.zip
 .DS_Store
 Thumbs.db

@@ -49,3 +49,19 @@ function test_upgrade_restore_puts_back_what_an_interrupted_upgrade_replaced(): 
         upgrade_rmdir($base);
     }
 }
+
+function test_upgrade_keeps_a_sites_own_files_in_assets(): void
+{
+    $base = sys_get_temp_dir() . '/flatbb-keep-' . getmypid();
+    foreach (['old/fonts', 'new'] as $d) @mkdir($base . '/' . $d, 0777, true);
+    file_put_contents($base . '/old/app.css', 'old release css');
+    file_put_contents($base . '/old/custom.css', 'body{color:red}');
+    file_put_contents($base . '/old/fonts/vazir.woff2', 'font');
+    file_put_contents($base . '/old/evil.php', '<?php');
+    file_put_contents($base . '/new/app.css', 'new release css');
+    test_same(['custom.css', 'fonts/vazir.woff2'], upgrade_keep_own_files($base . '/old', $base . '/new'), 'the site\'s own files come back, PHP never');
+    test_same('new release css', file_get_contents($base . '/new/app.css'), 'a file the release ships stays the release\'s');
+    test_same('body{color:red}', file_get_contents($base . '/new/custom.css'), 'custom.css kept');
+    test_assert(!file_exists($base . '/new/evil.php'), 'no PHP put back');
+    upgrade_rmdir($base);
+}

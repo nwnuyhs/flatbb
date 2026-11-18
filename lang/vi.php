@@ -219,6 +219,7 @@ return [
     'Current email' => 'Email hiện tại',
     'Current password' => 'Mật khẩu hiện tại',
     'Current password is incorrect.' => 'Mật khẩu hiện tại không chính xác.',
+    'Custom CSS' => 'CSS tùy chỉnh',
     'Customize' => 'Tùy chỉnh',
     'Customize %s' => 'Tùy chỉnh %s',
     'Daily cap' => 'Giới hạn mỗi ngày',
@@ -980,6 +981,7 @@ Nếu không phải bạn, hãy mở liên kết sau trong vòng 7 ngày để k
     'Your group cannot reply.' => 'Nhóm của bạn không được trả lời.',
     'Your icons' => 'Biểu tượng của bạn',
     'Your link' => 'Liên kết của bạn',
+    'Your own styles, applied after the theme and every plugin. Kept in the database, so upgrades never touch it.' => 'Kiểu riêng của bạn, áp dụng sau giao diện và mọi plugin. Lưu trong cơ sở dữ liệu nên khi nâng cấp không bị mất.',
     'Your session expired. Please go back and try again.' => 'Phiên làm việc đã hết hạn. Vui lòng quay lại và thử lại.',
     'Your verification code for %s is:
 

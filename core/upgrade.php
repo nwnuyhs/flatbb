@@ -60,6 +60,16 @@ function upgrade_paths(): array
 }
 
 /**
+ * Official plugins the release package carries, off until an administrator enables them (Admin → Plugins): small, stable,
+ * no outside services. A new install has them at hand; an upgrade adds the ones a site does not have yet and never touches
+ * one it already has (the marketplace keeps that one up to date).
+ */
+function upgrade_bundled_plugins(): array
+{
+    return ['featured', 'lightbox', 'report', 'seo_meta', 'share'];
+}
+
+/**
  * Download and apply the latest release (or a given zip file). Returns the new version string.
  * Throws RuntimeException with a user-readable message; the site is only modified after the package was verified.
  */
@@ -128,8 +138,15 @@ function upgrade_apply(?string $zip_file = null, ?callable $log = null): string
         $log('The previous files were put back.');
         throw new RuntimeException($e->getMessage() . '. The previous files were put back; nothing was upgraded.');
     }
+    foreach (upgrade_bundled_plugins() as $id) { // a bundled plugin arrives only where the site has none of that id
+        if (is_dir($root . '/plugins/' . $id) && !file_exists(ROOT . '/plugins/' . $id)) {
+            try { upgrade_copy($root . '/plugins/' . $id, ROOT . '/plugins/' . $id); $log('Added the plugin ' . $id . ' (off until you enable it)'); }
+            catch (Throwable $e) { $log('Could not add the plugin ' . $id . ': ' . $e->getMessage()); }
+        }
+    }
     upgrade_rmdir($tmp);
     foreach (upgrade_keep_language_packs($backup . '/lang', ROOT . '/lang') as $file) $log('Kept the language pack lang/' . $file);
+    foreach (upgrade_keep_own_files($backup . '/assets', ROOT . '/assets') as $file) $log('Kept your file assets/' . $file);
     $log('Backup of the previous files: ' . $backup);
     // finish: caches. This process still runs the old code, so the schema is brought up to date by app_boot() on the first request
     // with the new code (SCHEMA_VERSION differs from the stored one); schema_install() here only covers helpers that already exist.
@@ -169,6 +186,28 @@ function upgrade_keep_language_packs(string $old_dir, string $new_dir): array
         if (!preg_match('/^[a-z]{2}(-[a-z]{2})?\.php$/', $name) || file_exists($new_dir . '/' . $name)) continue;
         if (@copy($file, $new_dir . '/' . $name)) $kept[] = $name;
     }
+    return $kept;
+}
+
+/**
+ * assets/ is replaced as a whole too: put back the files a site added there itself (assets/custom.css, a font, a picture),
+ * any depth, those the release does not ship. A file the release ships is the release's; PHP files are never put back.
+ * Returns the paths put back, relative to assets/.
+ */
+function upgrade_keep_own_files(string $old_dir, string $new_dir): array
+{
+    if (!is_dir($old_dir)) return [];
+    $kept = [];
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($old_dir, FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $f) {
+        if (!$f->isFile()) continue;
+        $rel = ltrim(str_replace('\\', '/', substr($f->getPathname(), strlen($old_dir))), '/');
+        if ($rel === '' || str_ends_with(strtolower($rel), '.php') || file_exists($new_dir . '/' . $rel)) continue;
+        $to = $new_dir . '/' . $rel;
+        if (!is_dir(dirname($to))) @mkdir(dirname($to), 0755, true);
+        if (@copy($f->getPathname(), $to)) $kept[] = $rel;
+    }
+    sort($kept);
     return $kept;
 }
 
@@ -234,7 +273,7 @@ function upgrade_build_release(): array
     $zip = new ZipArchive();
     if ($zip->open($file, ZipArchive::CREATE) !== true) throw new RuntimeException('cannot create ' . $file);
     $top = 'flatbb-' . FLATBB_VERSION . '/'; // versioned folder: moving its contents up never collides with the CLI file named flatbb
-    foreach (upgrade_paths() as $rel) {
+    foreach (array_merge(upgrade_paths(), array_map(static fn(string $id): string => 'plugins/' . $id, upgrade_bundled_plugins())) as $rel) {
         $path = ROOT . '/' . $rel;
         if (!file_exists($path)) continue;
         if (is_file($path)) { $zip->addFile($path, $top . $rel); continue; }

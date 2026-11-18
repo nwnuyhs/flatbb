@@ -368,6 +368,13 @@ An importer brings another forum into a **new, empty** FlatBB forum. The core ow
 
 Wrap user-facing strings in `t('English text')`. Ship `plugins/<id>/lang/<code>.php` returning `['English text' => 'Translation']`; it is loaded automatically for the active language. A pack for a right-to-left script adds `'__dir' => 'rtl'`. The language is chosen per visitor (preference, cookie, then the site default), so never cache translated HTML across requests. Print timestamps with `time_tag($ts)`: the browser re-renders them in the visitor's own time zone.
 
+### Marketplace rules
+
+The marketplace is shared by forums in every language, so a plugin published there follows two rules:
+
+- **English first.** The manifest `name`, `description`, settings labels, help and choices, admin page labels and every `t('…')` are written in English; translations ship in `plugins/<id>/lang/<code>.php` (a Chinese site sees exactly the same as before). `plugin:check` refuses other scripts in those places, and the marketplace refuses a name or description that is not English. Content a plugin seeds (sample pages, default titles) may be in any language.
+- **Fits the default look.** Style your plugin with the core CSS variables (`--brand`, `--panel`, `--line`, `--text`, `--radius`…) and the existing classes (`.btn`, `.card`, `.list-card`, `.tabs`, `.badge`), and try it with the default theme in light and dark mode. Styles made for your own forum's theme belong in that theme, not in the plugin.
+
 ## 14a. Points: rules, awards and the ledger
 
 The core keeps the balance, the history and the **rule table** (Admin → Points: what each action pays, a daily cap per member, on/off). Plugins declare rules and pay through them, so the admin tunes every number in one place:
@@ -397,6 +404,7 @@ Every plugin is free unless its author sets a number of points on the marketplac
 - [ ] Works on SQLite and MySQL 5.7 (no dialect SQL, schema via `db_*` helpers).
 - [ ] Old settings/data still work; `install` and `uninstall` are idempotent.
 - [ ] `version` bumped; `description` accurate; `README.md` describes settings and usage.
+- [ ] For the marketplace: English text with translations in `lang/<code>.php`; looks right with the default theme ("Marketplace rules").
 - [ ] Narrow screens, long text, empty states and error states handled.
 
 ## 16. Prompt to give an AI

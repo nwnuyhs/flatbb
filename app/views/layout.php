@@ -48,6 +48,7 @@ $unread = notifications_unread();
 <?php endif; ?>
 <?= plugin_assets_tag('css') ?>
 <?= raw(theme_assets_tag()) ?>
+<?php if (($custom_css = trim(setting('custom_css'))) !== ''): ?><style id="custom-css"><?= raw(str_ireplace('</style', '<\/style', $custom_css)) ?></style><?php endif; /* Admin → Settings → Advanced: after the theme and the plugins, so it wins */ ?>
 <?= region('head', ['title' => $title], '', false) ?>
 <?= raw(str_replace('{nonce}', csp_nonce(), setting('head_code'))) ?>
 <?= raw($head) ?>
